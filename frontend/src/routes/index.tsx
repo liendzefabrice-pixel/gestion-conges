@@ -3,6 +3,8 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import AuthLayout from '../layouts/AuthLayout';
 import MainLayout from '../layouts/MainLayout';
 import LoginPage from '../pages/LoginPage';
+import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/ResetPasswordPage';
 import DashboardPage from '../pages/DashboardPage';
 import DepartmentsPage from '../pages/DepartmentsPage';
 import EmployeesPage from '../pages/EmployeesPage';
@@ -31,6 +33,14 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={<PublicRoute><AuthLayout /></PublicRoute>}>
         <Route index element={<LoginPage />} />
+      </Route>
+
+      <Route path="/forgot-password" element={<PublicRoute><AuthLayout /></PublicRoute>}>
+        <Route index element={<ForgotPasswordPage />} />
+      </Route>
+
+      <Route path="/reset-password" element={<PublicRoute><AuthLayout /></PublicRoute>}>
+        <Route index element={<ResetPasswordPage />} />
       </Route>
 
       <Route path="/change-password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />

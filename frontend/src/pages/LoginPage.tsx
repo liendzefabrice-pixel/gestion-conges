@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { loginSchema, type LoginFormData } from '../lib/schemas'
 import { Button } from '../components/ui/button'
@@ -56,7 +56,12 @@ export default function LoginPage() {
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Mot de passe</Label>
+              <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline">
+                Mot de passe oublié ?
+              </Link>
+            </div>
             <Input id="password" type="password" {...register('password')} />
             {errors.password && (
               <p className="text-sm text-red-600">{errors.password.message}</p>
