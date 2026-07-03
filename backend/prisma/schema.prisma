@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum LeaveStatus {
+  PENDING
+  RH_REVIEWED
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  LEAVE_CREATED
+  LEAVE_RH_REVIEWED
+  LEAVE_DECIDED
+  PERMISSION_CREATED
+  PERMISSION_RH_REVIEWED
+  PERMISSION_DECIDED
+  INFO
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+
+  users       User[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(true)
+  resetToken         String?
+  resetTokenExpires  DateTime?
+
+  roleId    Int
+  role      Role     @relation(fields: [roleId], references: [id])
+
+  employee  Employee?
+
+  hrReviewedLeaves        LeaveRequest[]       @relation("HR_Review")
+  directorDecidedLeaves   LeaveRequest[]       @relation("Director_Decision")
+  hrReviewedPermissions   PermissionRequest[]  @relation("Permission_HR_Review")
+  directorDecidedPermissions PermissionRequest[] @relation("Permission_Director_Decision")
+
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+
+  services    Service[]
+  employees   Employee[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Service {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  employees    Employee[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Employee {
+  id           Int      @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  hireDate     DateTime
+  position     String
+
+  userId       Int      @unique
+  user         User     @relation(fields: [userId], references: [id])
+
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  serviceId    Int?
+  service      Service? @relation(fields: [serviceId], references: [id])
+
+  leaveRequests      LeaveRequest[]
+  permissionRequests PermissionRequest[]
+  leaveBalances      LeaveBalance[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model LeaveType {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  defaultDays Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  leaveRequests LeaveRequest[]
+  leaveBalances LeaveBalance[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model LeaveRequest {
+  id             Int         @id @default(autoincrement())
+  startDate      DateTime
+  endDate        DateTime
+  duration       Int
+  reason         String
+  status         LeaveStatus @default(PENDING)
+  hrComment      String?
+  hrOpinion      String?
+  directorComment String?
+  reviewedAt     DateTime?
+  decidedAt      DateTime?
+
+  employeeId     Int
+  employee       Employee @relation(fields: [employeeId], references: [id])
+
+  leaveTypeId    Int
+  leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  reviewedById   Int?
+  reviewedBy     User?    @relation("HR_Review", fields: [reviewedById], references: [id])
+
+  decidedById    Int?
+  decidedBy      User?    @relation("Director_Decision", fields: [decidedById], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+model PermissionRequest {
+  id             Int         @id @default(autoincrement())
+  startDate      DateTime
+  endDate        DateTime
+  duration       Int
+  reason         String
+  status         LeaveStatus @default(PENDING)
+  hrComment      String?
+  hrOpinion      String?
+  directorComment String?
+  reviewedAt     DateTime?
+  decidedAt      DateTime?
+
+  employeeId     Int
+  employee       Employee @relation(fields: [employeeId], references: [id])
+
+  reviewedById   Int?
+  reviewedBy     User?    @relation("Permission_HR_Review", fields: [reviewedById], references: [id])
+
+  decidedById    Int?
+  decidedBy      User?    @relation("Permission_Director_Decision", fields: [decidedById], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+model LeaveBalance {
+  id           Int   @id @default(autoincrement())
+  year         Int
+  totalDays    Int   @default(0)
+  usedDays     Int   @default(0)
+  pendingDays  Int   @default(0)
+
+  employeeId   Int
+  employee     Employee @relation(fields: [employeeId], references: [id])
+
+  leaveTypeId  Int
+  leaveType    LeaveType @relation(fields: [leaveTypeId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId])
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  type      NotificationType
+
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id])
+
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  entityType String
+  entityId   Int
+  oldValue   Json?
+  newValue   Json?
+
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
