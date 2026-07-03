@@ -75,70 +75,70 @@ L'avancement du projet est mis à jour au fur et à mesure.
 - ✅ Initialisation NestJS
 - ✅ Configuration CORS
 - ✅ Validation globale
-- 🟡 Configuration Prisma
+- ✅ Configuration Prisma
 - ✅ Installation PostgreSQL
 
 ---
 
 # Phase 3 : Base de données
 
-- ⏳ Modélisation Prisma
-- ⏳ Première migration
-- ⏳ Création des rôles
-- ⏳ Création des utilisateurs
-- ⏳ Création des employés
-- ⏳ Création des départements
-- ⏳ Création des services
+- ✅ Modélisation Prisma
+- ✅ Synchronisation de la base de données
+- ✅ Création des rôles
+- ✅ Création des utilisateurs
+- ✅ Création des employés
+- ✅ Création des départements
+- ✅ Création des services
 
 ---
 
 # Phase 4 : Authentification
 
-- ⏳ JWT
-- ⏳ Connexion
-- ⏳ Déconnexion
-- ⏳ Gestion des rôles
-- ⏳ Protection des routes
+- ✅ JWT
+- ✅ Connexion
+- ✅ Déconnexion
+- ✅ Gestion des rôles
+- ✅ Protection des routes
 
 ---
 
 # Phase 5 : Administration
 
-- ⏳ Tableau de bord Administrateur
-- ⏳ Gestion des utilisateurs
-- ⏳ Gestion des départements
-- ⏳ Gestion des services
-- ⏳ Gestion des jours fériés
+- ✅ Tableau de bord Administrateur
+- ✅ Gestion des utilisateurs
+- ✅ Gestion des départements
+- ✅ Gestion des services
+- ❌ Gestion des jours fériés (module vide)
 - ⏳ Paramètres système
 
 ---
 
 # Phase 6 : Gestion des employés
 
-- ⏳ Création
-- ⏳ Modification
-- ⏳ Suppression
-- ⏳ Consultation
-- ⏳ Solde de congés
+- ✅ Création
+- ✅ Modification
+- ✅ Suppression
+- ✅ Consultation
+- ✅ Solde de congés
 
 ---
 
 # Phase 7 : Gestion des congés
 
-- ⏳ Types de congés
-- ⏳ Demandes
-- ⏳ Validation RH
-- ⏳ Validation Direction
-- ⏳ Historique
-- ⏳ Notifications
+- ✅ Types de congés
+- ✅ Demandes
+- ✅ Validation RH
+- ✅ Validation Direction
+- ✅ Historique
+- ✅ Notifications
 
 ---
 
 # Phase 8 : Gestion des permissions
 
-- ⏳ Demandes
-- ⏳ Validation
-- ⏳ Historique
+- ✅ Demandes
+- ✅ Validation
+- ✅ Historique
 
 ---
 
@@ -146,41 +146,41 @@ L'avancement du projet est mis à jour au fur et à mesure.
 
 ## Employé
 
-- ⏳ Tableau de bord
-- ⏳ Solde
-- ⏳ Historique
+- ✅ Tableau de bord
+- ✅ Solde
+- ✅ Historique
 
 ---
 
 ## RH
 
-- ⏳ Tableau de bord
-- ⏳ Avis
-- ⏳ Statistiques
+- ✅ Tableau de bord
+- ✅ Avis
+- ✅ Statistiques
 
 ---
 
 ## Direction
 
-- ⏳ Tableau de bord
-- ⏳ Validation
+- ✅ Tableau de bord
+- ✅ Validation
 - ⏳ Rapports
 
 ---
 
 ## Administrateur
 
-- ⏳ Tableau de bord
-- ⏳ Statistiques
+- ✅ Tableau de bord
+- ✅ Statistiques
 - ⏳ Gestion système
 
 ---
 
 # Phase 10 : Notifications
 
-- ⏳ Email
-- ⏳ Notifications internes
-- ⏳ Historique
+- ❌ Email (non configuré)
+- ✅ Notifications internes
+- ✅ AuditLog (modèle Prisma mais pas de module API)
 
 ---
 

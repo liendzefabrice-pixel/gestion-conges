@@ -120,6 +120,36 @@ Création des documents officiels du projet :
 
 ---
 
+# Version 0.4.0
+
+## Date
+
+03 Juillet 2026
+
+## Auteur
+
+Fabrice Liendze
+
+## Modifications
+
+### Infrastructure
+
+- Premier commit Git (117 fichiers).
+- Suppression du dépôt Git imbriqué dans backend/.
+- Correction d'une variable inutilisée dans UsersPage.tsx.
+
+### Base de données
+
+- Synchronisation de la base PostgreSQL avec le schéma Prisma.
+- Exécution du seed (rôles, administrateur, types de congés).
+
+### Validation
+
+- Backend : compilation et démarrage validés (toutes les routes API fonctionnelles).
+- Frontend : compilation TypeScript et build Vite validés.
+
+---
+
 # Versions futures
 
 Les prochaines versions seront ajoutées au fur et à mesure de l'avancement du projet.
