@@ -56,12 +56,7 @@ export default function LoginPage() {
             )}
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Link to="/forgot-password" className="text-xs text-blue-600 hover:underline">
-                Mot de passe oublié ?
-              </Link>
-            </div>
+            <Label htmlFor="password">Mot de passe</Label>
             <Input id="password" type="password" {...register('password')} />
             {errors.password && (
               <p className="text-sm text-red-600">{errors.password.message}</p>
@@ -70,6 +65,11 @@ export default function LoginPage() {
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Connexion...' : 'Se connecter'}
           </Button>
+          <div className="text-center">
+            <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+              Mot de passe oublié ?
+            </Link>
+          </div>
         </form>
       </CardContent>
     </Card>

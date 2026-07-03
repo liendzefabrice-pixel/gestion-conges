@@ -92,44 +92,53 @@ export class AuthService {
     });
 
     if (!user) {
-      return { message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' };
+      return { message: 'Si cet email existe, un code de vérification a été envoyé.' };
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    const expires = new Date(Date.now() + 60 * 60 * 1000);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
-        resetToken: hashedToken,
+        resetToken: hashedOtp,
         resetTokenExpires: expires,
       },
     });
 
     if (process.env.NODE_ENV === 'development') {
       return {
-        message: 'Lien de réinitialisation généré (mode développement)',
-        devToken: token,
-        resetUrl: `http://localhost:5173/reset-password?token=${token}`,
+        message: 'Un code de vérification a été envoyé (mode développement)',
+        devOtp: otp,
+        email: user.email,
       };
     }
 
-    return { message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' };
+    return { message: 'Un code de vérification a été envoyé par email.' };
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    const hashedToken = crypto.createHash('sha256').update(resetPasswordDto.token).digest('hex');
-
-    const user = await this.prisma.user.findFirst({
-      where: {
-        resetToken: hashedToken,
-        resetTokenExpires: { gt: new Date() },
-      },
+    const user = await this.prisma.user.findUnique({
+      where: { email: resetPasswordDto.email },
     });
 
     if (!user) {
-      throw new BadRequestException('Token invalide ou expiré');
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    if (!user.resetToken || !user.resetTokenExpires) {
+      throw new BadRequestException('Aucune demande de réinitialisation en cours');
+    }
+
+    if (user.resetTokenExpires < new Date()) {
+      throw new BadRequestException('Le code de vérification a expiré');
+    }
+
+    const hashedOtp = crypto.createHash('sha256').update(resetPasswordDto.otp).digest('hex');
+
+    if (user.resetToken !== hashedOtp) {
+      throw new BadRequestException('Code de vérification invalide');
     }
 
     const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
