@@ -21,7 +21,7 @@ export default function UsersPage() {
     e.preventDefault();
     setError('');
     try {
-      const res = await api.post('/users', { email, password: password || email, roleId: Number(roleId) });
+      await api.post('/users', { email, password: password || email, roleId: Number(roleId) });
       setTempPassword(password || email);
       setEmail('');
       setPassword('');
