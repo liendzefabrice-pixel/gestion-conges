@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import type { User } from '../types';
+import { translateRole } from '../lib/utils';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<(User & { employee?: { firstName: string; lastName: string }; isActive: boolean; mustChangePassword?: boolean })[]>([]);
@@ -90,7 +91,7 @@ export default function UsersPage() {
                 <td className="p-3 text-gray-500">
                   {u.employee ? `${u.employee.firstName} ${u.employee.lastName}` : '-'}
                 </td>
-                <td className="p-3 capitalize">{u.role?.name?.toLowerCase()}</td>
+                <td className="p-3">{translateRole(u.role?.name || '')}</td>
                 <td className="p-3">
                   <span className={`px-2 py-1 rounded text-xs font-medium ${u.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                     {u.isActive ? 'Actif' : 'Inactif'}
