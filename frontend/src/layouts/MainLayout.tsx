@@ -12,6 +12,7 @@ const navItems = [
   { label: 'Planification', path: '/leave-planning', roles: ['HR', 'ADMIN'] },
   { label: 'Permissions', path: '/permissions', roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
   { label: 'Utilisateurs', path: '/users', roles: ['ADMIN'] },
+  { label: 'Mon compte', path: '/account', roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
   { label: 'Notifications', path: '/notifications', roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
 ];
 

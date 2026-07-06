@@ -6,6 +6,7 @@ import LoginPage from '../pages/LoginPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import DashboardPage from '../pages/DashboardPage';
+import AccountPage from '../pages/AccountPage';
 import DepartmentsPage from '../pages/DepartmentsPage';
 import EmployeesPage from '../pages/EmployeesPage';
 import LeavePage from '../pages/LeavePage';
@@ -50,6 +51,7 @@ function AppRoutes() {
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="account" element={<AccountPage />} />
         <Route path="departments" element={<DepartmentsPage />} />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="leave" element={<LeavePage />} />

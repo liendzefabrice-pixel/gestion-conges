@@ -91,6 +91,24 @@ export class EmployeesService {
     });
   }
 
+  async findByUserId(userId: number) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      include: {
+        user: { select: { id: true, email: true, isActive: true, role: true } },
+        department: true,
+        service: true,
+        leaveBalances: { include: { leaveType: true } },
+      },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Profil employé introuvable');
+    }
+
+    return employee;
+  }
+
   async findOne(id: number) {
     const employee = await this.prisma.employee.findUnique({
       where: { id },

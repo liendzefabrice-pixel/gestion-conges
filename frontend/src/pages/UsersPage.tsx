@@ -57,7 +57,7 @@ export default function UsersPage() {
             <select value={roleId} onChange={(e) => setRoleId(e.target.value)} required className="w-full px-3 py-2 border rounded">
               <option value="">Sélectionner un rôle</option>
               {roles.filter((r) => r.name !== 'ADMIN').map((r) => (
-                <option key={r.id} value={r.id}>{r.name}</option>
+                <option key={r.id} value={r.id}>{translateRole(r.name)}</option>
               ))}
             </select>
             <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Créer</button>
