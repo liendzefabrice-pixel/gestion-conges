@@ -6,6 +6,7 @@ import api from '../services/api'
 import { resetPasswordSchema, type ResetPasswordFormData } from '../lib/schemas'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
+import { PasswordInput } from '../components/ui/password-input'
 import { Label } from '../components/ui/label'
 import {
   Card,
@@ -77,12 +78,12 @@ export default function ResetPasswordPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="newPassword">Nouveau mot de passe</Label>
-            <Input id="newPassword" type="password" {...register('newPassword')} />
+            <PasswordInput id="newPassword" {...register('newPassword')} />
             {errors.newPassword && <p className="text-sm text-red-600">{errors.newPassword.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-            <Input id="confirmPassword" type="password" {...register('confirmPassword')} />
+            <PasswordInput id="confirmPassword" {...register('confirmPassword')} />
             {errors.confirmPassword && <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>}
           </div>
           <Button type="submit" className="w-full" disabled={isSubmitting}>

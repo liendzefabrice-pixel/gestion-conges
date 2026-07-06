@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import type { Employee, Department } from '../types';
+import { PasswordInput } from '../components/ui/password-input';
 
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -64,7 +65,7 @@ export default function EmployeesPage() {
             <input value={form.firstName} onChange={(e) => handleChange('firstName', e.target.value)} placeholder="Prénom" required className="px-3 py-2 border rounded" />
             <input value={form.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Nom" required className="px-3 py-2 border rounded" />
             <input value={form.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="Email" required type="email" className="px-3 py-2 border rounded" />
-            <input value={form.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="Mot de passe (optionnel)" className="px-3 py-2 border rounded" />
+            <PasswordInput value={form.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="Mot de passe (optionnel)" />
             <input value={form.position} onChange={(e) => handleChange('position', e.target.value)} placeholder="Poste" required className="px-3 py-2 border rounded" />
             <input value={form.hireDate} onChange={(e) => handleChange('hireDate', e.target.value)} required type="date" className="px-3 py-2 border rounded" />
             <select value={form.departmentId} onChange={(e) => handleChange('departmentId', e.target.value)} required className="px-3 py-2 border rounded">

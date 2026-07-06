@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../services/api';
 import type { User } from '../types';
 import { translateRole } from '../lib/utils';
+import { PasswordInput } from '../components/ui/password-input';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<(User & { employee?: { firstName: string; lastName: string }; isActive: boolean; mustChangePassword?: boolean })[]>([]);
@@ -53,7 +54,7 @@ export default function UsersPage() {
           {error && <p className="text-red-600 bg-red-50 p-3 rounded mb-4 text-sm">{error}</p>}
           <form onSubmit={createUser} className="space-y-3">
             <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" required type="email" className="w-full px-3 py-2 border rounded" />
-            <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mot de passe (laisser vide = identique à l'email)" className="w-full px-3 py-2 border rounded" />
+            <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mot de passe (laisser vide = identique à l'email)" />
             <select value={roleId} onChange={(e) => setRoleId(e.target.value)} required className="w-full px-3 py-2 border rounded">
               <option value="">Sélectionner un rôle</option>
               {roles.filter((r) => r.name !== 'ADMIN').map((r) => (
