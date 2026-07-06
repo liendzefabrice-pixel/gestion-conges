@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -13,6 +14,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -36,6 +38,19 @@ export class AuthService {
 
     if (!user.isActive) {
       throw new UnauthorizedException('Compte désactivé');
+    }
+
+    if (!user.welcomeSent) {
+      await this.notificationsService.create({
+        userId: user.id,
+        title: 'Bienvenue sur Gestion Congés',
+        message: 'Bienvenue ! Vous pouvez dès à présent soumettre vos demandes de congés et permissions depuis votre espace.',
+        type: 'INFO',
+      });
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { welcomeSent: true },
+      });
     }
 
     const payload = {
