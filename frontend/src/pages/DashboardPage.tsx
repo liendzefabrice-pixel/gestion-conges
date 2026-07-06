@@ -84,12 +84,20 @@ function AdminDashboard({ data }: { data: DashboardAdmin }) {
 function HrDashboard({ data }: { data: DashboardHr }) {
   if (!data) return null
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <StatCard label="Congés à examiner" value={data.toReview.leave} color={colors[0]} />
-      <StatCard label="Permissions à examiner" value={data.toReview.permission} color={colors[2]} />
-      <StatCard label="Total à examiner" value={data.toReview.total} color={colors[5]} />
-      <StatCard label="Congés traités" value={data.totalProcessed.leave} color={colors[1]} />
-      <StatCard label="Permissions traitées" value={data.totalProcessed.permission} color={colors[4]} />
+    <div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <StatCard label="Congés à examiner" value={data.toReview.leave} color={colors[0]} />
+        <StatCard label="Permissions à examiner" value={data.toReview.permission} color={colors[2]} />
+        <StatCard label="Total à examiner" value={data.toReview.total} color={colors[5]} />
+        <StatCard label="Congés traités" value={data.totalProcessed.leave} color={colors[1]} />
+        <StatCard label="Permissions traitées" value={data.totalProcessed.permission} color={colors[4]} />
+      </div>
+      <h2 className="text-lg font-semibold mb-3">Planification annuelle</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard label="Employés" value={data.planning.totalEmployees} color={colors[3]} />
+        <StatCard label="Planifiés" value={data.planning.withPlanning} color={colors[1]} />
+        <StatCard label="Non planifiés" value={data.planning.withoutPlanning} color={colors[5]} />
+      </div>
     </div>
   )
 }
@@ -107,10 +115,38 @@ function DirectorDashboard({ data }: { data: DashboardDirector }) {
   )
 }
 
+const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+
 function EmployeeDashboard({ data }: { data: DashboardEmployee }) {
   if (!data) return null
   return (
     <div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Éligibilité aux congés</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold">
+              {data.eligibleForLeave ? (
+                <span className="text-green-600">Éligible</span>
+              ) : (
+                <span className="text-red-600">Non éligible (&lt;1 an)</span>
+              )}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-500">Mois planifié</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-semibold">
+              {data.planning ? months[data.planning.month] + ' ' + data.planning.year : 'Non planifié'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <StatCard label="Demandes en attente" value={data.pendingRequests.total} color={colors[5]} />
         <StatCard label="Congés" value={data.pendingRequests.leave} color={colors[0]} />

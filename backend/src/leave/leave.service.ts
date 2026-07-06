@@ -73,11 +73,40 @@ export class LeaveService {
       throw new BadRequestException('Type de congé invalide ou inactif');
     }
 
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Employé introuvable');
+    }
+
+    const now = new Date();
+    const hireDate = new Date(employee.hireDate);
+    const oneYearAgo = new Date(now);
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    if (hireDate > oneYearAgo) {
+      throw new BadRequestException(
+        'Vous devez avoir au moins 1 an d\'ancienneté pour poser des congés',
+      );
+    }
+
     const startDate = new Date(createLeaveRequestDto.startDate);
     const endDate = new Date(createLeaveRequestDto.endDate);
 
     if (endDate < startDate) {
       throw new BadRequestException('La date de fin doit être après la date de début');
+    }
+
+    const planning = await this.prisma.annualLeavePlanning.findUnique({
+      where: { employeeId_year: { employeeId, year: startDate.getFullYear() } },
+    });
+
+    if (!planning) {
+      throw new BadRequestException(
+        'Vous n\'avez pas de planification annuelle pour cette année. Veuillez contacter le RH.',
+      );
     }
 
     const duration = this.calculateDuration(startDate, endDate);
@@ -87,6 +116,7 @@ export class LeaveService {
         data: {
           employeeId,
           leaveTypeId: createLeaveRequestDto.leaveTypeId,
+          annualLeavePlanningId: planning.id,
           startDate,
           endDate,
           duration,

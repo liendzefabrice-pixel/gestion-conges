@@ -45,6 +45,12 @@ export class DashboardService {
       this.prisma.permissionRequest.count(),
     ]);
 
+    const currentYear = new Date().getFullYear();
+    const totalEmployees = await this.prisma.employee.count();
+    const planningsCount = await this.prisma.annualLeavePlanning.count({
+      where: { year: currentYear },
+    });
+
     return {
       toReview: {
         leave: pendingLeaves,
@@ -54,6 +60,11 @@ export class DashboardService {
       totalProcessed: {
         leave: totalLeaves,
         permission: totalPermissions,
+      },
+      planning: {
+        totalEmployees,
+        withPlanning: planningsCount,
+        withoutPlanning: totalEmployees - planningsCount,
       },
     };
   }
@@ -91,7 +102,13 @@ export class DashboardService {
       return {};
     }
 
-    const [leaveBalances, pendingLeaves, pendingPermissions] =
+    const currentYear = new Date().getFullYear();
+    const hireDate = new Date(employee.hireDate);
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const eligibleForLeave = hireDate <= oneYearAgo;
+
+    const [leaveBalances, pendingLeaves, pendingPermissions, planning] =
       await Promise.all([
         this.prisma.leaveBalance.findMany({
           where: { employeeId: employee.id },
@@ -103,6 +120,9 @@ export class DashboardService {
         }),
         this.prisma.permissionRequest.count({
           where: { employeeId: employee.id, status: 'PENDING' },
+        }),
+        this.prisma.annualLeavePlanning.findUnique({
+          where: { employeeId_year: { employeeId: employee.id, year: currentYear } },
         }),
       ]);
 
@@ -120,6 +140,10 @@ export class DashboardService {
         permission: pendingPermissions,
         total: pendingLeaves + pendingPermissions,
       },
+      planning: planning
+        ? { month: planning.month, year: planning.year }
+        : null,
+      eligibleForLeave,
     };
   }
 }

@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { DepartmentsModule } from './departments/departments.module';
 import { EmployeesModule } from './employees/employees.module';
 import { LeaveModule } from './leave/leave.module';
+import { LeavePlanningModule } from './leave-planning/leave-planning.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
@@ -20,6 +21,7 @@ import { UsersModule } from './users/users.module';
     DepartmentsModule,
     EmployeesModule,
     LeaveModule,
+    LeavePlanningModule,
     PermissionsModule,
     NotificationsModule,
     DashboardModule,

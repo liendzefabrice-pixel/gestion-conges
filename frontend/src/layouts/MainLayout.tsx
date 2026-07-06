@@ -7,6 +7,8 @@ const navItems = [
   { label: 'Départements', path: '/departments', roles: ['ADMIN'] },
   { label: 'Employés', path: '/employees', roles: ['ADMIN', 'HR'] },
   { label: 'Congés', path: '/leave', roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
+  { label: 'Mon planning', path: '/my-planning', roles: ['EMPLOYEE'] },
+  { label: 'Planification', path: '/leave-planning', roles: ['HR', 'ADMIN'] },
   { label: 'Permissions', path: '/permissions', roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
   { label: 'Utilisateurs', path: '/users', roles: ['ADMIN'] },
   { label: 'Notifications', path: '/notifications', roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },

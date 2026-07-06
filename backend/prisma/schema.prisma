@@ -54,6 +54,8 @@ model User {
   hrReviewedPermissions   PermissionRequest[]  @relation("Permission_HR_Review")
   directorDecidedPermissions PermissionRequest[] @relation("Permission_Director_Decision")
 
+  annualLeavePlannings  AnnualLeavePlanning[]
+
   notifications Notification[]
   auditLogs     AuditLog[]
 
@@ -103,9 +105,10 @@ model Employee {
   serviceId    Int?
   service      Service? @relation(fields: [serviceId], references: [id])
 
-  leaveRequests      LeaveRequest[]
-  permissionRequests PermissionRequest[]
-  leaveBalances      LeaveBalance[]
+  leaveRequests          LeaveRequest[]
+  permissionRequests     PermissionRequest[]
+  leaveBalances          LeaveBalance[]
+  annualLeavePlannings   AnnualLeavePlanning[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -123,6 +126,26 @@ model LeaveType {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model AnnualLeavePlanning {
+  id          Int      @id @default(autoincrement())
+  employeeId  Int
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  year        Int
+  month       Int
+
+  plannedById Int
+  plannedBy   User     @relation(fields: [plannedById], references: [id])
+
+  leaveRequests LeaveRequest[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([employeeId, year])
+  @@index([employeeId])
+  @@index([year])
 }
 
 model LeaveRequest {
@@ -144,6 +167,9 @@ model LeaveRequest {
   leaveTypeId    Int
   leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id])
 
+  annualLeavePlanningId Int
+  annualLeavePlanning  AnnualLeavePlanning @relation(fields: [annualLeavePlanningId], references: [id])
+
   reviewedById   Int?
   reviewedBy     User?    @relation("HR_Review", fields: [reviewedById], references: [id])
 
@@ -155,6 +181,7 @@ model LeaveRequest {
 
   @@index([employeeId])
   @@index([status])
+  @@index([annualLeavePlanningId])
 }
 
 model PermissionRequest {

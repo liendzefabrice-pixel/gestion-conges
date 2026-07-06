@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { leaveRequestSchema, type LeaveRequestFormData } from '../lib/schemas'
-import type { LeaveRequest, LeaveType } from '../types'
+import type { LeaveRequest, LeaveType, LeaveEligibility } from '../types'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -26,6 +26,8 @@ import {
 import { Textarea } from '../components/ui/textarea'
 import RequestDetailModal from '../components/RequestDetailModal'
 
+const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
   PENDING: { label: 'En attente', variant: 'secondary' },
   RH_REVIEWED: { label: 'Examinée', variant: 'outline' },
@@ -37,6 +39,10 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
   const { data: leaveTypes } = useQuery<LeaveType[]>({
     queryKey: ['leave-types'],
     queryFn: () => api.get('/leave/types').then((r) => r.data),
+  })
+  const { data: eligibility } = useQuery<LeaveEligibility>({
+    queryKey: ['leave-eligibility'],
+    queryFn: () => api.get('/leave-planning/eligibility').then((r) => r.data),
   })
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
@@ -73,6 +79,14 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
         <CardTitle className="text-lg">Nouvelle demande de congé</CardTitle>
       </CardHeader>
       <CardContent>
+        {eligibility && (
+          <div className="mb-4 p-3 rounded text-sm bg-blue-50 border border-blue-200">
+            <p><strong>Éligibilité :</strong> {eligibility.eligible ? '✔ Éligible' : '✖ Non éligible (ancienneté &lt; 1 an)'}</p>
+            {eligibility.planning && (
+              <p><strong>Mois planifié :</strong> {months[eligibility.planning.month]} {eligibility.planning.year}</p>
+            )}
+          </div>
+        )}
         <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
           {error && (
             <div className="p-3 text-sm text-red-700 bg-red-100 rounded">{error}</div>

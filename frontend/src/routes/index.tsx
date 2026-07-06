@@ -9,6 +9,8 @@ import DashboardPage from '../pages/DashboardPage';
 import DepartmentsPage from '../pages/DepartmentsPage';
 import EmployeesPage from '../pages/EmployeesPage';
 import LeavePage from '../pages/LeavePage';
+import LeavePlanningPage from '../pages/LeavePlanningPage';
+import MyPlanningPage from '../pages/MyPlanningPage';
 import PermissionsPage from '../pages/PermissionsPage';
 import UsersPage from '../pages/UsersPage';
 import NotificationsPage from '../pages/NotificationsPage';
@@ -51,6 +53,8 @@ function AppRoutes() {
         <Route path="departments" element={<DepartmentsPage />} />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="leave" element={<LeavePage />} />
+        <Route path="leave-planning" element={<LeavePlanningPage />} />
+        <Route path="my-planning" element={<MyPlanningPage />} />
         <Route path="permissions" element={<PermissionsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
