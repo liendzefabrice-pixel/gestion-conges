@@ -82,7 +82,7 @@ export default function AccountPage() {
                 <p className="font-medium">Mot de passe</p>
                 <p className="text-sm text-gray-500">Dernière modification inconnue</p>
               </div>
-              <Button variant="outline" onClick={() => navigate('/change-password')}>
+              <Button variant="outline" onClick={() => navigate('/account/security')}>
                 Modifier
               </Button>
             </div>
