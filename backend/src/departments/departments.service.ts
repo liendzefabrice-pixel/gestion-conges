@@ -6,8 +6,6 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
-import { CreateServiceDto } from './dto/create-service.dto';
-import { UpdateServiceDto } from './dto/update-service.dto';
 
 @Injectable()
 export class DepartmentsService {
@@ -29,7 +27,7 @@ export class DepartmentsService {
 
   async findAll() {
     return this.prisma.department.findMany({
-      include: { services: true, _count: { select: { employees: true } } },
+      include: { _count: { select: { employees: true } } },
       orderBy: { name: 'asc' },
     });
   }
@@ -37,7 +35,7 @@ export class DepartmentsService {
   async findOne(id: number) {
     const department = await this.prisma.department.findUnique({
       where: { id },
-      include: { services: true, employees: true },
+      include: { _count: { select: { employees: true } } },
     });
 
     if (!department) {
@@ -80,63 +78,5 @@ export class DepartmentsService {
     }
 
     return this.prisma.department.delete({ where: { id } });
-  }
-
-  async createService(departmentId: number, createServiceDto: CreateServiceDto) {
-    await this.findOne(departmentId);
-
-    return this.prisma.service.create({
-      data: {
-        ...createServiceDto,
-        departmentId,
-      },
-    });
-  }
-
-  async findServicesByDepartment(departmentId: number) {
-    await this.findOne(departmentId);
-
-    return this.prisma.service.findMany({
-      where: { departmentId },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-  async findServiceById(id: number) {
-    const service = await this.prisma.service.findUnique({
-      where: { id },
-      include: { department: true },
-    });
-
-    if (!service) {
-      throw new NotFoundException('Service introuvable');
-    }
-
-    return service;
-  }
-
-  async updateService(id: number, updateServiceDto: UpdateServiceDto) {
-    await this.findServiceById(id);
-
-    return this.prisma.service.update({
-      where: { id },
-      data: updateServiceDto,
-    });
-  }
-
-  async removeService(id: number) {
-    await this.findServiceById(id);
-
-    const hasEmployees = await this.prisma.employee.findFirst({
-      where: { serviceId: id },
-    });
-
-    if (hasEmployees) {
-      throw new ConflictException(
-        'Impossible de supprimer ce service : des employés y sont rattachés',
-      );
-    }
-
-    return this.prisma.service.delete({ where: { id } });
   }
 }

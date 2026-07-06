@@ -53,7 +53,6 @@ export default function DepartmentsPage() {
             <tr className="bg-gray-50 text-left">
               <th className="p-3 text-sm font-medium">Nom</th>
               <th className="p-3 text-sm font-medium">Description</th>
-              <th className="p-3 text-sm font-medium">Services</th>
               <th className="p-3 text-sm font-medium">Employés</th>
               <th className="p-3 text-sm font-medium">Actions</th>
             </tr>
@@ -63,7 +62,6 @@ export default function DepartmentsPage() {
               <tr key={d.id} className="border-t">
                 <td className="p-3 font-medium">{d.name}</td>
                 <td className="p-3 text-gray-500">{d.description || '-'}</td>
-                <td className="p-3">{d.services?.length || 0}</td>
                 <td className="p-3">{d._count?.employees || 0}</td>
                 <td className="p-3">
                   <button onClick={() => remove(d.id)} className="text-red-600 hover:text-red-800 text-sm">

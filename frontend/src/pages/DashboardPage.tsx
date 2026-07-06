@@ -68,8 +68,7 @@ function AdminDashboard({ data }: { data: DashboardAdmin }) {
     { label: 'Utilisateurs', value: data.users, color: colors[0] },
     { label: 'Employés', value: data.employees, color: colors[1] },
     { label: 'Départements', value: data.departments, color: colors[2] },
-    { label: 'Services', value: data.services, color: colors[3] },
-    { label: 'Types de congés', value: data.leaveTypes, color: colors[4] },
+    { label: 'Types de congés', value: data.leaveTypes, color: colors[3] },
     { label: 'Demandes en attente', value: data.pendingRequests.total, color: colors[5] },
   ]
   return (

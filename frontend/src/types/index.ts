@@ -17,25 +17,17 @@ export interface Department {
   id: number;
   name: string;
   description?: string;
-  services: Service[];
   _count?: { employees: number };
-}
-
-export interface Service {
-  id: number;
-  name: string;
-  description?: string;
-  departmentId: number;
 }
 
 export interface Employee {
   id: number;
+  matricule: string;
   firstName: string;
   lastName: string;
   hireDate: string;
   position: string;
   department: Department;
-  service?: Service;
   user: { id: number; email: string; isActive: boolean; role: { name: string } };
   leaveBalances?: LeaveBalance[];
 }
@@ -98,7 +90,6 @@ export interface DashboardAdmin {
   users: number;
   employees: number;
   departments: number;
-  services: number;
   leaveTypes: number;
   pendingRequests: { leave: number; permission: number; total: number };
 }

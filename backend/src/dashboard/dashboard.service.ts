@@ -6,12 +6,11 @@ export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
   async getAdminStats() {
-    const [users, employees, departments, services, leaveTypes] =
+    const [users, employees, departments, leaveTypes] =
       await Promise.all([
         this.prisma.user.count(),
         this.prisma.employee.count(),
         this.prisma.department.count(),
-        this.prisma.service.count(),
         this.prisma.leaveType.count({ where: { isActive: true } }),
       ]);
 
@@ -24,7 +23,6 @@ export class DashboardService {
       users,
       employees,
       departments,
-      services,
       leaveTypes,
       pendingRequests: {
         leave: pendingLeaves,

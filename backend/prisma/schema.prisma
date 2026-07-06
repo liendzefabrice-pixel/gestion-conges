@@ -68,29 +68,15 @@ model Department {
   name        String   @unique
   description String?
 
-  services    Service[]
   employees   Employee[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
-model Service {
-  id           Int      @id @default(autoincrement())
-  name         String
-  description  String?
-
-  departmentId Int
-  department   Department @relation(fields: [departmentId], references: [id])
-
-  employees    Employee[]
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
 model Employee {
   id           Int      @id @default(autoincrement())
+  matricule    String   @unique
   firstName    String
   lastName     String
   hireDate     DateTime
@@ -101,9 +87,6 @@ model Employee {
 
   departmentId Int
   department   Department @relation(fields: [departmentId], references: [id])
-
-  serviceId    Int?
-  service      Service? @relation(fields: [serviceId], references: [id])
 
   leaveRequests          LeaveRequest[]
   permissionRequests     PermissionRequest[]

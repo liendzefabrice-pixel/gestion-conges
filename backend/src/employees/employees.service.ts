@@ -21,28 +21,20 @@ export class EmployeesService {
       throw new ConflictException('Un utilisateur avec cet email existe déjà');
     }
 
+    const existingMatricule = await this.prisma.employee.findUnique({
+      where: { matricule: createEmployeeDto.matricule },
+    });
+
+    if (existingMatricule) {
+      throw new ConflictException('Ce matricule est déjà attribué');
+    }
+
     const department = await this.prisma.department.findUnique({
       where: { id: createEmployeeDto.departmentId },
     });
 
     if (!department) {
       throw new NotFoundException('Département introuvable');
-    }
-
-    if (createEmployeeDto.serviceId) {
-      const service = await this.prisma.service.findUnique({
-        where: { id: createEmployeeDto.serviceId },
-      });
-
-      if (!service) {
-        throw new NotFoundException('Service introuvable');
-      }
-
-      if (service.departmentId !== createEmployeeDto.departmentId) {
-        throw new ConflictException(
-          'Ce service n\'appartient pas au département sélectionné',
-        );
-      }
     }
 
     const hashedPassword = await bcrypt.hash(createEmployeeDto.password, 10);
@@ -63,18 +55,17 @@ export class EmployeesService {
 
       return tx.employee.create({
         data: {
+          matricule: createEmployeeDto.matricule,
           firstName: createEmployeeDto.firstName,
           lastName: createEmployeeDto.lastName,
           hireDate: new Date(createEmployeeDto.hireDate),
           position: createEmployeeDto.position,
           departmentId: createEmployeeDto.departmentId,
-          serviceId: createEmployeeDto.serviceId || null,
           userId: user.id,
         },
         include: {
           user: { include: { role: true } },
           department: true,
-          service: true,
         },
       });
     });
@@ -85,9 +76,8 @@ export class EmployeesService {
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
-        service: true,
       },
-      orderBy: { lastName: 'asc' },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
   }
 
@@ -97,7 +87,6 @@ export class EmployeesService {
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
-        service: true,
         leaveBalances: { include: { leaveType: true } },
       },
     });
@@ -115,7 +104,6 @@ export class EmployeesService {
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
-        service: true,
         leaveBalances: { include: { leaveType: true } },
       },
     });
@@ -130,24 +118,12 @@ export class EmployeesService {
   async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
     await this.findOne(id);
 
-    if (updateEmployeeDto.serviceId) {
-      const service = await this.prisma.service.findUnique({
-        where: { id: updateEmployeeDto.serviceId },
+    if (updateEmployeeDto.matricule) {
+      const existingMatricule = await this.prisma.employee.findUnique({
+        where: { matricule: updateEmployeeDto.matricule },
       });
-
-      if (!service) {
-        throw new NotFoundException('Service introuvable');
-      }
-
-      const targetDepartmentId =
-        updateEmployeeDto.departmentId ||
-        (await this.prisma.employee.findUnique({ where: { id } }))
-          ?.departmentId;
-
-      if (service.departmentId !== targetDepartmentId) {
-        throw new ConflictException(
-          'Ce service n\'appartient pas au département sélectionné',
-        );
+      if (existingMatricule && existingMatricule.id !== id) {
+        throw new ConflictException('Ce matricule est déjà attribué');
       }
     }
 
@@ -162,7 +138,6 @@ export class EmployeesService {
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
-        service: true,
       },
     });
   }

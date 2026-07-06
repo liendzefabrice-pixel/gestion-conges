@@ -2,13 +2,17 @@ import {
   IsString,
   IsEmail,
   IsInt,
-  IsOptional,
   MinLength,
   MaxLength,
   IsDateString,
 } from 'class-validator';
 
 export class CreateEmployeeDto {
+  @IsString()
+  @MinLength(2)
+  @MaxLength(20)
+  matricule: string;
+
   @IsString()
   @MinLength(2)
   @MaxLength(50)
@@ -35,8 +39,4 @@ export class CreateEmployeeDto {
 
   @IsInt()
   departmentId: number;
-
-  @IsOptional()
-  @IsInt()
-  serviceId?: number;
 }

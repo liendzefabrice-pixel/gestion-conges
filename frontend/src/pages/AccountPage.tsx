@@ -36,7 +36,7 @@ export default function AccountPage() {
                 {employee ? `${employee.firstName} ${employee.lastName}` : user?.email}
               </h2>
               <p className="text-sm text-gray-500">{employee?.position}</p>
-              <p className="text-sm text-gray-500">{employee?.department?.name}{employee?.service ? ` — ${employee.service.name}` : ''}</p>
+              <p className="text-sm text-gray-500">{employee?.department?.name}</p>
               <Badge variant="outline">{translateRole(user?.role?.name || '')}</Badge>
             </div>
           </CardContent>
