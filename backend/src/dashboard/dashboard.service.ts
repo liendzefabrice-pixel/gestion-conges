@@ -99,7 +99,12 @@ export class DashboardService {
     });
 
     if (!employee) {
-      return {};
+      return {
+        balances: [],
+        pendingRequests: { leave: 0, permission: 0, total: 0 },
+        planning: null,
+        eligibleForLeave: false,
+      };
     }
 
     const currentYear = new Date().getFullYear();
