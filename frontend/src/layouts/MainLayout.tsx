@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import NotificationsBadge from '../components/NotificationsBadge'
+import Topbar from '../components/Topbar'
 import { translateRole } from '../lib/utils'
 import {
   LayoutDashboard,
@@ -16,7 +17,6 @@ import {
   Bell,
   LogOut,
   ChevronLeft,
-  ChevronRight,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -233,11 +233,14 @@ export default function MainLayout() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <div className="p-8 max-w-7xl mx-auto">
-          <Outlet />
-        </div>
-      </main>
+      <div className="flex-1 flex flex-col min-w-0">
+        <Topbar collapsed={collapsed} onToggleCollapse={() => setCollapsed(!collapsed)} />
+        <main className="flex-1 overflow-auto">
+          <div className="p-8 max-w-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   )
 }
