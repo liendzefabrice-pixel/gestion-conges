@@ -1,122 +1,234 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import NotificationsBadge from '../components/NotificationsBadge';
-import { translateRole } from '../lib/utils';
-import { LayoutDashboard, Building2, Users, Calendar, CalendarCheck, ClipboardList, UserCog, User, Bell, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
-import { cn } from '../lib/utils';
+import { useState } from 'react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import NotificationsBadge from '../components/NotificationsBadge'
+import { translateRole } from '../lib/utils'
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  Calendar,
+  CalendarCheck,
+  ClipboardList,
+  FileText,
+  UserCog,
+  User,
+  Bell,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react'
+import { cn } from '../lib/utils'
 
-const navItems = [
-  { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
-  { label: 'Départements', path: '/departments', icon: Building2, roles: ['ADMIN'] },
-  { label: 'Employés', path: '/employees', icon: Users, roles: ['ADMIN', 'HR'] },
-  { label: 'Congés', path: '/leave', icon: Calendar, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
-  { label: 'Mon planning', path: '/my-planning', icon: CalendarCheck, roles: ['EMPLOYEE'] },
-  { label: 'Planification', path: '/leave-planning', icon: ClipboardList, roles: ['HR', 'ADMIN'] },
-  { label: 'Permissions', path: '/permissions', icon: ClipboardList, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
-  { label: 'Utilisateurs', path: '/users', icon: UserCog, roles: ['ADMIN'] },
-  { label: 'Mon compte', path: '/account', icon: User, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
-  { label: 'Notifications', path: '/notifications', icon: Bell, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
-];
+interface NavItem {
+  label: string
+  path: string
+  icon: typeof LayoutDashboard
+  roles: string[]
+  badge?: boolean
+}
+
+interface NavSection {
+  title: string | null
+  items: NavItem[]
+}
+
+const navSections: NavSection[] = [
+  {
+    title: 'Accueil',
+    items: [
+      { label: 'Tableau de bord', path: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
+    ],
+  },
+  {
+    title: 'Gestion',
+    items: [
+      { label: 'Employés', path: '/employees', icon: Users, roles: ['ADMIN', 'HR'] },
+      { label: 'Départements', path: '/departments', icon: Building2, roles: ['ADMIN'] },
+      { label: 'Congés', path: '/leave', icon: Calendar, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
+      { label: 'Mon planning', path: '/my-planning', icon: CalendarCheck, roles: ['EMPLOYEE'] },
+      { label: 'Planification', path: '/leave-planning', icon: ClipboardList, roles: ['HR', 'ADMIN'] },
+      { label: 'Permissions', path: '/permissions', icon: FileText, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
+    ],
+  },
+  {
+    title: 'Administration',
+    items: [
+      { label: 'Utilisateurs', path: '/users', icon: UserCog, roles: ['ADMIN'] },
+      { label: 'Notifications', path: '/notifications', icon: Bell, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'], badge: true },
+    ],
+  },
+]
+
+function getInitials(email: string): string {
+  return email.charAt(0).toUpperCase()
+}
 
 export default function MainLayout() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [collapsed, setCollapsed] = useState(false);
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const [collapsed, setCollapsed] = useState(false)
 
-  const roleName = user?.role?.name || '';
+  const roleName = user?.role?.name || ''
+  const userEmail = user?.email || ''
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const visibleItems = navItems.filter((item) => item.roles.includes(roleName));
+    logout()
+    navigate('/login')
+  }
 
   return (
     <div className="flex h-screen bg-background">
-      <aside className={cn(
-        'flex flex-col bg-card border-r border-border/50 transition-all duration-200 z-30',
-        collapsed ? 'w-16' : 'w-64',
-      )}>
-        <div className={cn(
-          'flex items-center gap-3 px-5 h-16 border-b border-border/50 shrink-0',
-          collapsed && 'justify-center px-0',
-        )}>
-          <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shrink-0">
-            <Calendar className="w-4 h-4 text-white" />
+      <aside
+        className={cn(
+          'flex flex-col h-full bg-white border-r border-gray-200 shrink-0 z-30 transition-all duration-200',
+          collapsed ? 'w-[72px]' : 'w-[280px]',
+        )}
+      >
+        {/* Logo */}
+        <div className={cn('flex items-center h-[72px] shrink-0', collapsed ? 'justify-center px-0' : 'gap-3 px-6')}>
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm">
+            <Calendar className="w-5 h-5 text-white" />
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="font-bold text-sm text-foreground truncate">SIAP</p>
-              <p className="text-[10px] font-semibold text-muted-foreground truncate tracking-wider uppercase">Gestion des Congés</p>
+              <p className="text-base font-bold text-foreground leading-tight">Gestion Congés</p>
+              <p className="text-[11px] font-semibold text-muted-foreground tracking-wider uppercase leading-tight mt-0.5">
+                SIAP Pharma
+              </p>
             </div>
           )}
         </div>
 
-        <nav className="flex-1 py-3 px-3 space-y-1 overflow-y-auto">
-          {visibleItems.map((item) => {
-            const Icon = item.icon;
+        {/* Separator */}
+        <div className={cn('h-px bg-gray-100', collapsed ? 'mx-3' : 'mx-5')} />
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4 space-y-6">
+          {navSections.map((section) => {
+            const visibleItems = section.items.filter((item) => item.roles.includes(roleName))
+            if (visibleItems.length === 0) return null
+
             return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className={({ isActive }) => cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
-                  'hover:bg-accent',
-                  collapsed && 'justify-center px-0',
-                  isActive
-                    ? 'bg-primary/10 text-primary hover:bg-primary/15'
-                    : 'text-muted-foreground hover:text-foreground',
+              <div key={section.title}>
+                {!collapsed && section.title && (
+                  <p className="px-6 mb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-gray-400 select-none">
+                    {section.title}
+                  </p>
                 )}
-              >
-                <Icon className={cn('size-5 shrink-0', collapsed && 'size-5')} />
-                {!collapsed && (
-                  <>
-                    <span className="truncate">{item.label}</span>
-                    {item.path === '/notifications' && <NotificationsBadge />}
-                  </>
-                )}
-              </NavLink>
-            );
+                <div className={cn('space-y-0.5', collapsed ? 'px-2' : 'px-3')}>
+                  {visibleItems.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={({ isActive }) =>
+                          cn(
+                            'flex items-center rounded-xl text-sm font-medium transition-all duration-150',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1',
+                            collapsed
+                              ? 'justify-center h-10 w-10 mx-auto'
+                              : 'gap-3 px-3 py-2.5',
+                            isActive
+                              ? 'bg-primary text-white shadow-sm'
+                              : 'text-gray-600 hover:bg-blue-50 hover:text-primary',
+                          )
+                        }
+                        title={collapsed ? item.label : undefined}
+                      >
+                        <Icon className="size-5 shrink-0" />
+                        {!collapsed && (
+                          <>
+                            <span className="truncate flex-1">{item.label}</span>
+                            {item.badge && <NotificationsBadge />}
+                          </>
+                        )}
+                      </NavLink>
+                    )
+                  })}
+                </div>
+              </div>
+            )
           })}
+
+          {/* Mon compte */}
+          <div className={collapsed ? 'px-2' : 'px-3'}>
+            <NavLink
+              to="/account"
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center rounded-xl text-sm font-medium transition-all duration-150',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1',
+                  collapsed
+                    ? 'justify-center h-10 w-10 mx-auto'
+                    : 'gap-3 px-3 py-2.5',
+                  isActive
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-blue-50 hover:text-primary',
+                )
+              }
+              title={collapsed ? 'Mon compte' : undefined}
+            >
+              <User className="size-5 shrink-0" />
+              {!collapsed && <span className="truncate">Mon compte</span>}
+            </NavLink>
+          </div>
         </nav>
 
-        <div className="p-3 border-t border-border/50">
+        {/* Toggle */}
+        <div className={cn('shrink-0', collapsed ? 'flex justify-center py-3' : 'px-4 py-1')}>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center justify-center w-full py-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors duration-150"
+            className={cn(
+              'flex items-center justify-center rounded-xl transition-all duration-150 text-gray-400 hover:text-primary hover:bg-blue-50',
+              collapsed ? 'h-8 w-8' : 'w-full h-8 gap-2 px-2',
+            )}
+            title={collapsed ? 'Déplier' : 'Replier'}
           >
-            {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+            <ChevronLeft className={cn('size-4 transition-transform duration-200', collapsed && 'rotate-180')} />
+            {!collapsed && <span className="text-xs font-medium">Replier</span>}
           </button>
         </div>
 
-        <div className={cn(
-          'px-4 py-4 border-t border-border/50',
-          collapsed && 'px-2',
-        )}>
+        {/* Separator */}
+        <div className={cn('h-px bg-gray-100', collapsed ? 'mx-3' : 'mx-5')} />
+
+        {/* User card & Logout */}
+        <div className="shrink-0 px-4 pb-4 pt-3">
           {collapsed ? (
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="size-4 text-primary" />
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-sm font-bold text-primary">{getInitials(userEmail)}</span>
               </div>
-              <button onClick={handleLogout} className="text-muted-foreground hover:text-destructive transition-colors">
-                <LogOut className="size-4" />
+              <button
+                onClick={handleLogout}
+                className="flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-destructive hover:bg-red-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
+                title="Déconnexion"
+              >
+                <LogOut className="size-4 shrink-0" />
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <User className="size-4 text-primary" />
+            <>
+              <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gray-50 border border-gray-100">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-bold text-primary">{getInitials(userEmail)}</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-foreground truncate">{userEmail}</p>
+                  <p className="text-xs text-muted-foreground truncate">{translateRole(roleName)}</p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground truncate">{user?.email}</p>
-                <p className="text-xs text-muted-foreground">{translateRole(roleName)}</p>
-              </div>
-              <button onClick={handleLogout} className="text-muted-foreground hover:text-destructive transition-colors shrink-0" title="Déconnexion">
-                <LogOut className="size-4" />
+
+              <button
+                onClick={handleLogout}
+                className="mt-2 flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:text-destructive hover:bg-red-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
+              >
+                <LogOut className="size-4 shrink-0" />
+                <span>Déconnexion</span>
               </button>
-            </div>
+            </>
           )}
         </div>
       </aside>
@@ -127,5 +239,5 @@ export default function MainLayout() {
         </div>
       </main>
     </div>
-  );
+  )
 }
