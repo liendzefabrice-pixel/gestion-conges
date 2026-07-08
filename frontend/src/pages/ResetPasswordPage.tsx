@@ -46,7 +46,7 @@ export default function ResetPasswordPage() {
     return (
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl text-green-600">Mot de passe réinitialisé</CardTitle>
+          <CardTitle className="text-xl text-success">Mot de passe réinitialisé</CardTitle>
           <CardDescription>
             Tu vas être redirigé vers la page de connexion...
           </CardDescription>
@@ -64,33 +64,33 @@ export default function ResetPasswordPage() {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-700 bg-red-100 rounded">{error}</div>
+            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200">{error}</div>
           )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" {...register('email')} />
-            {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
+            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="otp">Code de vérification (6 chiffres)</Label>
             <Input id="otp" type="text" maxLength={6} placeholder="000000" {...register('otp')} />
-            {errors.otp && <p className="text-sm text-red-600">{errors.otp.message}</p>}
+            {errors.otp && <p className="text-sm text-destructive">{errors.otp.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="newPassword">Nouveau mot de passe</Label>
             <PasswordInput id="newPassword" {...register('newPassword')} />
-            {errors.newPassword && <p className="text-sm text-red-600">{errors.newPassword.message}</p>}
+            {errors.newPassword && <p className="text-sm text-destructive">{errors.newPassword.message}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
             <PasswordInput id="confirmPassword" {...register('confirmPassword')} />
-            {errors.confirmPassword && <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>}
+            {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
           </div>
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Réinitialisation...' : 'Réinitialiser'}
           </Button>
           <div className="text-center">
-            <Link to="/login" className="text-sm text-blue-600 hover:underline">
+            <Link to="/login" className="text-sm text-primary hover:underline">
               Retour à la connexion
             </Link>
           </div>

@@ -3,19 +3,21 @@ import api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import RequestDetailModal from '../components/RequestDetailModal';
 import type { PermissionRequest } from '../types';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Badge } from '../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { PageHeader } from '../components/ui/page-header';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
+import { Label } from '../components/ui/label';
+import { Plus } from 'lucide-react';
 
-const statusLabels: Record<string, string> = {
-  PENDING: 'En attente',
-  RH_REVIEWED: 'Examinée',
-  APPROVED: 'Approuvée',
-  REJECTED: 'Refusée',
-};
-
-const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  RH_REVIEWED: 'bg-blue-100 text-blue-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
+const statusConfig: Record<string, { label: string; variant: 'default' | 'warning' | 'success' | 'danger' | 'info' }> = {
+  PENDING: { label: 'En attente', variant: 'warning' },
+  RH_REVIEWED: { label: 'Examinée', variant: 'info' },
+  APPROVED: { label: 'Approuvée', variant: 'success' },
+  REJECTED: { label: 'Refusée', variant: 'danger' },
 };
 
 export default function PermissionsPage() {
@@ -53,53 +55,78 @@ export default function PermissionsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Demandes de permission</h1>
-        {role === 'EMPLOYEE' && (
-          <button onClick={() => setShowForm(!showForm)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-            Nouvelle demande
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Demandes de permission"
+        description="Gérez vos demandes de permission"
+        actions={
+          role === 'EMPLOYEE' && (
+            <Button onClick={() => setShowForm(!showForm)}>
+              <Plus className="size-4" />
+              Nouvelle demande
+            </Button>
+          )
+        }
+      />
 
       {showForm && (
-        <form onSubmit={createRequest} className="bg-white p-4 rounded-lg shadow mb-6 space-y-3">
-          {error && <p className="text-red-600 bg-red-50 p-3 rounded text-sm">{error}</p>}
-          <div className="flex gap-2">
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required className="flex-1 px-3 py-2 border rounded" />
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="flex-1 px-3 py-2 border rounded" />
-          </div>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motif" required className="w-full px-3 py-2 border rounded" rows={2} />
-          <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Soumettre</button>
-        </form>
+        <Card className="mb-6 animate-fade-in">
+          <CardHeader>
+            <CardTitle>Nouvelle demande de permission</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4 border border-red-200">{error}</div>}
+            <form onSubmit={createRequest} className="space-y-4">
+              <div className="flex gap-4">
+                <div className="flex-1 space-y-2">
+                  <Label>Date de début</Label>
+                  <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Label>Date de fin</Label>
+                  <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Motif</Label>
+                <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Motif de la demande" required />
+              </div>
+              <Button type="submit">Soumettre</Button>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50 text-left">
-              <th className="p-3 text-sm font-medium">Employé</th>
-              <th className="p-3 text-sm font-medium">Période</th>
-              <th className="p-3 text-sm font-medium">Jours</th>
-              <th className="p-3 text-sm font-medium">Statut</th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((r) => (
-              <tr key={r.id} className="border-t cursor-pointer hover:bg-gray-50" onClick={() => setSelectedRequest(r)}>
-                <td className="p-3">{r.employee?.user?.email || 'N/A'}</td>
-                <td className="p-3 text-sm">{new Date(r.startDate).toLocaleDateString()} - {new Date(r.endDate).toLocaleDateString()}</td>
-                <td className="p-3">{r.duration}</td>
-                <td className="p-3">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${statusColors[r.status]}`}>
-                    {statusLabels[r.status]}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Employé</TableHead>
+            <TableHead>Période</TableHead>
+            <TableHead>Jours</TableHead>
+            <TableHead>Statut</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {requests.map((r) => (
+            <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelectedRequest(r)}>
+              <TableCell>{r.employee?.user?.email || 'N/A'}</TableCell>
+              <TableCell className="text-sm">
+                {new Date(r.startDate).toLocaleDateString()} - {new Date(r.endDate).toLocaleDateString()}
+              </TableCell>
+              <TableCell>{r.duration}</TableCell>
+              <TableCell>
+                <Badge variant={statusConfig[r.status]?.variant}>
+                  {statusConfig[r.status]?.label}
+                </Badge>
+              </TableCell>
+            </TableRow>
+          ))}
+          {requests.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-muted-foreground">Aucune demande</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
 
       {selectedRequest && (
         <RequestDetailModal

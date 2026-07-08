@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import type { Employee, Department } from '../types';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
 import { PasswordInput } from '../components/ui/password-input';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { PageHeader } from '../components/ui/page-header';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Label } from '../components/ui/label';
+import { Plus, X } from 'lucide-react';
 
 function computeSeniority(hireDate: string): string {
   const now = new Date();
@@ -65,69 +73,110 @@ export default function EmployeesPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Employés</h1>
-        <button onClick={() => setShowCreate(!showCreate)} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-          {showCreate ? 'Annuler' : 'Nouvel employé'}
-        </button>
-      </div>
+      <PageHeader
+        title="Employés"
+        description="Gérez les employés de l'entreprise"
+        actions={
+          <Button onClick={() => setShowCreate(!showCreate)}>
+            <Plus className="size-4" />
+            Nouvel employé
+          </Button>
+        }
+      />
 
       {showCreate && (
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <h2 className="text-lg font-semibold mb-3">Nouvel employé</h2>
-          {error && <p className="text-red-600 bg-red-50 p-3 rounded mb-4 text-sm">{error}</p>}
-          <form onSubmit={createEmployee} className="grid grid-cols-2 gap-3">
-            <input value={form.matricule} onChange={(e) => handleChange('matricule', e.target.value)} placeholder="Matricule" required className="px-3 py-2 border rounded" />
-            <input value={form.firstName} onChange={(e) => handleChange('firstName', e.target.value)} placeholder="Prénom" required className="px-3 py-2 border rounded" />
-            <input value={form.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Nom" required className="px-3 py-2 border rounded" />
-            <input value={form.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="Email" required type="email" className="px-3 py-2 border rounded" />
-            <PasswordInput value={form.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="Mot de passe (optionnel)" containerClassName="col-span-1" />
-            <input value={form.position} onChange={(e) => handleChange('position', e.target.value)} placeholder="Poste" required className="px-3 py-2 border rounded" />
-            <input value={form.hireDate} onChange={(e) => handleChange('hireDate', e.target.value)} required type="date" className="px-3 py-2 border rounded" />
-            <select value={form.departmentId} onChange={(e) => handleChange('departmentId', e.target.value)} required className="px-3 py-2 border rounded">
-              <option value="">Département</option>
-              {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-            <div className="col-span-2">
-              <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Créer</button>
+        <Card className="mb-6 animate-fade-in">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Nouvel employé</CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowCreate(false)}>
+                <X className="size-4" />
+              </Button>
             </div>
-          </form>
-        </div>
+          </CardHeader>
+          <CardContent>
+            {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4 border border-red-200">{error}</div>}
+            <form onSubmit={createEmployee} className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Matricule</Label>
+                <Input value={form.matricule} onChange={(e) => handleChange('matricule', e.target.value)} placeholder="Matricule" required />
+              </div>
+              <div className="space-y-2">
+                <Label>Prénom</Label>
+                <Input value={form.firstName} onChange={(e) => handleChange('firstName', e.target.value)} placeholder="Prénom" required />
+              </div>
+              <div className="space-y-2">
+                <Label>Nom</Label>
+                <Input value={form.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Nom" required />
+              </div>
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input value={form.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="Email" required type="email" />
+              </div>
+              <div className="space-y-2">
+                <Label>Mot de passe</Label>
+                <PasswordInput value={form.password} onChange={(e) => handleChange('password', e.target.value)} placeholder="Optionnel" />
+              </div>
+              <div className="space-y-2">
+                <Label>Poste</Label>
+                <Input value={form.position} onChange={(e) => handleChange('position', e.target.value)} placeholder="Poste" required />
+              </div>
+              <div className="space-y-2">
+                <Label>Date d'embauche</Label>
+                <Input value={form.hireDate} onChange={(e) => handleChange('hireDate', e.target.value)} required type="date" />
+              </div>
+              <div className="space-y-2">
+                <Label>Département</Label>
+                <Select value={form.departmentId || null} onValueChange={(v) => handleChange('departmentId', v || '')}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Département" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2 pt-2">
+                <Button type="submit">Créer l'employé</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50 text-left">
-              <th className="p-3 text-sm font-medium">Matricule</th>
-              <th className="p-3 text-sm font-medium">Noms</th>
-              <th className="p-3 text-sm font-medium">Prénoms</th>
-              <th className="p-3 text-sm font-medium">Poste</th>
-              <th className="p-3 text-sm font-medium">Département</th>
-              <th className="p-3 text-sm font-medium">Date d'embauche</th>
-              <th className="p-3 text-sm font-medium">Ancienneté</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employees.map((e) => (
-              <tr key={e.id} className="border-t">
-                <td className="p-3 font-mono text-sm">{e.matricule}</td>
-                <td className="p-3 font-medium">{e.lastName}</td>
-                <td className="p-3">{e.firstName}</td>
-                <td className="p-3 text-gray-600">{e.position}</td>
-                <td className="p-3 text-gray-600">{e.department?.name}</td>
-                <td className="p-3 text-gray-600">{formatDate(e.hireDate)}</td>
-                <td className="p-3 text-gray-600">{e.seniority}</td>
-              </tr>
-            ))}
-            {employees.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-3 text-center text-gray-500">Aucun employé</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Matricule</TableHead>
+            <TableHead>Nom</TableHead>
+            <TableHead>Prénom</TableHead>
+            <TableHead>Poste</TableHead>
+            <TableHead>Département</TableHead>
+            <TableHead>Date d'embauche</TableHead>
+            <TableHead>Ancienneté</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {employees.map((e) => (
+            <TableRow key={e.id}>
+              <TableCell className="font-mono text-sm">{e.matricule}</TableCell>
+              <TableCell className="font-medium">{e.lastName}</TableCell>
+              <TableCell>{e.firstName}</TableCell>
+              <TableCell className="text-muted-foreground">{e.position}</TableCell>
+              <TableCell className="text-muted-foreground">{e.department?.name}</TableCell>
+              <TableCell className="text-muted-foreground">{formatDate(e.hireDate)}</TableCell>
+              <TableCell className="text-muted-foreground">{e.seniority}</TableCell>
+            </TableRow>
+          ))}
+          {employees.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center text-muted-foreground">Aucun employé</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

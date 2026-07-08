@@ -4,7 +4,9 @@ import api from '../services/api'
 import { PasswordInput } from '../components/ui/password-input'
 import { Button } from '../components/ui/button'
 import { Label } from '../components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
+import { PageHeader } from '../components/ui/page-header'
+import { KeyRound, ArrowLeft, CheckCircle2 } from 'lucide-react'
 
 export default function AccountSecurityPage() {
   const navigate = useNavigate()
@@ -39,11 +41,14 @@ export default function AccountSecurityPage() {
     return (
       <div className="max-w-lg mx-auto">
         <Card>
-          <CardContent className="text-center py-8">
-            <div className="text-4xl mb-4 text-green-500">✓</div>
-            <h2 className="text-xl font-semibold mb-2">Mot de passe modifié</h2>
-            <p className="text-gray-500 mb-6">Votre mot de passe a été mis à jour avec succès.</p>
+          <CardContent className="text-center py-10">
+            <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="size-8 text-success" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2 text-foreground">Mot de passe modifié</h2>
+            <p className="text-muted-foreground mb-6">Votre mot de passe a été mis à jour avec succès.</p>
             <Button variant="outline" onClick={() => navigate('/account')}>
+              <ArrowLeft className="size-4" />
               Retour à mon compte
             </Button>
           </CardContent>
@@ -54,13 +59,25 @@ export default function AccountSecurityPage() {
 
   return (
     <div className="max-w-lg mx-auto">
+      <PageHeader
+        title=""
+        actions={
+          <Button variant="ghost" size="sm" onClick={() => navigate('/account')}>
+            <ArrowLeft className="size-4" />
+            Retour
+          </Button>
+        }
+      />
       <Card>
         <CardHeader>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
+            <KeyRound className="size-5 text-primary" />
+          </div>
           <CardTitle>Modifier le mot de passe</CardTitle>
-          <p className="text-sm text-gray-500">Choisissez un mot de passe sécurisé que vous n'utilisez pas ailleurs.</p>
+          <CardDescription>Choisissez un mot de passe sécurisé que vous n'utilisez pas ailleurs.</CardDescription>
         </CardHeader>
         <CardContent>
-          {error && <div className="p-3 text-sm text-red-700 bg-red-100 rounded mb-4">{error}</div>}
+          {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl mb-4 border border-red-200">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="currentPassword">Mot de passe actuel</Label>
@@ -74,9 +91,9 @@ export default function AccountSecurityPage() {
               <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
               <PasswordInput id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => navigate('/account')}>
-                Retour
+                Annuler
               </Button>
               <Button type="submit">
                 Enregistrer

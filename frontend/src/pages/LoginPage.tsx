@@ -45,7 +45,7 @@ export default function LoginPage() {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {errors.root && (
-            <div className="p-3 text-sm text-red-700 bg-red-100 rounded">
+            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200">
               {errors.root.message}
             </div>
           )}
@@ -53,21 +53,21 @@ export default function LoginPage() {
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" placeholder="email@exemple.com" {...register('email')} />
             {errors.email && (
-              <p className="text-sm text-red-600">{errors.email.message}</p>
+              <p className="text-sm text-destructive">{errors.email.message}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Mot de passe</Label>
             <PasswordInput id="password" {...register('password')} />
             {errors.password && (
-              <p className="text-sm text-red-600">{errors.password.message}</p>
+              <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
           <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? 'Connexion...' : 'Se connecter'}
           </Button>
           <div className="text-center">
-            <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+            <Link to="/forgot-password" className="text-sm text-primary hover:underline">
               Mot de passe oublié ?
             </Link>
           </div>

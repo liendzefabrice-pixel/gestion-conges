@@ -3,17 +3,18 @@ import api from '../services/api'
 import type { AnnualLeavePlanning, LeaveEligibility } from '../types'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
+import { PageHeader } from '../components/ui/page-header'
 
 const months = [
   '', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ]
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-  PENDING: { label: 'En attente', variant: 'secondary' },
-  RH_REVIEWED: { label: 'Examinée', variant: 'outline' },
-  APPROVED: { label: 'Approuvée', variant: 'default' },
-  REJECTED: { label: 'Refusée', variant: 'destructive' },
+const statusConfig: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }> = {
+  PENDING: { label: 'En attente', variant: 'warning' },
+  RH_REVIEWED: { label: 'Examinée', variant: 'info' },
+  APPROVED: { label: 'Approuvée', variant: 'success' },
+  REJECTED: { label: 'Refusée', variant: 'danger' },
 }
 
 export default function MyPlanningPage() {
@@ -29,27 +30,30 @@ export default function MyPlanningPage() {
 
   const loading = planningLoading || eligibilityLoading
 
-  if (loading) return <p className="text-gray-500">Chargement...</p>
+  if (loading) return <p className="text-muted-foreground">Chargement...</p>
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Mon planning annuel</h1>
+      <PageHeader
+        title="Mon planning annuel"
+        description="Consultez votre éligibilité et votre planning de congés"
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Éligibilité</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Éligibilité</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-lg font-semibold">
               {eligibility?.eligible ? (
-                <span className="text-green-600">Éligible aux congés</span>
+                <span className="text-success">Éligible aux congés</span>
               ) : (
-                <span className="text-red-600">Non éligible (moins d'1 an d'ancienneté)</span>
+                <span className="text-destructive">Non éligible (moins d'1 an d'ancienneté)</span>
               )}
             </p>
             {eligibility && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Date d'embauche : {new Date(eligibility.hireDate).toLocaleDateString()} —
                 Ancienneté : {eligibility.seniorityYears} an{eligibility.seniorityYears > 1 ? 's' : ''}
               </p>
@@ -59,7 +63,7 @@ export default function MyPlanningPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">Mois planifié</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Mois planifié</CardTitle>
           </CardHeader>
           <CardContent>
             {planning ? (
@@ -67,7 +71,7 @@ export default function MyPlanningPage() {
                 {months[planning.month]} {planning.year}
               </p>
             ) : (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Aucune planification pour cette année. Veuillez contacter le RH.
               </p>
             )}
@@ -81,24 +85,24 @@ export default function MyPlanningPage() {
             <CardTitle>Demandes associées</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <table className="w-full">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="p-3 text-sm font-medium text-left">Type</th>
-                  <th className="p-3 text-sm font-medium text-left">Période</th>
-                  <th className="p-3 text-sm font-medium text-left">Jours</th>
-                  <th className="p-3 text-sm font-medium text-left">Statut</th>
+                <tr className="border-b border-border/50 bg-muted/50">
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Type</th>
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Période</th>
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Jours</th>
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Statut</th>
                 </tr>
               </thead>
               <tbody>
-                {planning.leaveRequests.map((r) => (
-                  <tr key={r.id} className="border-b">
-                    <td className="p-3">{r.leaveType?.name}</td>
-                    <td className="p-3 text-sm">
+                {planning.leaveRequests.map((r: any) => (
+                  <tr key={r.id} className="border-b border-border/30 transition-colors duration-150 hover:bg-muted/40">
+                    <td className="p-4 px-5">{r.leaveType?.name}</td>
+                    <td className="p-4 px-5 text-sm">
                       {new Date(r.startDate).toLocaleDateString()} - {new Date(r.endDate).toLocaleDateString()}
                     </td>
-                    <td className="p-3">{r.duration}</td>
-                    <td className="p-3">
+                    <td className="p-4 px-5">{r.duration}</td>
+                    <td className="p-4 px-5">
                       <Badge variant={statusConfig[r.status]?.variant}>
                         {statusConfig[r.status]?.label}
                       </Badge>

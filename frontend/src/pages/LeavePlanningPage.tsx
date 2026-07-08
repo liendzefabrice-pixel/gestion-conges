@@ -6,7 +6,9 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { PageHeader } from '../components/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 
 const months = [
   { value: '1', label: 'Janvier' }, { value: '2', label: 'Février' },
@@ -95,7 +97,10 @@ export default function LeavePlanningPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Planification des congés</h1>
+      <PageHeader
+        title="Planification des congés"
+        description="Planifiez les congés annuels des employés"
+      />
 
       <Card className="mb-6">
         <CardHeader>
@@ -103,7 +108,7 @@ export default function LeavePlanningPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <div className="p-3 text-sm text-red-700 bg-red-100 rounded">{error}</div>}
+            {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200">{error}</div>}
             <div className="space-y-2">
               <Label>Employé</Label>
               <Select
@@ -157,38 +162,44 @@ export default function LeavePlanningPage() {
       </Card>
 
       {isLoading ? (
-        <p className="text-gray-500">Chargement...</p>
+        <p className="text-muted-foreground">Chargement...</p>
       ) : (
         <Card>
           <CardContent className="p-0">
-            <table className="w-full">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="p-3 text-sm font-medium text-left">Employé</th>
-                  <th className="p-3 text-sm font-medium text-left">Département</th>
-                  <th className="p-3 text-sm font-medium text-left">Année</th>
-                  <th className="p-3 text-sm font-medium text-left">Mois</th>
-                  <th className="p-3 text-sm font-medium text-left">Planifié par</th>
-                  <th className="p-3 text-sm font-medium text-left">Actions</th>
+                <tr className="border-b border-border/50 bg-muted/50">
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Employé</th>
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Département</th>
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Année</th>
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Mois</th>
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Planifié par</th>
+                  <th className="h-11 px-5 text-right font-semibold text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {plannings.map((p) => (
-                  <tr key={p.id} className="border-b">
-                    <td className="p-3">{p.employee?.firstName} {p.employee?.lastName}</td>
-                    <td className="p-3">{p.employee?.department?.name}</td>
-                    <td className="p-3">{p.year}</td>
-                    <td className="p-3">{months.find((m) => m.value === String(p.month))?.label}</td>
-                    <td className="p-3 text-sm">{p.plannedBy?.email}</td>
-                    <td className="p-3 flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleEdit(p)}>Modifier</Button>
-                      <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(p.id)}>Supprimer</Button>
+                  <tr key={p.id} className="border-b border-border/30 transition-colors duration-150 hover:bg-muted/40">
+                    <td className="p-4 px-5">{p.employee?.firstName} {p.employee?.lastName}</td>
+                    <td className="p-4 px-5 text-muted-foreground">{p.employee?.department?.name}</td>
+                    <td className="p-4 px-5">{p.year}</td>
+                    <td className="p-4 px-5">{months.find((m) => m.value === String(p.month))?.label}</td>
+                    <td className="p-4 px-5 text-sm text-muted-foreground">{p.plannedBy?.email}</td>
+                    <td className="p-4 px-5 text-right">
+                      <div className="flex gap-1 justify-end">
+                        <Button size="sm" variant="ghost" onClick={() => handleEdit(p)}>
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => deleteMutation.mutate(p.id)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {plannings.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-3 text-center text-gray-500">Aucune planification</td>
+                    <td colSpan={6} className="p-4 px-5 text-center text-muted-foreground">Aucune planification</td>
                   </tr>
                 )}
               </tbody>
