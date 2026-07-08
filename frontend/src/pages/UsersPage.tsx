@@ -112,11 +112,11 @@ export default function UsersPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Employé</TableHead>
-            <TableHead>Rôle</TableHead>
-            <TableHead>Statut</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead>EMAIL</TableHead>
+            <TableHead>NOMS & PRÉNOMS</TableHead>
+            <TableHead>RÔLE</TableHead>
+            <TableHead>STATUT</TableHead>
+            <TableHead className="text-right">ACTIONS</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
