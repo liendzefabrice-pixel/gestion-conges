@@ -129,7 +129,12 @@ export default function EmployeesPage() {
                 <Label>Département</Label>
                 <Select value={form.departmentId || null} onValueChange={(v) => handleChange('departmentId', v || '')}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Département" />
+                    <span className="flex flex-1 text-left">
+                      {form.departmentId
+                        ? departments.find(d => d.id === Number(form.departmentId))?.name || ''
+                        : <span className="text-muted-foreground">Département</span>
+                      }
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((d) => (

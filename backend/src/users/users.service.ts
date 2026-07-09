@@ -35,12 +35,18 @@ export class UsersService {
       data: {
         email: createUserDto.email,
         password: hashedPassword,
+        firstName: createUserDto.firstName,
+        lastName: createUserDto.lastName,
+        gender: createUserDto.gender,
         roleId: createUserDto.roleId,
         mustChangePassword: true,
       },
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
+        gender: true,
         isActive: true,
         mustChangePassword: true,
         role: { select: { id: true, name: true } },
@@ -54,6 +60,9 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
+        gender: true,
         isActive: true,
         role: { select: { id: true, name: true, description: true } },
         employee: {
@@ -77,6 +86,9 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
+        gender: true,
         isActive: true,
         role: { select: { id: true, name: true, description: true } },
         employee: {
@@ -103,6 +115,15 @@ export class UsersService {
   async update(id: number, updateUserDto: UpdateUserDto) {
     await this.findOne(id);
 
+    if (updateUserDto.email) {
+      const existing = await this.prisma.user.findUnique({
+        where: { email: updateUserDto.email },
+      });
+      if (existing && existing.id !== id) {
+        throw new ConflictException('Un utilisateur avec cet email existe déjà');
+      }
+    }
+
     if (updateUserDto.roleId) {
       const role = await this.prisma.role.findUnique({
         where: { id: updateUserDto.roleId },
@@ -119,8 +140,21 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        firstName: true,
+        lastName: true,
+        gender: true,
         isActive: true,
-        role: { select: { id: true, name: true } },
+        role: { select: { id: true, name: true, description: true } },
+        employee: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            position: true,
+          },
+        },
+        createdAt: true,
+        updatedAt: true,
       },
     });
   }
