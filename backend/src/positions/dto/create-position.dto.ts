@@ -1,6 +1,6 @@
-import { IsString, IsInt, IsOptional, IsBoolean, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsInt, MinLength, MaxLength } from 'class-validator';
 
-export class CreateDepartmentDto {
+export class CreatePositionDto {
   @IsString()
   @MinLength(2)
   @MaxLength(100)
@@ -11,9 +11,8 @@ export class CreateDepartmentDto {
   @MaxLength(255)
   description?: string;
 
-  @IsOptional()
   @IsInt()
-  headId?: number;
+  departmentId: number;
 
   @IsOptional()
   @IsBoolean()

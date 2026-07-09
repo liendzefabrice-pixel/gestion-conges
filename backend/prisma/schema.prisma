@@ -71,11 +71,31 @@ model Department {
   id          Int      @id @default(autoincrement())
   name        String   @unique
   description String?
+  headId      Int?     @unique
+  head        Employee? @relation("DepartmentHead", fields: [headId], references: [id])
+  isActive    Boolean  @default(true)
+
+  employees   Employee[]
+  positions   Position[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Position {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  departmentId Int
+  department   Department @relation(fields: [departmentId], references: [id])
 
   employees   Employee[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([name, departmentId])
 }
 
 model Employee {
@@ -84,13 +104,17 @@ model Employee {
   firstName    String
   lastName     String
   hireDate     DateTime
-  position     String
+  position     String?
+  positionId   Int?
+  positionRef  Position? @relation(fields: [positionId], references: [id])
 
   userId       Int      @unique
   user         User     @relation(fields: [userId], references: [id])
 
   departmentId Int
   department   Department @relation(fields: [departmentId], references: [id])
+
+  headedDepartment Department? @relation("DepartmentHead")
 
   leaveRequests          LeaveRequest[]
   permissionRequests     PermissionRequest[]

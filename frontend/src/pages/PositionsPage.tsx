@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import api from '../services/api';
-import type { Department, Employee } from '../types';
+import type { Position, Department } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -28,13 +28,14 @@ function formatDate(dateStr: string): string {
 
 const PAGE_SIZE = 8;
 
-export default function DepartmentsPage() {
+export default function PositionsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role?.name === 'ADMIN';
 
+  const [positions, setPositions] = useState<Position[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [search, setSearch] = useState('');
+  const [filterDeptId, setFilterDeptId] = useState('');
   const [page, setPage] = useState(0);
   const [sortKey, setSortKey] = useState<'name' | 'createdAt' | 'count'>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -42,23 +43,25 @@ export default function DepartmentsPage() {
   const [error, setError] = useState('');
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
-  const [editingDept, setEditingDept] = useState<any>(null);
+  const [editingPosition, setEditingPosition] = useState<any>(null);
   const [formName, setFormName] = useState('');
   const [formDesc, setFormDesc] = useState('');
-  const [formHeadId, setFormHeadId] = useState('');
+  const [formDeptId, setFormDeptId] = useState('');
   const [formIsActive, setFormIsActive] = useState('true');
 
   const load = () => {
+    api.get('/positions').then((res) => setPositions(res.data));
     api.get('/departments').then((res) => setDepartments(res.data));
-    api.get('/employees').then((res) => setEmployees(res.data));
   };
 
   useEffect(() => { load(); }, []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    let list = departments.filter(
-      (d) => d.name.toLowerCase().includes(q) || (d.description || '').toLowerCase().includes(q),
+    let list = positions.filter(
+      (p) =>
+        (p.name.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)) &&
+        (!filterDeptId || p.departmentId === Number(filterDeptId)),
     );
     list.sort((a, b) => {
       if (sortKey === 'count') {
@@ -71,40 +74,36 @@ export default function DepartmentsPage() {
       return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     });
     return list;
-  }, [departments, search, sortKey, sortDir]);
+  }, [positions, search, filterDeptId, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
-  const availableHeads = employees.filter(
-    (e) => !departments.some((d) => d.head?.id === e.id && d.id !== editingDept?.id),
-  );
-
   const openCreate = () => {
     setModalMode('create');
-    setEditingDept(null);
+    setEditingPosition(null);
     setFormName('');
     setFormDesc('');
-    setFormHeadId('');
+    setFormDeptId('');
     setFormIsActive('true');
     setError('');
     setSuccess('');
   };
 
-  const openEdit = (d: any) => {
+  const openEdit = (p: any) => {
     setModalMode('edit');
-    setEditingDept(d);
-    setFormName(d.name);
-    setFormDesc(d.description || '');
-    setFormHeadId(d.head?.id ? String(d.head.id) : '');
-    setFormIsActive(d.isActive !== false ? 'true' : 'false');
+    setEditingPosition(p);
+    setFormName(p.name);
+    setFormDesc(p.description || '');
+    setFormDeptId(String(p.departmentId));
+    setFormIsActive(p.isActive !== false ? 'true' : 'false');
     setError('');
     setSuccess('');
   };
 
   const closeModal = () => {
     setModalMode(null);
-    setEditingDept(null);
+    setEditingPosition(null);
     setError('');
     setSuccess('');
   };
@@ -117,47 +116,49 @@ export default function DepartmentsPage() {
     const body: Record<string, any> = {
       name: formName,
       description: formDesc || undefined,
+      isActive: formIsActive === 'true',
     };
-    if (formHeadId) body.headId = Number(formHeadId);
-    else body.headId = null;
-    body.isActive = formIsActive === 'true';
+    if (modalMode === 'create' || editingPosition) {
+      body.departmentId = Number(formDeptId);
+    }
 
     try {
       if (modalMode === 'create') {
-        await api.post('/departments', body);
-      } else if (modalMode === 'edit' && editingDept) {
-        await api.patch(`/departments/${editingDept.id}`, body);
+        await api.post('/positions', body);
+      } else if (modalMode === 'edit' && editingPosition) {
+        await api.patch(`/positions/${editingPosition.id}`, body);
       }
-      setSuccess(modalMode === 'create' ? 'Département créé avec succès' : 'Département modifié avec succès');
+      setSuccess(modalMode === 'create' ? 'Poste créé avec succès' : 'Poste modifié avec succès');
       setModalMode(null);
-      setEditingDept(null);
+      setEditingPosition(null);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur');
     }
   };
 
-  const toggleActive = async (d: any) => {
+  const toggleActive = async (p: any) => {
     try {
-      await api.patch(`/departments/${d.id}`, { isActive: !(d.isActive !== false) });
+      await api.patch(`/positions/${p.id}`, { isActive: !(p.isActive !== false) });
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur');
     }
   };
 
-  const modalTitle = modalMode === 'create' ? 'Nouveau département' : 'Modifier le département';
+  const modalTitle = modalMode === 'create' ? 'Nouveau poste' : 'Modifier le poste';
+  const colCount = isAdmin ? 7 : 6;
 
   return (
     <div>
       <PageHeader
-        title="Départements"
-        description="Gérez les départements de l'entreprise"
+        title="Postes"
+        description="Gérez les postes et fonctions de l'entreprise"
         actions={
           isAdmin ? (
             <Button onClick={openCreate}>
               <Plus className="size-4" />
-              Nouveau département
+              Nouveau poste
             </Button>
           ) : undefined
         }
@@ -171,21 +172,37 @@ export default function DepartmentsPage() {
         </Card>
       )}
 
-      {/* Search + Sort */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-            placeholder="Rechercher un département..."
+            placeholder="Rechercher un poste..."
             className="pl-9"
           />
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Département :</span>
+          <Select value={filterDeptId} onValueChange={(v) => { setFilterDeptId(v); setPage(0); }}>
+            <SelectTrigger className="w-44">
+              <span className="flex flex-1 text-left">
+                {filterDeptId
+                  ? departments.find(d => d.id === Number(filterDeptId))?.name || ''
+                  : <span className="text-muted-foreground">Tous</span>
+                }
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Tous</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <span>Trier par :</span>
           <Select value={sortKey} onValueChange={(v) => { setSortKey(v as any); setPage(0); }}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-28">
               <span className="flex flex-1 text-left">
                 {sortKey === 'name' ? 'Nom' : sortKey === 'count' ? 'Effectif' : 'Date'}
               </span>
@@ -209,43 +226,41 @@ export default function DepartmentsPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nom du département</TableHead>
-            <TableHead>Responsable</TableHead>
-            <TableHead>Nombre d'employés</TableHead>
+            <TableHead>Nom du poste</TableHead>
+            <TableHead>Département</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Date de création</TableHead>
+            <TableHead>Nombre d'employés</TableHead>
             <TableHead>Statut</TableHead>
+            <TableHead>Date de création</TableHead>
             {isAdmin && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {paged.map((d) => (
-            <TableRow key={d.id}>
-              <TableCell className="font-medium">{d.name}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {d.head ? `${d.head.firstName} ${d.head.lastName}` : '—'}
-              </TableCell>
-              <TableCell>{d._count?.employees || 0}</TableCell>
-              <TableCell className="text-muted-foreground max-w-[200px] truncate">{d.description || '—'}</TableCell>
-              <TableCell className="text-muted-foreground">{d.createdAt ? formatDate(d.createdAt) : '—'}</TableCell>
+          {paged.map((p) => (
+            <TableRow key={p.id}>
+              <TableCell className="font-medium">{p.name}</TableCell>
+              <TableCell className="text-muted-foreground">{p.department?.name || '—'}</TableCell>
+              <TableCell className="text-muted-foreground max-w-[200px] truncate">{p.description || '—'}</TableCell>
+              <TableCell>{p._count?.employees || 0}</TableCell>
               <TableCell>
-                <Badge variant={d.isActive !== false ? 'success' : 'danger'}>
-                  {d.isActive !== false ? 'Actif' : 'Inactif'}
+                <Badge variant={p.isActive !== false ? 'success' : 'danger'}>
+                  {p.isActive !== false ? 'Actif' : 'Inactif'}
                 </Badge>
               </TableCell>
+              <TableCell className="text-muted-foreground">{p.createdAt ? formatDate(p.createdAt) : '—'}</TableCell>
               {isAdmin && (
                 <TableCell className="text-right">
                   <div className="flex flex-col items-end gap-1">
-                    <Button variant="ghost" size="sm" className="h-auto py-1" onClick={() => openEdit(d)}>
+                    <Button variant="ghost" size="sm" className="h-auto py-1" onClick={() => openEdit(p)}>
                       Modifier
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-auto py-1 ${d.isActive !== false ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
-                      onClick={() => toggleActive(d)}
+                      className={`h-auto py-1 ${p.isActive !== false ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
+                      onClick={() => toggleActive(p)}
                     >
-                      {d.isActive !== false ? 'Désactiver' : 'Activer'}
+                      {p.isActive !== false ? 'Désactiver' : 'Activer'}
                     </Button>
                   </div>
                 </TableCell>
@@ -254,15 +269,14 @@ export default function DepartmentsPage() {
           ))}
           {paged.length === 0 && (
             <TableRow>
-              <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground">
-                Aucun département
+              <TableCell colSpan={colCount} className="text-center text-muted-foreground">
+                {search || filterDeptId ? 'Aucun poste ne correspond à votre recherche' : 'Aucun poste'}
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-4">
           <Button variant="ghost" size="sm" disabled={page === 0} onClick={() => setPage(Math.max(0, page - 1))}>
@@ -277,13 +291,12 @@ export default function DepartmentsPage() {
         </div>
       )}
 
-      {/* Create / Edit Modal */}
       <Dialog open={modalMode !== null} onOpenChange={(open) => { if (!open) closeModal(); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{modalTitle}</DialogTitle>
             <DialogDescription>
-              {modalMode === 'create' ? 'Créez un nouveau département' : 'Modifiez les informations du département'}
+              {modalMode === 'create' ? 'Créez un nouveau poste' : 'Modifiez les informations du poste'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -294,29 +307,26 @@ export default function DepartmentsPage() {
                 <Input value={formName} onChange={(e) => setFormName(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
-                <Input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Optionnelle" />
-              </div>
-              <div className="space-y-2">
-                <Label>Responsable</Label>
-                <Select value={formHeadId || null} onValueChange={(v) => setFormHeadId(v || '')}>
+                <Label>Département</Label>
+                <Select value={formDeptId || null} onValueChange={(v) => setFormDeptId(v || '')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">
-                      {formHeadId
-                        ? employees.find(e => e.id === Number(formHeadId))
-                          ? `${employees.find(e => e.id === Number(formHeadId))!.firstName} ${employees.find(e => e.id === Number(formHeadId))!.lastName}`
-                          : ''
-                        : <span className="text-muted-foreground">Sélectionner un responsable</span>
+                      {formDeptId
+                        ? departments.find(d => d.id === Number(formDeptId))?.name || ''
+                        : <span className="text-muted-foreground">Sélectionner un département</span>
                       }
                     </span>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Aucun</SelectItem>
-                    {availableHeads.map((e) => (
-                      <SelectItem key={e.id} value={String(e.id)}>{e.firstName} {e.lastName}</SelectItem>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Optionnelle" />
               </div>
               <div className="space-y-2">
                 <Label>Statut</Label>
@@ -335,7 +345,7 @@ export default function DepartmentsPage() {
             </div>
             <DialogFooter showCloseButton className="mt-6">
               <Button type="submit">
-                {modalMode === 'create' ? 'Créer le département' : 'Enregistrer'}
+                {modalMode === 'create' ? 'Créer le poste' : 'Enregistrer'}
               </Button>
             </DialogFooter>
           </form>

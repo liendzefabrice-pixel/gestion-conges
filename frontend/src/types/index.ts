@@ -16,11 +16,25 @@ export interface AuthResponse {
   user: User;
 }
 
+export interface Position {
+  id: number;
+  name: string;
+  description?: string;
+  departmentId: number;
+  department?: { id: number; name: string };
+  isActive?: boolean;
+  _count?: { employees: number };
+  createdAt?: string;
+}
+
 export interface Department {
   id: number;
   name: string;
   description?: string;
+  head?: { id: number; firstName: string; lastName: string } | null;
+  isActive?: boolean;
   _count?: { employees: number };
+  createdAt?: string;
 }
 
 export interface Employee {
@@ -30,6 +44,8 @@ export interface Employee {
   lastName: string;
   hireDate: string;
   position: string;
+  positionId?: number;
+  positionRef?: Position | null;
   department: Department;
   user: { id: number; email: string; isActive: boolean; role: { name: string } };
   leaveBalances?: LeaveBalance[];

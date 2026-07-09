@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
@@ -20,14 +21,36 @@ export class DepartmentsService {
       throw new ConflictException('Ce département existe déjà');
     }
 
+    if (createDepartmentDto.headId) {
+      const employee = await this.prisma.employee.findUnique({
+        where: { id: createDepartmentDto.headId },
+      });
+      if (!employee) {
+        throw new NotFoundException('Employé introuvable');
+      }
+      const alreadyHead = await this.prisma.department.findUnique({
+        where: { headId: createDepartmentDto.headId },
+      });
+      if (alreadyHead) {
+        throw new ConflictException('Cet employé est déjà responsable d\'un département');
+      }
+    }
+
     return this.prisma.department.create({
       data: createDepartmentDto,
+      include: {
+        head: { select: { id: true, firstName: true, lastName: true } },
+        _count: { select: { employees: true } },
+      },
     });
   }
 
   async findAll() {
     return this.prisma.department.findMany({
-      include: { _count: { select: { employees: true } } },
+      include: {
+        head: { select: { id: true, firstName: true, lastName: true } },
+        _count: { select: { employees: true } },
+      },
       orderBy: { name: 'asc' },
     });
   }
@@ -35,7 +58,10 @@ export class DepartmentsService {
   async findOne(id: number) {
     const department = await this.prisma.department.findUnique({
       where: { id },
-      include: { _count: { select: { employees: true } } },
+      include: {
+        head: { select: { id: true, firstName: true, lastName: true } },
+        _count: { select: { employees: true } },
+      },
     });
 
     if (!department) {
@@ -58,9 +84,28 @@ export class DepartmentsService {
       }
     }
 
+    if (updateDepartmentDto.headId) {
+      const employee = await this.prisma.employee.findUnique({
+        where: { id: updateDepartmentDto.headId },
+      });
+      if (!employee) {
+        throw new NotFoundException('Employé introuvable');
+      }
+      const alreadyHead = await this.prisma.department.findFirst({
+        where: { headId: updateDepartmentDto.headId, id: { not: id } },
+      });
+      if (alreadyHead) {
+        throw new ConflictException('Cet employé est déjà responsable d\'un autre département');
+      }
+    }
+
     return this.prisma.department.update({
       where: { id },
       data: updateDepartmentDto,
+      include: {
+        head: { select: { id: true, firstName: true, lastName: true } },
+        _count: { select: { employees: true } },
+      },
     });
   }
 

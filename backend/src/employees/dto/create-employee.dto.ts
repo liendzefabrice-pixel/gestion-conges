@@ -2,6 +2,7 @@ import {
   IsString,
   IsEmail,
   IsInt,
+  IsOptional,
   MinLength,
   MaxLength,
   IsDateString,
@@ -26,9 +27,14 @@ export class CreateEmployeeDto {
   @IsDateString()
   hireDate: string;
 
+  @IsOptional()
   @IsString()
   @MaxLength(100)
-  position: string;
+  position?: string;
+
+  @IsOptional()
+  @IsInt()
+  positionId?: number;
 
   @IsEmail()
   email: string;

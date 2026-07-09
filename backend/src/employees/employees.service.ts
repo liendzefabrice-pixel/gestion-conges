@@ -53,19 +53,20 @@ export class EmployeesService {
         },
       });
 
+      const { position, positionId, ...empData } = createEmployeeDto;
+
       return tx.employee.create({
         data: {
-          matricule: createEmployeeDto.matricule,
-          firstName: createEmployeeDto.firstName,
-          lastName: createEmployeeDto.lastName,
+          ...empData,
+          position: position || null,
+          positionId: positionId || null,
           hireDate: new Date(createEmployeeDto.hireDate),
-          position: createEmployeeDto.position,
-          departmentId: createEmployeeDto.departmentId,
           userId: user.id,
         },
         include: {
           user: { include: { role: true } },
           department: true,
+          positionRef: true,
         },
       });
     });
@@ -79,6 +80,7 @@ export class EmployeesService {
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
+        positionRef: true,
       },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
@@ -90,6 +92,7 @@ export class EmployeesService {
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
+        positionRef: true,
         leaveBalances: { include: { leaveType: true } },
       },
     });
@@ -107,6 +110,7 @@ export class EmployeesService {
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
+        positionRef: true,
         leaveBalances: { include: { leaveType: true } },
       },
     });
@@ -130,10 +134,14 @@ export class EmployeesService {
       }
     }
 
+    const { position, positionId, ...rest } = updateEmployeeDto;
+
     return this.prisma.employee.update({
       where: { id },
       data: {
-        ...updateEmployeeDto,
+        ...rest,
+        position: position ?? undefined,
+        positionId: positionId ?? undefined,
         hireDate: updateEmployeeDto.hireDate
           ? new Date(updateEmployeeDto.hireDate)
           : undefined,
@@ -141,6 +149,7 @@ export class EmployeesService {
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
+        positionRef: true,
       },
     });
   }

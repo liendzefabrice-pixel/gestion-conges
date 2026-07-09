@@ -6,7 +6,6 @@ import { cn } from '../lib/utils'
 import {
   PanelLeftClose,
   PanelLeft,
-  Search,
   Bell,
   Calendar as CalendarIcon,
   User,
@@ -55,7 +54,6 @@ export default function Topbar({ collapsed, onToggleCollapse }: TopbarProps) {
   const { user, logout } = useAuth()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notifCount, setNotifCount] = useState(0)
-  const [searchFocused, setSearchFocused] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const roleName = user?.role?.name || ''
@@ -126,30 +124,6 @@ export default function Topbar({ collapsed, onToggleCollapse }: TopbarProps) {
 
         {/* Spacer */}
         <div className="flex-1" />
-
-        {/* Center: search */}
-        <div className="hidden sm:block max-w-xs w-full">
-          <div
-            className={cn(
-              'relative transition-all duration-150',
-              searchFocused && 'scale-[1.02]',
-            )}
-          >
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              className={cn(
-                'w-full h-10 pl-10 pr-4 text-sm bg-gray-50 border border-gray-200 rounded-xl outline-none',
-                'placeholder:text-gray-400',
-                'transition-all duration-150',
-                'focus:bg-white focus:border-primary/50 focus:ring-2 focus:ring-primary/10',
-              )}
-            />
-          </div>
-        </div>
 
         {/* Spacer */}
         <div className="flex-1 hidden sm:block" />

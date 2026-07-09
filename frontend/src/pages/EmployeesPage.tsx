@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import api from '../services/api';
-import type { Employee, Department } from '../types';
+import type { Employee, Department, Position } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -18,7 +18,7 @@ import {
 } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Search } from 'lucide-react';
 
 function computeSeniority(hireDate: string): string {
   const now = new Date();
@@ -40,19 +40,21 @@ export default function EmployeesPage() {
 
   const [employees, setEmployees] = useState<(Employee & { seniority?: string })[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [search, setSearch] = useState('');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
 
   const initForm = () => ({
     matricule: '', firstName: '', lastName: '', email: '', password: '',
-    position: '', hireDate: '', departmentId: '',
+    position: '', positionId: '', hireDate: '', departmentId: '',
   });
   const [form, setForm] = useState(initForm());
   const [editForm, setEditForm] = useState({
-    matricule: '', firstName: '', lastName: '', position: '', hireDate: '', departmentId: '',
+    matricule: '', firstName: '', lastName: '', position: '', positionId: '', hireDate: '', departmentId: '',
   });
 
   const load = () => {
@@ -61,6 +63,7 @@ export default function EmployeesPage() {
       setEmployees(list);
     });
     api.get('/departments').then((res) => setDepartments(res.data));
+    api.get('/positions/active').then((res) => setPositions(res.data));
   };
 
   useEffect(() => { load(); }, []);
@@ -79,7 +82,8 @@ export default function EmployeesPage() {
         lastName: form.lastName,
         email: form.email,
         password: form.password || form.email,
-        position: form.position,
+        positionId: form.positionId ? Number(form.positionId) : undefined,
+        position: form.position || undefined,
         hireDate: form.hireDate,
         departmentId: Number(form.departmentId),
       });
@@ -99,6 +103,7 @@ export default function EmployeesPage() {
       firstName: emp.firstName || '',
       lastName: emp.lastName || '',
       position: emp.position || '',
+      positionId: emp.positionId ? String(emp.positionId) : '',
       hireDate: emp.hireDate ? emp.hireDate.split('T')[0] : '',
       departmentId: emp.department?.id ? String(emp.department.id) : '',
     });
@@ -124,7 +129,8 @@ export default function EmployeesPage() {
         matricule: editForm.matricule,
         firstName: editForm.firstName,
         lastName: editForm.lastName,
-        position: editForm.position,
+        positionId: editForm.positionId ? Number(editForm.positionId) : null,
+        position: editForm.position || undefined,
         hireDate: editForm.hireDate,
         departmentId: Number(editForm.departmentId),
       });
@@ -147,6 +153,20 @@ export default function EmployeesPage() {
   };
 
   const colCount = isAdmin ? 8 : 7;
+
+  const filteredEmployees = useMemo(() => {
+    const q = search.toLowerCase();
+    if (!q) return employees;
+    return employees.filter(
+      (e) =>
+        e.firstName.toLowerCase().includes(q) ||
+        e.lastName.toLowerCase().includes(q) ||
+        e.matricule.toLowerCase().includes(q) ||
+        (e.positionRef?.name || e.position || '').toLowerCase().includes(q) ||
+        e.department?.name.toLowerCase().includes(q) ||
+        e.user?.email.toLowerCase().includes(q),
+    );
+  }, [employees, search]);
 
   return (
     <div>
@@ -204,7 +224,21 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Poste</Label>
-                <Input value={form.position} onChange={(e) => handleChange('position', e.target.value)} placeholder="Poste" required />
+                <Select value={form.positionId || null} onValueChange={(v) => { handleChange('positionId', v || ''); const pos = positions.find(p => p.id === Number(v)); handleChange('position', pos?.name || ''); }}>
+                  <SelectTrigger>
+                    <span className="flex flex-1 text-left">
+                      {form.positionId
+                        ? positions.find(p => p.id === Number(form.positionId))?.name || ''
+                        : <span className="text-muted-foreground">Sélectionner un poste</span>
+                      }
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {positions.filter(p => !form.departmentId || p.departmentId === Number(form.departmentId)).map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Date d'embauche</Label>
@@ -259,7 +293,21 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Poste</Label>
-                <Input value={editForm.position} onChange={(e) => setEditForm(p => ({ ...p, position: e.target.value }))} required />
+                <Select value={editForm.positionId || null} onValueChange={(v) => setEditForm(p => ({ ...p, positionId: v || '', position: v ? positions.find(pos => pos.id === Number(v))?.name || '' : '' }))}>
+                  <SelectTrigger>
+                    <span className="flex flex-1 text-left">
+                      {editForm.positionId
+                        ? positions.find(p => p.id === Number(editForm.positionId))?.name || ''
+                        : <span className="text-muted-foreground">Sélectionner un poste</span>
+                      }
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {positions.filter(p => !editForm.departmentId || p.departmentId === Number(editForm.departmentId)).map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Date d'embauche</Label>
@@ -291,6 +339,17 @@ export default function EmployeesPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Search */}
+      <div className="relative max-w-sm mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher un employé..."
+          className="pl-9"
+        />
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -305,12 +364,12 @@ export default function EmployeesPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {employees.map((e) => (
+          {filteredEmployees.map((e) => (
             <TableRow key={e.id}>
               <TableCell className="font-mono text-sm">{e.matricule}</TableCell>
               <TableCell className="font-medium">{e.lastName}</TableCell>
               <TableCell>{e.firstName}</TableCell>
-              <TableCell className="text-muted-foreground">{e.position}</TableCell>
+              <TableCell className="text-muted-foreground">{e.positionRef?.name || e.position || '—'}</TableCell>
               <TableCell className="text-muted-foreground">{e.department?.name}</TableCell>
               <TableCell className="text-muted-foreground">{formatDate(e.hireDate)}</TableCell>
               <TableCell className="text-muted-foreground">{e.seniority}</TableCell>
@@ -338,9 +397,11 @@ export default function EmployeesPage() {
               )}
             </TableRow>
           ))}
-          {employees.length === 0 && (
+          {filteredEmployees.length === 0 && (
             <TableRow>
-              <TableCell colSpan={colCount} className="text-center text-muted-foreground">Aucun employé</TableCell>
+              <TableCell colSpan={colCount} className="text-center text-muted-foreground">
+                {search ? 'Aucun employé ne correspond à votre recherche' : 'Aucun employé'}
+              </TableCell>
             </TableRow>
           )}
         </TableBody>
