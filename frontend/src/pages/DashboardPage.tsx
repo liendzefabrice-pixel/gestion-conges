@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import type {
@@ -32,6 +33,7 @@ import { UpcomingEventsCard } from '../components/dashboard/UpcomingEventsCard'
 import { SystemAlertsCard } from '../components/dashboard/SystemAlertsCard'
 import { QuickActionsCard } from '../components/dashboard/QuickActionsCard'
 import { HrQuickActionsCard } from '../components/dashboard/HrQuickActionsCard'
+import { DirectorQuickActionsCard } from '../components/dashboard/DirectorQuickActionsCard'
 import { SystemInformationCard } from '../components/dashboard/SystemInformationCard'
 import { DonutChart } from '../components/dashboard/DonutChart'
 import { MonthlyChart } from '../components/dashboard/MonthlyChart'
@@ -61,6 +63,10 @@ import {
   CalendarCheck,
   ShieldCheck,
   CalendarRange,
+  XCircle,
+  FileCheck,
+  ClipboardCheck,
+  ArrowRight,
 } from 'lucide-react'
 
 type DashboardData = DashboardAdmin | DashboardHr | DashboardDirector | DashboardEmployee
@@ -701,55 +707,255 @@ function HrDashboard({ data }: { data: DashboardHr }) {
 
 /* ───── Director Dashboard ───── */
 function DirectorDashboard({ data }: { data: DashboardDirector }) {
+  const [now, setNow] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formattedDate = now.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const formattedTime = now.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  const navigate = useNavigate()
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-foreground tracking-tight">
-        Tableau de bord Directeur
-      </h1>
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            Bonjour, Directeur 👋
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Voici un aperçu des validations et des indicateurs stratégiques.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 text-xs text-muted-foreground">
+            <CalendarDays className="size-3.5 shrink-0" />
+            <span className="capitalize">{formattedDate}</span>
+            <span className="text-gray-300">|</span>
+            <Clock className="size-3.5 shrink-0" />
+            <span>{formattedTime}</span>
+          </div>
+          <Button onClick={() => navigate('/leave')}>
+            <ClipboardCheck className="size-4" />
+            Voir les demandes
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MiniStat
+      {/* 2. KPI Zone */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <AdminKpiCard
           icon={<Clock className="size-5" />}
-          label="À décider"
+          title="Demandes en attente"
           value={data.toDecide.total}
-          color="amber"
+          subtitle="En attente de décision"
+          color="orange"
+          evolution="+0%"
         />
-        <MiniStat
-          icon={<Briefcase className="size-5" />}
-          label="Congés à décider"
-          value={data.toDecide.leave}
-          color="blue"
+        <AdminKpiCard
+          icon={<CheckCircle className="size-5" />}
+          title="Demandes approuvées"
+          value={data.decisions.approved}
+          subtitle="Validées par vos soins"
+          color="emerald"
+          evolution="+0%"
         />
-        <MiniStat
+        <AdminKpiCard
+          icon={<XCircle className="size-5" />}
+          title="Demandes refusées"
+          value={data.decisions.rejected}
+          subtitle="Non validées"
+          color="red"
+          evolution="+0%"
+        />
+        <AdminKpiCard
           icon={<CalendarDays className="size-5" />}
-          label="Permissions à décider"
-          value={data.toDecide.permission}
+          title="Congés validés"
+          value={data.decisions.approved}
+          subtitle="Depuis le début"
+          color="blue"
+          evolution="+0%"
+        />
+        <AdminKpiCard
+          icon={<FileCheck className="size-5" />}
+          title="Permissions validées"
+          value="--"
+          subtitle="Demandes de permission"
           color="purple"
         />
-        <MiniStat
+        <AdminKpiCard
           icon={<Building2 className="size-5" />}
-          label="Décisions rendues"
-          value={data.decisions.approved + data.decisions.rejected}
-          color="emerald"
+          title="Départements concernés"
+          value="--"
+          subtitle="Ayant des demandes"
+          color="cyan"
+        />
+      </div>
+
+      {/* 3. Statistics Zone */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DashboardChartCard title="Évolution des décisions" subtitle="Validations et refus par mois">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <Calendar className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée mensuelle</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              L'évolution des validations et refus par mois apparaîtra ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Répartition des décisions" subtitle="En attente, approuvées, refusées">
+          <div className="pt-2">
+            <DashboardDonutChart
+              data={[
+                { name: 'En attente', value: data.toDecide.total, color: '#F59E0B' },
+                { name: 'Approuvées', value: data.decisions.approved, color: '#10B981' },
+                { name: 'Refusées', value: data.decisions.rejected, color: '#EF4444' },
+              ].filter((d) => d.value > 0)}
+            />
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Demandes par département" subtitle="Par service">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <Building2 className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              La répartition par département apparaîtra ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Congés validés par mois" subtitle="Évolution mensuelle">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <CalendarDays className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              L'évolution mensuelle des congés validés apparaîtra ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Permissions validées" subtitle="Répartition">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <FileCheck className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              La répartition des permissions validées apparaîtra ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Charge décisionnelle" subtitle="Décisions par mois">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <ClipboardCheck className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Le nombre de décisions prises chaque mois apparaîtra ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+      </div>
+
+      {/* 4. Info & Actions Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardCheck className="size-4 text-muted-foreground" />
+              Décisions récentes
+            </CardTitle>
+            <CardDescription>Dernières validations effectuées</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+              <ClipboardCheck className="size-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Aucune décision récente</p>
+              <p className="text-xs text-muted-foreground/60 mt-1 max-w-[220px]">
+                Les dernières validations et refus apparaîtront ici.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-border/50">
+              <Button
+                variant="ghost"
+                className="w-full justify-between text-sm"
+                onClick={() => navigate('/leave')}
+              >
+                Voir toutes les demandes
+                <ArrowRight className="size-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <SystemAlertsCard
+          alerts={[
+            data.toDecide.total > 0 && {
+              id: 'to-decide',
+              icon: AlertTriangle,
+              colorClass: 'text-amber-600 bg-amber-100',
+              title: 'Demandes en attente',
+              description: 'En attente de votre décision',
+              count: data.toDecide.total,
+            },
+            data.toDecide.leave > 0 && {
+              id: 'pending-leaves',
+              icon: CalendarDays,
+              colorClass: 'text-blue-600 bg-blue-100',
+              title: 'Congés à valider',
+              description: 'En attente de décision',
+              count: data.toDecide.leave,
+            },
+            data.toDecide.permission > 0 && {
+              id: 'pending-permissions',
+              icon: ShieldCheck,
+              colorClass: 'text-purple-600 bg-purple-100',
+              title: 'Permissions à valider',
+              description: 'En attente de décision',
+              count: data.toDecide.permission,
+            },
+            data.decisions.approved > 0 && {
+              id: 'approved',
+              icon: CheckCircle,
+              colorClass: 'text-emerald-600 bg-emerald-100',
+              title: 'Demandes approuvées',
+              description: 'Validées',
+              count: data.decisions.approved,
+            },
+          ].filter(Boolean) as any[]}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
+        <DirectorQuickActionsCard />
+
+        <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Décisions</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="size-4 text-muted-foreground" />
+              Évènements importants
+            </CardTitle>
+            <CardDescription>Prochains évènements liés aux congés</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50">
-                <span className="text-sm font-medium text-emerald-600">Approuvées</span>
-                <span className="font-semibold">{data.decisions.approved}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50">
-                <span className="text-sm font-medium text-red-600">Refusées</span>
-                <span className="font-semibold">{data.decisions.rejected}</span>
-              </div>
-            </div>
+          <CardContent className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+            <CalendarDays className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucun évènement à venir</p>
+            <p className="text-xs text-muted-foreground/60 mt-1 max-w-[220px]">
+              Les départs, retours et échéances planifiés apparaîtront ici.
+            </p>
           </CardContent>
         </Card>
       </div>
