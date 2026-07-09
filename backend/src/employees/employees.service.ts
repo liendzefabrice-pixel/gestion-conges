@@ -73,6 +73,9 @@ export class EmployeesService {
 
   async findAll() {
     return this.prisma.employee.findMany({
+      where: {
+        user: { role: { name: { not: 'ADMIN' } } },
+      },
       include: {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,

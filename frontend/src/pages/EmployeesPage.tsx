@@ -1,12 +1,21 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 import type { Employee, Department } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { PasswordInput } from '../components/ui/password-input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { PageHeader } from '../components/ui/page-header';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
 import { Plus, X } from 'lucide-react';
@@ -23,17 +32,28 @@ function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('fr-FR');
 }
 
+type ModalMode = 'create' | 'edit' | null;
+
 export default function EmployeesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role?.name === 'ADMIN';
+
   const [employees, setEmployees] = useState<(Employee & { seniority?: string })[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [editingEmployee, setEditingEmployee] = useState<any>(null);
 
   const initForm = () => ({
     matricule: '', firstName: '', lastName: '', email: '', password: '',
     position: '', hireDate: '', departmentId: '',
   });
   const [form, setForm] = useState(initForm());
+  const [editForm, setEditForm] = useState({
+    matricule: '', firstName: '', lastName: '', position: '', hireDate: '', departmentId: '',
+  });
 
   const load = () => {
     api.get('/employees').then((res) => {
@@ -71,6 +91,63 @@ export default function EmployeesPage() {
     }
   };
 
+  const openEdit = (emp: any) => {
+    setModalMode('edit');
+    setEditingEmployee(emp);
+    setEditForm({
+      matricule: emp.matricule || '',
+      firstName: emp.firstName || '',
+      lastName: emp.lastName || '',
+      position: emp.position || '',
+      hireDate: emp.hireDate ? emp.hireDate.split('T')[0] : '',
+      departmentId: emp.department?.id ? String(emp.department.id) : '',
+    });
+    setError('');
+    setSuccess('');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setEditingEmployee(null);
+    setError('');
+    setSuccess('');
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    if (!editingEmployee) return;
+
+    try {
+      await api.patch(`/employees/${editingEmployee.id}`, {
+        matricule: editForm.matricule,
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        position: editForm.position,
+        hireDate: editForm.hireDate,
+        departmentId: Number(editForm.departmentId),
+      });
+      setSuccess('Employé modifié avec succès');
+      setModalMode(null);
+      setEditingEmployee(null);
+      load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erreur lors de la modification');
+    }
+  };
+
+  const toggleActive = async (emp: any) => {
+    try {
+      await api.patch(`/users/${emp.user.id}`, { isActive: !emp.user.isActive });
+      load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erreur');
+    }
+  };
+
+  const colCount = isAdmin ? 8 : 7;
+
   return (
     <div>
       <PageHeader
@@ -83,6 +160,14 @@ export default function EmployeesPage() {
           </Button>
         }
       />
+
+      {success && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="p-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200">{success}</div>
+          </CardContent>
+        </Card>
+      )}
 
       {showCreate && (
         <Card className="mb-6 animate-fade-in">
@@ -151,6 +236,61 @@ export default function EmployeesPage() {
         </Card>
       )}
 
+      <Dialog open={modalMode === 'edit'} onOpenChange={(open) => { if (!open) closeModal(); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Modifier l'employé</DialogTitle>
+            <DialogDescription>Modifiez les informations de l'employé</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit}>
+            {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4 border border-red-200">{error}</div>}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Matricule</Label>
+                <Input value={editForm.matricule} onChange={(e) => setEditForm(p => ({ ...p, matricule: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Prénom</Label>
+                <Input value={editForm.firstName} onChange={(e) => setEditForm(p => ({ ...p, firstName: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Nom</Label>
+                <Input value={editForm.lastName} onChange={(e) => setEditForm(p => ({ ...p, lastName: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Poste</Label>
+                <Input value={editForm.position} onChange={(e) => setEditForm(p => ({ ...p, position: e.target.value }))} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Date d'embauche</Label>
+                <Input value={editForm.hireDate} onChange={(e) => setEditForm(p => ({ ...p, hireDate: e.target.value }))} required type="date" />
+              </div>
+              <div className="space-y-2">
+                <Label>Département</Label>
+                <Select value={editForm.departmentId || null} onValueChange={(v) => setEditForm(p => ({ ...p, departmentId: v || '' }))}>
+                  <SelectTrigger>
+                    <span className="flex flex-1 text-left">
+                      {editForm.departmentId
+                        ? departments.find(d => d.id === Number(editForm.departmentId))?.name || ''
+                        : <span className="text-muted-foreground">Département</span>
+                      }
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (
+                      <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter showCloseButton className="mt-6">
+              <Button type="submit">Enregistrer</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -161,6 +301,7 @@ export default function EmployeesPage() {
             <TableHead>Département</TableHead>
             <TableHead>Date d'embauche</TableHead>
             <TableHead>Ancienneté</TableHead>
+            {isAdmin && <TableHead className="text-right">ACTIONS</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -173,11 +314,33 @@ export default function EmployeesPage() {
               <TableCell className="text-muted-foreground">{e.department?.name}</TableCell>
               <TableCell className="text-muted-foreground">{formatDate(e.hireDate)}</TableCell>
               <TableCell className="text-muted-foreground">{e.seniority}</TableCell>
+              {isAdmin && (
+                <TableCell className="text-right">
+                  <div className="flex flex-col items-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto py-1"
+                      onClick={() => openEdit(e)}
+                    >
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-auto py-1 ${e.user?.isActive ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
+                      onClick={() => toggleActive(e)}
+                    >
+                      {e.user?.isActive ? 'Désactiver' : 'Activer'}
+                    </Button>
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           ))}
           {employees.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground">Aucun employé</TableCell>
+              <TableCell colSpan={colCount} className="text-center text-muted-foreground">Aucun employé</TableCell>
             </TableRow>
           )}
         </TableBody>
