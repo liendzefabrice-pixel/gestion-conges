@@ -18,6 +18,7 @@ const colorVariants: Record<string, string> = {
   orange: 'from-orange-500/10 to-orange-500/5 border-orange-200/50 [&_.kpi-icon]:bg-orange-500/10 [&_.kpi-icon_svg]:text-orange-600',
   red: 'from-red-500/10 to-red-500/5 border-red-200/50 [&_.kpi-icon]:bg-red-500/10 [&_.kpi-icon_svg]:text-red-600',
   purple: 'from-purple-500/10 to-purple-500/5 border-purple-200/50 [&_.kpi-icon]:bg-purple-500/10 [&_.kpi-icon_svg]:text-purple-600',
+  cyan: 'from-cyan-500/10 to-cyan-500/5 border-cyan-200/50 [&_.kpi-icon]:bg-cyan-500/10 [&_.kpi-icon_svg]:text-cyan-600',
   indigo: 'from-indigo-500/10 to-indigo-500/5 border-indigo-200/50 [&_.kpi-icon]:bg-indigo-500/10 [&_.kpi-icon_svg]:text-indigo-600',
   amber: 'from-amber-500/10 to-amber-500/5 border-amber-200/50 [&_.kpi-icon]:bg-amber-500/10 [&_.kpi-icon_svg]:text-amber-600',
   rose: 'from-rose-500/10 to-rose-500/5 border-rose-200/50 [&_.kpi-icon]:bg-rose-500/10 [&_.kpi-icon_svg]:text-rose-600',

@@ -15,6 +15,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { PageHeader } from '../components/ui/page-header'
@@ -26,8 +27,11 @@ import { DashboardBarChart } from '../components/dashboard/DashboardBarChart'
 import { DashboardPieChart } from '../components/dashboard/DashboardPieChart'
 import { DashboardAreaChart } from '../components/dashboard/DashboardAreaChart'
 import { RecentActivityCard } from '../components/dashboard/RecentActivityCard'
+import { RecentRequestsCard } from '../components/dashboard/RecentRequestsCard'
+import { UpcomingEventsCard } from '../components/dashboard/UpcomingEventsCard'
 import { SystemAlertsCard } from '../components/dashboard/SystemAlertsCard'
 import { QuickActionsCard } from '../components/dashboard/QuickActionsCard'
+import { HrQuickActionsCard } from '../components/dashboard/HrQuickActionsCard'
 import { SystemInformationCard } from '../components/dashboard/SystemInformationCard'
 import { DonutChart } from '../components/dashboard/DonutChart'
 import { MonthlyChart } from '../components/dashboard/MonthlyChart'
@@ -53,6 +57,10 @@ import {
   UserX,
   AlertTriangle,
   Bell,
+  ClipboardList,
+  CalendarCheck,
+  ShieldCheck,
+  CalendarRange,
 } from 'lucide-react'
 
 type DashboardData = DashboardAdmin | DashboardHr | DashboardDirector | DashboardEmployee
@@ -479,96 +487,213 @@ function AdminDashboard({
 }
 
 /* ───── HR Dashboard ───── */
-const colorMap: Record<string, string> = {
-  blue: 'from-blue-500/10 to-blue-500/5 border-blue-200/50 [&_.icon-wrap]:bg-blue-500/10 [&_.icon-wrap_svg]:text-blue-600',
-  emerald: 'from-emerald-500/10 to-emerald-500/5 border-emerald-200/50 [&_.icon-wrap]:bg-emerald-500/10 [&_.icon-wrap_svg]:text-emerald-600',
-  amber: 'from-amber-500/10 to-amber-500/5 border-amber-200/50 [&_.icon-wrap]:bg-amber-500/10 [&_.icon-wrap_svg]:text-amber-600',
-  purple: 'from-purple-500/10 to-purple-500/5 border-purple-200/50 [&_.icon-wrap]:bg-purple-500/10 [&_.icon-wrap_svg]:text-purple-600',
-}
-
-function MiniStat({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) {
-  return (
-    <div className={`rounded-2xl border bg-gradient-to-br p-4 ${colorMap[color] || colorMap.blue}`}>
-      <div className="icon-wrap flex items-center justify-center w-9 h-9 rounded-xl mb-2">
-        {icon}
-      </div>
-      <p className="text-xl font-bold text-foreground">{value}</p>
-      <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-    </div>
-  )
-}
-
 function HrDashboard({ data }: { data: DashboardHr }) {
+  const [now, setNow] = useState(new Date())
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formattedDate = now.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const formattedTime = now.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-foreground tracking-tight">
-        Tableau de bord RH
-      </h1>
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            Bonjour, Responsable RH 👋
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Voici un aperçu de l'activité des ressources humaines.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 text-xs text-muted-foreground">
+            <CalendarDays className="size-3.5 shrink-0" />
+            <span className="capitalize">{formattedDate}</span>
+            <span className="text-gray-300">|</span>
+            <Clock className="size-3.5 shrink-0" />
+            <span>{formattedTime}</span>
+          </div>
+          <Button>
+            <Plus className="size-4" />
+            Nouveau dossier
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <MiniStat
-          icon={<Clock className="size-5" />}
-          label="À examiner"
-          value={data.toReview.total}
-          color="amber"
-        />
-        <MiniStat
-          icon={<Briefcase className="size-5" />}
-          label="Total traité"
-          value={data.totalProcessed.leave + data.totalProcessed.permission}
+      {/* 2. KPI Zone */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <AdminKpiCard
+          icon={<Users className="size-5" />}
+          title="Employés"
+          value={data.planning.totalEmployees}
+          subtitle="Employés enregistrés"
           color="blue"
+          evolution="+0%"
         />
-        <MiniStat
-          icon={<CalendarDays className="size-5" />}
-          label="Planification"
-          value={`${data.planning.withPlanning}/${data.planning.totalEmployees}`}
+        <AdminKpiCard
+          icon={<Clock className="size-5" />}
+          title="Demandes en attente"
+          value={data.toReview.total}
+          subtitle="À analyser"
+          color="amber"
+          evolution={`${data.toReview.leave} congés · ${data.toReview.permission} permissions`}
+        />
+        <AdminKpiCard
+          icon={<CalendarCheck className="size-5" />}
+          title="Congés approuvés"
+          value={data.totalProcessed.leave}
+          subtitle="Depuis le début de l'année"
           color="emerald"
+          evolution="+0%"
+        />
+        <AdminKpiCard
+          icon={<ShieldCheck className="size-5" />}
+          title="Permissions"
+          value={data.totalProcessed.permission}
+          subtitle="Demandes de permission"
+          color="purple"
+          evolution="+0%"
+        />
+        <AdminKpiCard
+          icon={<CalendarRange className="size-5" />}
+          title="Planning annuel"
+          value={data.planning.withPlanning}
+          subtitle="Congés annuels programmés"
+          color="cyan"
+          evolution={`${data.planning.totalEmployees} employés`}
+        />
+        <AdminKpiCard
+          icon={<AlertTriangle className="size-5" />}
+          title="Employés à planifier"
+          value={data.planning.withoutPlanning}
+          subtitle="Action requise"
+          color="red"
+          evolution="+0%"
+        />
+      </div>
+
+      {/* 3. Statistics Zone */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DashboardChartCard title="Évolution des demandes" subtitle="Par mois">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <Calendar className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée mensuelle</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              L'évolution des congés et permissions par mois apparaîtra ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Répartition des demandes" subtitle="En attente et traitées">
+          <div className="pt-2">
+            <DashboardDonutChart
+              data={[
+                { name: 'Congés en attente', value: data.toReview.leave, color: '#F59E0B' },
+                { name: 'Permissions en attente', value: data.toReview.permission, color: '#F97316' },
+                { name: 'Congés traités', value: Math.max(0, data.totalProcessed.leave - data.toReview.leave), color: '#10B981' },
+                { name: 'Permissions traitées', value: Math.max(0, data.totalProcessed.permission - data.toReview.permission), color: '#3B82F6' },
+              ].filter((d) => d.value > 0)}
+            />
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Demandes par département" subtitle="Par service">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <Building2 className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              La répartition par département apparaîtra ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Planning annuel des congés" subtitle="Taux de planification">
+          <div className="pt-2">
+            <DashboardBarChart
+              data={[
+                { name: 'Planifiés', value: data.planning.withPlanning },
+                { name: 'Non planifiés', value: data.planning.withoutPlanning },
+              ]}
+              dataKey="value"
+              xAxisKey="name"
+              layout="horizontal"
+              color="#10B981"
+            />
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Répartition des types de congés" subtitle="Par catégorie">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <CalendarDays className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Les types de congés et leur répartition apparaîtront ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Congés vs Permissions" subtitle="Évolution mensuelle">
+          <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+            <FileText className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              La comparaison mensuelle des congés et permissions apparaîtra ici.
+            </p>
+          </div>
+        </DashboardChartCard>
+      </div>
+
+      {/* 4. Info & Actions Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <RecentRequestsCard />
+
+        <SystemAlertsCard
+          alerts={[
+            data.toReview.total > 0 && {
+              id: 'to-review',
+              icon: AlertTriangle,
+              colorClass: 'text-amber-600 bg-amber-100',
+              title: 'Demandes à examiner',
+              description: 'Congés et permissions en attente',
+              count: data.toReview.total,
+            },
+            data.planning.withoutPlanning > 0 && {
+              id: 'without-planning',
+              icon: CalendarDays,
+              colorClass: 'text-blue-600 bg-blue-100',
+              title: 'Employés non planifiés',
+              description: 'Sans planning annuel',
+              count: data.planning.withoutPlanning,
+            },
+            data.planning.totalEmployees > 0 && {
+              id: 'total-employees',
+              icon: Users,
+              colorClass: 'text-emerald-600 bg-emerald-100',
+              title: 'Effectif total',
+              description: 'Employés enregistrés',
+              count: data.planning.totalEmployees,
+            },
+          ].filter(Boolean) as any[]}
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Planification annuelle</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50">
-                <span className="text-sm text-muted-foreground">Employés planifiés</span>
-                <span className="font-semibold">{data.planning.withPlanning}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50">
-                <span className="text-sm text-muted-foreground">Non planifiés</span>
-                <span className="font-semibold">{data.planning.withoutPlanning}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50">
-                <span className="text-sm text-muted-foreground">Total employés</span>
-                <span className="font-semibold">{data.planning.totalEmployees}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>À traiter</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50">
-                <span className="text-sm text-muted-foreground">Congés</span>
-                <Badge variant="warning">{data.toReview.leave}</Badge>
-              </div>
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50">
-                <span className="text-sm text-muted-foreground">Permissions</span>
-                <Badge variant="warning">{data.toReview.permission}</Badge>
-              </div>
-              <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted/50">
-                <span className="text-sm text-muted-foreground">Total</span>
-                <span className="font-semibold">{data.toReview.total}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <HrQuickActionsCard />
+        <UpcomingEventsCard />
       </div>
     </div>
   )
