@@ -10,6 +10,8 @@ import type {
   DashboardEmployee,
   User,
   LeaveRequest,
+  PermissionRequest,
+  Notification,
 } from '../types'
 import {
   Card,
@@ -34,6 +36,7 @@ import { SystemAlertsCard } from '../components/dashboard/SystemAlertsCard'
 import { QuickActionsCard } from '../components/dashboard/QuickActionsCard'
 import { HrQuickActionsCard } from '../components/dashboard/HrQuickActionsCard'
 import { DirectorQuickActionsCard } from '../components/dashboard/DirectorQuickActionsCard'
+import { EmployeeQuickActionsCard } from '../components/dashboard/EmployeeQuickActionsCard'
 import { SystemInformationCard } from '../components/dashboard/SystemInformationCard'
 import { DonutChart } from '../components/dashboard/DonutChart'
 import { MonthlyChart } from '../components/dashboard/MonthlyChart'
@@ -41,6 +44,7 @@ import { RecentActivity } from '../components/dashboard/RecentActivity'
 import { RecentUsersTable } from '../components/dashboard/RecentUsersTable'
 import { QuickActions } from '../components/dashboard/QuickActions'
 import { SystemAlerts } from '../components/dashboard/SystemAlerts'
+import { cn } from '../lib/utils'
 import { Button } from '../components/ui/button'
 import {
   Users,
@@ -67,6 +71,9 @@ import {
   FileCheck,
   ClipboardCheck,
   ArrowRight,
+  WalletCards,
+  BellRing,
+  PlusCircle,
 } from 'lucide-react'
 
 type DashboardData = DashboardAdmin | DashboardHr | DashboardDirector | DashboardEmployee
@@ -965,89 +972,409 @@ function DirectorDashboard({ data }: { data: DashboardDirector }) {
 
 /* ───── Employee Dashboard ───── */
 function EmployeeDashboard({ data }: { data: DashboardEmployee }) {
+  const [now, setNow] = useState(new Date())
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const formattedDate = now.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
+  const formattedTime = now.toLocaleTimeString('fr-FR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  const { data: myLeaves = [] } = useQuery<LeaveRequest[]>({
+    queryKey: ['my-leaves'],
+    queryFn: () => api.get('/leave/requests/my').then((r) => r.data),
+  })
+
+  const { data: unreadCount = 0 } = useQuery<number>({
+    queryKey: ['unread-count-employee'],
+    queryFn: () => api.get('/notifications/unread/count').then((r) => r.data.count ?? r.data ?? 0),
+  })
+
+  const totalRemaining = data.balances.reduce((sum, b) => sum + b.remaining, 0)
+  const approvedCount = myLeaves.filter((l) => l.status === 'APPROVED').length
+
+  const monthlyActivity = Array.from({ length: 12 }, (_, i) => ({
+    month: monthsShort[i],
+    Congés: myLeaves.filter((l) => new Date(l.startDate).getMonth() === i).length,
+  }))
+
+  const statusDonut = [
+    { name: 'En attente', value: myLeaves.filter((l) => l.status === 'PENDING' || l.status === 'RH_REVIEWED').length, color: '#F59E0B' },
+    { name: 'Approuvées', value: myLeaves.filter((l) => l.status === 'APPROVED').length, color: '#10B981' },
+    { name: 'Refusées', value: myLeaves.filter((l) => l.status === 'REJECTED').length, color: '#EF4444' },
+  ].filter((d) => d.value > 0)
+
+  const typeCounts: Record<string, number> = {}
+  myLeaves.forEach((l) => {
+    const name = l.leaveType?.name || 'Inconnu'
+    typeCounts[name] = (typeCounts[name] || 0) + 1
+  })
+  const typePie = Object.entries(typeCounts).map(([name, value], i) => ({
+    name,
+    value,
+    color: ['#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4'][i % 6],
+  }))
+
+  const latestRequest = myLeaves.length > 0
+    ? myLeaves.sort((a, b) => new Date(b.createdAt || b.startDate).getTime() - new Date(a.createdAt || a.startDate).getTime())[0]
+    : null
+
+  const statusLabel: Record<string, string> = {
+    PENDING: 'En attente',
+    RH_REVIEWED: 'Examinée',
+    APPROVED: 'Approuvée',
+    REJECTED: 'Refusée',
+  }
+
+  const statusBadgeColor: Record<string, string> = {
+    PENDING: 'bg-amber-100 text-amber-700',
+    RH_REVIEWED: 'bg-blue-100 text-blue-700',
+    APPROVED: 'bg-emerald-100 text-emerald-700',
+    REJECTED: 'bg-red-100 text-red-700',
+  }
+
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-foreground tracking-tight">
-        Mon tableau de bord
-      </h1>
+      {/* 1. Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            Bonjour 👋
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Retrouvez ici un aperçu de vos congés, permissions et de votre planning annuel.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 text-xs text-muted-foreground">
+            <CalendarDays className="size-3.5 shrink-0" />
+            <span className="capitalize">{formattedDate}</span>
+            <span className="text-gray-300">|</span>
+            <Clock className="size-3.5 shrink-0" />
+            <span>{formattedTime}</span>
+          </div>
+          <Button onClick={() => navigate('/leave')}>
+            <PlusCircle className="size-4" />
+            Nouvelle demande
+          </Button>
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MiniStat
-          icon={<Briefcase className="size-5" />}
-          label="Mes demandes"
-          value={data.pendingRequests.total}
+      {/* 2. KPI Zone */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+        <AdminKpiCard
+          icon={<WalletCards className="size-5" />}
+          title="Solde de congés"
+          value={totalRemaining}
+          subtitle="Jours restants"
           color="blue"
+          evolution="+0%"
         />
-        <MiniStat
+        <AdminKpiCard
           icon={<Clock className="size-5" />}
-          label="En attente"
-          value={data.pendingRequests.leave + data.pendingRequests.permission}
-          color="amber"
+          title="Demandes en attente"
+          value={data.pendingRequests.total}
+          subtitle="En cours de traitement"
+          color="orange"
+          evolution="+0%"
         />
-        <MiniStat
-          icon={<CalendarDays className="size-5" />}
-          label="Éligible"
-          value={data.eligibleForLeave ? 'Oui' : 'Non'}
+        <AdminKpiCard
+          icon={<CheckCircle className="size-5" />}
+          title="Congés approuvés"
+          value={approvedCount}
+          subtitle="Demandes validées"
           color="emerald"
+          evolution="+0%"
         />
-        <MiniStat
-          icon={<Building2 className="size-5" />}
-          label="Soldes"
-          value={data.balances.length}
+        <AdminKpiCard
+          icon={<CalendarDays className="size-5" />}
+          title="Permissions"
+          value={data.pendingRequests.permission}
+          subtitle="En attente"
           color="purple"
+          evolution="+0%"
+        />
+        <AdminKpiCard
+          icon={<CalendarRange className="size-5" />}
+          title="Mois planifié"
+          value={data.planning ? monthsShort[data.planning.month - 1] || '' : 'Non planifié'}
+          subtitle="Congé annuel"
+          color="cyan"
+        />
+        <AdminKpiCard
+          icon={<BellRing className="size-5" />}
+          title="Notifications"
+          value={unreadCount}
+          subtitle="Non lues"
+          color="red"
+          evolution="+0%"
         />
       </div>
 
-      {data.balances.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Soldes de congés</CardTitle>
-          </CardHeader>
-          <CardContent className="px-0">
-            <div className="divide-y divide-border/50">
-              {data.balances.map((b, i) => (
-                <div key={i} className="flex items-center justify-between px-6 py-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{b.type}</p>
-                    <p className="text-xs text-muted-foreground">{b.year}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Utilisé</p>
-                      <p className="text-sm font-medium">{b.used}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Restant</p>
-                      <p className="text-sm font-bold text-foreground">{b.remaining}</p>
-                    </div>
-                    <div className="w-24">
-                      <div className="h-2 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-primary transition-all"
-                          style={{ width: `${b.total > 0 ? ((b.used + b.pending) / b.total) * 100 : 0}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+      {/* 3. Statistics Zone */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <DashboardChartCard title="Historique de mes demandes" subtitle="Évolution mensuelle">
+          {monthlyActivity.some((m) => m.Congés > 0) ? (
+            <div className="pt-2">
+              <DashboardLineChart
+                data={monthlyActivity}
+                dataKey="Congés"
+                xAxisKey="month"
+                color="#3B82F6"
+              />
             </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+              <Calendar className="size-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Aucune donnée mensuelle</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                L'historique de vos demandes apparaîtra ici.
+              </p>
+            </div>
+          )}
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Répartition de mes demandes" subtitle="En attente, approuvées, refusées">
+          {statusDonut.length > 0 ? (
+            <div className="pt-2">
+              <DashboardDonutChart data={statusDonut} />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+              <CheckCircle className="size-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                La répartition de vos demandes apparaîtra ici.
+              </p>
+            </div>
+          )}
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Répartition de mes congés" subtitle="Par type de congé">
+          {typePie.length > 0 ? (
+            <div className="pt-2">
+              <DashboardPieChart data={typePie} />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+              <CalendarDays className="size-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                La répartition par type de congé apparaîtra ici.
+              </p>
+            </div>
+          )}
+        </DashboardChartCard>
+
+        <DashboardChartCard title="Mon activité annuelle" subtitle="Demandes déposées par mois">
+          {monthlyActivity.some((m) => m.Congés > 0) ? (
+            <div className="pt-2">
+              <DashboardAreaChart
+                data={monthlyActivity}
+                dataKey="Congés"
+                xAxisKey="month"
+                color="#8B5CF6"
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+              <Calendar className="size-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                Votre activité annuelle apparaîtra ici.
+              </p>
+            </div>
+          )}
+        </DashboardChartCard>
+      </div>
+
+      {/* 4. Info Section - Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="size-4 text-muted-foreground" />
+              Dernière demande
+            </CardTitle>
+            <CardDescription>Votre demande la plus récente</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col">
+            {latestRequest ? (
+              <>
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Type</span>
+                    <span className="text-sm font-medium">{latestRequest.leaveType?.name || 'Congé'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Dates</span>
+                    <span className="text-sm font-medium">
+                      {new Date(latestRequest.startDate).toLocaleDateString('fr-FR')} - {new Date(latestRequest.endDate).toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Durée</span>
+                    <span className="text-sm font-medium">{latestRequest.duration} jour{latestRequest.duration > 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Statut</span>
+                    <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', statusBadgeColor[latestRequest.status] || 'bg-gray-100 text-gray-700')}>
+                      {statusLabel[latestRequest.status] || latestRequest.status}
+                    </span>
+                  </div>
+                  {latestRequest.reason && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Motif</span>
+                      <p className="text-sm mt-1">{latestRequest.reason}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="pt-3 border-t border-border/50 mt-3">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between text-sm"
+                    onClick={() => navigate('/leave')}
+                  >
+                    Voir le détail
+                    <ArrowRight className="size-4" />
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+                  <FileText className="size-10 text-muted-foreground/30 mb-3" />
+                  <p className="text-sm text-muted-foreground">Aucune demande</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1 max-w-[220px]">
+                    Votre dernière demande de congé apparaîtra ici.
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-border/50">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-between text-sm"
+                    onClick={() => navigate('/leave')}
+                  >
+                    Nouvelle demande
+                    <ArrowRight className="size-4" />
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
-      )}
 
-      {data.planning && (
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
-            <CardTitle>Mois planifié</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarRange className="size-4 text-muted-foreground" />
+              Planning annuel
+            </CardTitle>
+            <CardDescription>Votre planification de congés</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold">
-              {monthsShort[data.planning.month - 1] || ''} {data.planning.year}
+          <CardContent className="flex-1">
+            {data.planning ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-200/50">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Mois planifié</p>
+                    <p className="text-lg font-bold text-foreground mt-0.5">
+                      {monthsShort[data.planning.month - 1] || ''} {data.planning.year}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-cyan-500/10">
+                    <CalendarRange className="size-6 text-cyan-600" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between py-2 px-4 rounded-xl bg-muted/50">
+                  <span className="text-sm text-muted-foreground">Éligibilité</span>
+                  <span className={cn('text-sm font-medium', data.eligibleForLeave ? 'text-emerald-600' : 'text-amber-600')}>
+                    {data.eligibleForLeave ? 'Éligible' : 'Non éligible'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-2 px-4 rounded-xl bg-muted/50">
+                  <span className="text-sm text-muted-foreground">Ancienneté</span>
+                  <span className="text-sm font-medium">{data.eligibleForLeave ? '1 an ou plus' : 'Moins d\'un an'}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <CalendarRange className="size-10 text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground">Aucun planning défini</p>
+                <p className="text-xs text-muted-foreground/60 mt-1 max-w-[220px]">
+                  Vous n'avez pas encore de planning annuel de congés.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* 5. Info Section - Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="size-4 text-muted-foreground" />
+              Prochains évènements
+            </CardTitle>
+            <CardDescription>Vos prochains congés et permissions</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col items-center justify-center py-12 text-center">
+            <CalendarDays className="size-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">Aucun évènement à venir</p>
+            <p className="text-xs text-muted-foreground/60 mt-1 max-w-[220px]">
+              Vos prochains congés, retours et permissions apparaîtront ici.
             </p>
           </CardContent>
         </Card>
-      )}
+
+        <EmployeeQuickActionsCard />
+      </div>
+
+      {/* 6. Notifications */}
+      <div className="grid grid-cols-1 gap-4">
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="size-4 text-muted-foreground" />
+              Notifications récentes
+            </CardTitle>
+            <CardDescription>Vos dernières alertes et notifications</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1">
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Bell className="size-10 text-muted-foreground/30 mb-3" />
+              <p className="text-sm text-muted-foreground">Aucune notification récente</p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                Les notifications apparaîtront ici.
+              </p>
+            </div>
+            <div className="pt-2 border-t border-border/50 mt-2">
+              <Button
+                variant="ghost"
+                className="w-full justify-between text-sm"
+                onClick={() => navigate('/notifications')}
+              >
+                Voir toutes
+                <ArrowRight className="size-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
