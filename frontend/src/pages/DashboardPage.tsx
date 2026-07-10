@@ -196,6 +196,13 @@ function AdminDashboard({
 
   const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
 
+  const roleLabels: Record<string, string> = {
+    ADMIN: 'Administrateur',
+    HR: 'RH',
+    DIRECTOR: 'Directeur',
+    EMPLOYEE: 'Employé',
+  }
+
   const roleColors: Record<string, string> = {
     ADMIN: '#3B82F6',
     HR: '#F59E0B',
@@ -223,7 +230,7 @@ function AdminDashboard({
     roleCounts[name] = (roleCounts[name] || 0) + 1
   })
   const userRoleData = Object.entries(roleCounts).map(([name, value]) => ({
-    name,
+    name: roleLabels[name] || name,
     value: value as number,
     color: roleColors[name] || '#6B7280',
   }))

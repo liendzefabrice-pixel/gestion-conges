@@ -42,7 +42,7 @@ const defaultActions: ActionItem[] = [
     icon: Calendar,
     label: 'Créer un type de congé',
     description: 'Définir un nouveau type',
-    path: '/departments',
+    path: '/leave-types',
     colorClass: 'text-purple-600 bg-purple-100 hover:bg-purple-200',
   },
   {

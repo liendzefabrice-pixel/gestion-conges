@@ -27,10 +27,12 @@ import { Calendar } from 'lucide-react'
 const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info' }> = {
-  PENDING: { label: 'En attente', variant: 'warning' },
-  RH_REVIEWED: { label: 'Examinée', variant: 'info' },
+  DRAFT: { label: 'Brouillon', variant: 'default' },
+  PENDING: { label: 'En attente RH', variant: 'warning' },
+  RH_REVIEWED: { label: 'Avis RH rendu', variant: 'info' },
   APPROVED: { label: 'Approuvée', variant: 'success' },
   REJECTED: { label: 'Refusée', variant: 'danger' },
+  CANCELLED: { label: 'Annulée', variant: 'outline' },
 }
 
 function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
@@ -153,7 +155,7 @@ export default function LeavePage() {
         title="Demandes de congé"
         description="Consultez et gérez les demandes de congé"
         actions={
-          role === 'EMPLOYEE' && (
+          (role === 'EMPLOYEE' || role === 'HR') && (
             <Button onClick={() => setShowForm(!showForm)}>
               Nouvelle demande
             </Button>

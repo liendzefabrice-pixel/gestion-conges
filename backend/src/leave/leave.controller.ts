@@ -57,13 +57,23 @@ export class LeaveController {
   }
 
   @Post('requests')
-  @Roles('EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN')
+  @Roles('EMPLOYEE', 'HR')
   async createRequest(
     @CurrentUser() user: { id: number; role: { name: string } },
     @Body() createLeaveRequestDto: CreateLeaveRequestDto,
   ) {
     const employee = await this.leaveService.getEmployeeByUserId(user.id);
     return this.leaveService.createRequest(employee.id, createLeaveRequestDto);
+  }
+
+  @Patch('requests/:id/cancel')
+  @Roles('EMPLOYEE', 'HR')
+  async cancelRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    const employee = await this.leaveService.getEmployeeByUserId(user.id);
+    return this.leaveService.cancelRequest(id, employee.id);
   }
 
   @Get('requests/my')

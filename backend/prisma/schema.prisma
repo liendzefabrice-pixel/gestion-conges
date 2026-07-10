@@ -8,10 +8,12 @@ datasource db {
 }
 
 enum LeaveStatus {
+  DRAFT
   PENDING
   RH_REVIEWED
   APPROVED
   REJECTED
+  CANCELLED
 }
 
 enum NotificationType {

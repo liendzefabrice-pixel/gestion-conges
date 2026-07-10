@@ -346,6 +346,33 @@ export class LeaveService {
     });
   }
 
+  async cancelRequest(id: number, employeeId: number) {
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Demande introuvable');
+    }
+
+    if (request.employeeId !== employeeId) {
+      throw new BadRequestException('Vous ne pouvez annuler que vos propres demandes');
+    }
+
+    if (request.status !== 'PENDING' && request.status !== 'DRAFT') {
+      throw new BadRequestException(
+        'Seules les demandes en attente ou en brouillon peuvent être annulées',
+      );
+    }
+
+    return this.prisma.leaveRequest.update({
+      where: { id },
+      data: {
+        status: 'CANCELLED',
+      },
+    });
+  }
+
   async initLeaveBalance(employeeId: number, year: number) {
     const leaveTypes = await this.prisma.leaveType.findMany({
       where: { isActive: true },

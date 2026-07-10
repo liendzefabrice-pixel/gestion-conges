@@ -74,7 +74,7 @@ export interface LeaveRequest {
   endDate: string;
   duration: number;
   reason: string;
-  status: 'PENDING' | 'RH_REVIEWED' | 'APPROVED' | 'REJECTED';
+  status: 'DRAFT' | 'PENDING' | 'RH_REVIEWED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
   hrComment?: string;
   hrOpinion?: string;
   directorComment?: string;
@@ -82,6 +82,9 @@ export interface LeaveRequest {
   leaveType: LeaveType;
   reviewedBy?: { id: number; email: string };
   decidedBy?: { id: number; email: string };
+  createdAt?: string;
+  reviewedAt?: string;
+  decidedAt?: string;
 }
 
 export interface PermissionRequest {
