@@ -10,11 +10,13 @@ const months = [
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ]
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' }> = {
-  PENDING: { label: 'En attente', variant: 'warning' },
-  RH_REVIEWED: { label: 'Examinée', variant: 'info' },
-  APPROVED: { label: 'Approuvée', variant: 'success' },
-  REJECTED: { label: 'Refusée', variant: 'danger' },
+const statusConfig: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'secondary' | 'outline' }> = {
+  BROUILLON: { label: 'Brouillon', variant: 'default' },
+  EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning' },
+  AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info' },
+  APPROUVE: { label: 'Approuvée', variant: 'success' },
+  REFUSE: { label: 'Refusée', variant: 'danger' },
+  ANNULE: { label: 'Annulée', variant: 'outline' },
 }
 
 export default function MyPlanningPage() {

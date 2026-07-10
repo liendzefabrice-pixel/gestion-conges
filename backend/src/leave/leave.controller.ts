@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { LeaveService } from './leave.service';
 import { CreateLeaveTypeDto } from './dto/create-leave-type.dto';
@@ -57,7 +58,7 @@ export class LeaveController {
   }
 
   @Post('requests')
-  @Roles('EMPLOYEE', 'HR')
+  @Roles('EMPLOYEE')
   async createRequest(
     @CurrentUser() user: { id: number; role: { name: string } },
     @Body() createLeaveRequestDto: CreateLeaveRequestDto,
@@ -67,7 +68,7 @@ export class LeaveController {
   }
 
   @Patch('requests/:id/cancel')
-  @Roles('EMPLOYEE', 'HR')
+  @Roles('EMPLOYEE')
   async cancelRequest(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { id: number },
@@ -94,13 +95,13 @@ export class LeaveController {
   @Get('requests/pending')
   @Roles('HR', 'ADMIN')
   findPendingRequests() {
-    return this.leaveService.findPendingRequests();
+    return this.leaveService.findRequestsByStatus(['EN_ATTENTE_RH']);
   }
 
   @Get('requests/hr-reviewed')
   @Roles('DIRECTOR', 'ADMIN')
   findHrReviewedRequests() {
-    return this.leaveService.findHrReviewedRequests();
+    return this.leaveService.findRequestsByStatus(['AVIS_RH_RENDU']);
   }
 
   @Get('requests/:id')

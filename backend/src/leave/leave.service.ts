@@ -121,6 +121,7 @@ export class LeaveService {
           endDate,
           duration,
           reason: createLeaveRequestDto.reason,
+          status: 'EN_ATTENTE_RH',
         },
         include: {
           employee: {
@@ -170,7 +171,7 @@ export class LeaveService {
     return this.prisma.leaveRequest.findMany({
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } }, department: { select: { name: true } } },
         },
         leaveType: true,
         reviewedBy: { select: { id: true, email: true } },
@@ -180,28 +181,16 @@ export class LeaveService {
     });
   }
 
-  async findPendingRequests() {
+  async findRequestsByStatus(statuses: string[]) {
     return this.prisma.leaveRequest.findMany({
-      where: { status: 'PENDING' },
+      where: { status: { in: statuses as any } },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
-        },
-        leaveType: true,
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-  }
-
-  async findHrReviewedRequests() {
-    return this.prisma.leaveRequest.findMany({
-      where: { status: 'RH_REVIEWED' },
-      include: {
-        employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } }, department: { select: { name: true } } },
         },
         leaveType: true,
         reviewedBy: { select: { id: true, email: true } },
+        decidedBy: { select: { id: true, email: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -221,16 +210,16 @@ export class LeaveService {
       throw new NotFoundException('Demande introuvable');
     }
 
-    if (request.status !== 'PENDING') {
+    if (request.status !== 'EN_ATTENTE_RH') {
       throw new BadRequestException(
-        'Seules les demandes en attente peuvent être examinées',
+        'Seules les demandes en attente du RH peuvent être examinées',
       );
     }
 
     const updated = await this.prisma.leaveRequest.update({
       where: { id },
       data: {
-        status: 'RH_REVIEWED',
+        status: 'AVIS_RH_RENDU',
         hrComment: hrReviewDto.hrComment,
         hrOpinion: hrReviewDto.hrOpinion,
         reviewedById: userId,
@@ -241,6 +230,7 @@ export class LeaveService {
           include: { user: { select: { id: true, email: true } } },
         },
         leaveType: true,
+        reviewedBy: { select: { id: true, email: true } },
       },
     });
 
@@ -273,7 +263,7 @@ export class LeaveService {
       throw new NotFoundException('Demande introuvable');
     }
 
-    if (request.status !== 'RH_REVIEWED') {
+    if (request.status !== 'AVIS_RH_RENDU') {
       throw new BadRequestException(
         'La demande doit d\'abord être examinée par le RH',
       );
@@ -310,7 +300,7 @@ export class LeaveService {
       if (leaveBalance) {
         const newPendingDays = leaveBalance.pendingDays - request.duration;
 
-        if (dto.decision === 'APPROVED') {
+        if (dto.decision === 'APPROUVE') {
           await tx.leaveBalance.update({
             where: { id: leaveBalance.id },
             data: {
@@ -339,7 +329,7 @@ export class LeaveService {
         }
       }
 
-      if (dto.decision === 'APPROVED') {
+      if (dto.decision === 'APPROUVE') {
         this.notificationsService.notifyEmployee(
           request.employeeId,
           'Demande de congé approuvée',
@@ -372,7 +362,7 @@ export class LeaveService {
       throw new BadRequestException('Vous ne pouvez annuler que vos propres demandes');
     }
 
-    if (request.status !== 'PENDING' && request.status !== 'DRAFT') {
+    if (request.status !== 'EN_ATTENTE_RH' && request.status !== 'BROUILLON') {
       throw new BadRequestException(
         'Seules les demandes en attente ou en brouillon peuvent être annulées',
       );
@@ -380,9 +370,7 @@ export class LeaveService {
 
     return this.prisma.leaveRequest.update({
       where: { id },
-      data: {
-        status: 'CANCELLED',
-      },
+      data: { status: 'ANNULE' },
     });
   }
 
@@ -457,7 +445,7 @@ export class LeaveService {
       where: { id },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } }, department: { select: { name: true } } },
         },
         leaveType: true,
         reviewedBy: { select: { id: true, email: true } },

@@ -12,7 +12,6 @@ import { Label } from '../components/ui/label'
 import { Badge } from '../components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
-import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table'
 import {
   Select,
   SelectContent,
@@ -22,17 +21,17 @@ import {
 } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import RequestDetailModal from '../components/RequestDetailModal'
-import { Calendar } from 'lucide-react'
+import { Calendar, Filter } from 'lucide-react'
 
 const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info' }> = {
-  DRAFT: { label: 'Brouillon', variant: 'default' },
-  PENDING: { label: 'En attente RH', variant: 'warning' },
-  RH_REVIEWED: { label: 'Avis RH rendu', variant: 'info' },
-  APPROVED: { label: 'Approuvée', variant: 'success' },
-  REJECTED: { label: 'Refusée', variant: 'danger' },
-  CANCELLED: { label: 'Annulée', variant: 'outline' },
+const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info'; color: string }> = {
+  BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
+  EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning', color: 'text-amber-700 bg-amber-100' },
+  AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info', color: 'text-blue-700 bg-blue-100' },
+  APPROUVE: { label: 'Approuvé', variant: 'success', color: 'text-green-700 bg-green-100' },
+  REFUSE: { label: 'Refusé', variant: 'danger', color: 'text-red-700 bg-red-100' },
+  ANNULE: { label: 'Annulé', variant: 'outline', color: 'text-gray-500 bg-gray-100' },
 }
 
 function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
@@ -70,7 +69,12 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
 
   const handleTypeChange = (value: string | null) => {
     setSelectedType(value ?? '')
-    setValue('leaveTypeId', value ?? '')
+    const leaveType = leaveTypes?.find(t => t.name === value)
+    if (leaveType) {
+      setValue('leaveTypeId', String(leaveType.id))
+    } else {
+      setValue('leaveTypeId', '')
+    }
   }
 
   return (
@@ -103,7 +107,7 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
               </SelectTrigger>
               <SelectContent>
                 {leaveTypes?.map((t) => (
-                  <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                  <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -127,7 +131,7 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
             {errors.reason && <p className="text-sm text-destructive">{errors.reason.message}</p>}
           </div>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Soumission...' : 'Soumettre'}
+            {isSubmitting ? 'Soumission...' : 'Soumettre la demande'}
           </Button>
         </form>
       </CardContent>
@@ -140,6 +144,7 @@ export default function LeavePage() {
   const role = user?.role?.name
   const [showForm, setShowForm] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>('')
 
   const { data: requests = [], isLoading } = useQuery<LeaveRequest[]>({
     queryKey: ['leave-requests', role],
@@ -149,13 +154,22 @@ export default function LeavePage() {
     },
   })
 
+  const filtered = filterStatus ? requests.filter((r) => r.status === filterStatus) : requests
+
+  const statusOptions = Object.entries(statusConfig).filter(([key]) => {
+    if (role === 'EMPLOYEE') return true
+    if (role === 'HR') return ['EN_ATTENTE_RH', 'AVIS_RH_RENDU', 'APPROUVE', 'REFUSE', 'ANNULE'].includes(key)
+    if (role === 'DIRECTOR' || role === 'ADMIN') return ['AVIS_RH_RENDU', 'APPROUVE', 'REFUSE', 'ANNULE', 'EN_ATTENTE_RH'].includes(key)
+    return true
+  })
+
   return (
     <div>
       <PageHeader
         title="Demandes de congé"
         description="Consultez et gérez les demandes de congé"
         actions={
-          (role === 'EMPLOYEE' || role === 'HR') && (
+          role === 'EMPLOYEE' && (
             <Button onClick={() => setShowForm(!showForm)}>
               Nouvelle demande
             </Button>
@@ -164,6 +178,22 @@ export default function LeavePage() {
       />
 
       {showForm && <NewLeaveForm onSuccess={() => setShowForm(false)} />}
+
+      {role !== 'EMPLOYEE' && (
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="size-4 text-muted-foreground" />
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-3 py-1.5 border rounded-lg text-sm bg-white"
+          >
+            <option value="">Tous les statuts</option>
+            {statusOptions.map(([key, cfg]) => (
+              <option key={key} value={key}>{cfg.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-muted-foreground">Chargement...</p>
@@ -181,7 +211,7 @@ export default function LeavePage() {
                 </tr>
               </thead>
               <tbody>
-                {requests.map((r) => (
+                {filtered.map((r) => (
                   <tr
                     key={r.id}
                     className="border-b border-border/30 transition-colors duration-150 hover:bg-muted/40 cursor-pointer"
@@ -200,7 +230,7 @@ export default function LeavePage() {
                     </td>
                   </tr>
                 ))}
-                {requests.length === 0 && (
+                {filtered.length === 0 && (
                   <tr>
                     <td colSpan={5} className="p-4 px-5 text-center text-muted-foreground">Aucune demande</td>
                   </tr>

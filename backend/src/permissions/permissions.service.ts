@@ -89,7 +89,7 @@ export class PermissionsService {
 
   async findPending() {
     return this.prisma.permissionRequest.findMany({
-      where: { status: 'PENDING' },
+      where: { status: 'EN_ATTENTE_RH' },
       include: {
         employee: {
           include: { user: { select: { id: true, email: true } } },
@@ -101,7 +101,7 @@ export class PermissionsService {
 
   async findHrReviewed() {
     return this.prisma.permissionRequest.findMany({
-      where: { status: 'RH_REVIEWED' },
+      where: { status: 'AVIS_RH_RENDU' },
       include: {
         employee: {
           include: { user: { select: { id: true, email: true } } },
@@ -145,7 +145,7 @@ export class PermissionsService {
       throw new NotFoundException('Demande introuvable');
     }
 
-    if (request.status !== 'PENDING') {
+    if (request.status !== 'EN_ATTENTE_RH') {
       throw new BadRequestException(
         'Seules les demandes en attente peuvent être examinées',
       );
@@ -154,7 +154,7 @@ export class PermissionsService {
     const updated = await this.prisma.permissionRequest.update({
       where: { id },
       data: {
-        status: 'RH_REVIEWED',
+        status: 'AVIS_RH_RENDU',
         hrComment: dto.hrComment,
         hrOpinion: dto.hrOpinion,
         reviewedById: userId,
@@ -192,7 +192,7 @@ export class PermissionsService {
       throw new NotFoundException('Demande introuvable');
     }
 
-    if (request.status !== 'RH_REVIEWED') {
+    if (request.status !== 'AVIS_RH_RENDU') {
       throw new BadRequestException(
         'La demande doit d\'abord être examinée par le RH',
       );
@@ -213,7 +213,7 @@ export class PermissionsService {
       },
     });
 
-    if (dto.decision === 'APPROVED') {
+    if (dto.decision === 'APPROUVE') {
       this.notificationsService.notifyEmployee(
         request.employeeId,
         'Demande de permission approuvée',

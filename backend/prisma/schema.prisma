@@ -8,12 +8,12 @@ datasource db {
 }
 
 enum LeaveStatus {
-  DRAFT
-  PENDING
-  RH_REVIEWED
-  APPROVED
-  REJECTED
-  CANCELLED
+  BROUILLON
+  EN_ATTENTE_RH
+  AVIS_RH_RENDU
+  APPROUVE
+  REFUSE
+  ANNULE
 }
 
 enum NotificationType {
@@ -177,7 +177,7 @@ model LeaveRequest {
   endDate        DateTime
   duration       Int
   reason         String
-  status         LeaveStatus @default(PENDING)
+  status         LeaveStatus @default(EN_ATTENTE_RH)
   hrComment      String?
   hrOpinion      String?
   directorComment String?
@@ -213,7 +213,7 @@ model PermissionRequest {
   endDate        DateTime
   duration       Int
   reason         String
-  status         LeaveStatus @default(PENDING)
+  status         LeaveStatus @default(EN_ATTENTE_RH)
   hrComment      String?
   hrOpinion      String?
   directorComment String?

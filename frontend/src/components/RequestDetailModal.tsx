@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import api from '../services/api';
-import type { LeaveRequest, PermissionRequest } from '../types';
+import type { LeaveRequest, PermissionRequest, LeaveBalance } from '../types';
 import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Textarea } from '../components/ui/textarea';
+import { CalendarDays, Clock, User, FileText, MessageSquare, Scale, History } from 'lucide-react';
 
 type RequestType = LeaveRequest | PermissionRequest;
 
@@ -13,77 +17,115 @@ interface Props {
   onRefresh: () => void;
 }
 
-const statusLabels: Record<string, string> = {
-  DRAFT: 'Brouillon',
-  PENDING: 'En attente RH',
-  RH_REVIEWED: 'Avis RH rendu',
-  APPROVED: 'Approuvée',
-  REJECTED: 'Refusée',
-  CANCELLED: 'Annulée',
-};
-
-const statusColors: Record<string, string> = {
-  DRAFT: 'bg-gray-100 text-gray-700',
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  RH_REVIEWED: 'bg-blue-100 text-blue-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  REJECTED: 'bg-red-100 text-red-800',
-  CANCELLED: 'bg-gray-100 text-gray-500',
+const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info'; color: string }> = {
+  BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
+  EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning', color: 'text-amber-700 bg-amber-100' },
+  AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info', color: 'text-blue-700 bg-blue-100' },
+  APPROUVE: { label: 'Approuvé', variant: 'success', color: 'text-green-700 bg-green-100' },
+  REFUSE: { label: 'Refusé', variant: 'danger', color: 'text-red-700 bg-red-100' },
+  ANNULE: { label: 'Annulé', variant: 'outline', color: 'text-gray-500 bg-gray-100' },
 };
 
 function Timeline({ request }: { request: any }) {
-  const steps = [
-    { label: 'Demande créée', date: request.createdAt, done: !!request.createdAt },
-    { label: 'Reçue par le RH', date: request.createdAt, done: request.status !== 'DRAFT' },
-    { label: 'Avis RH rédigé', date: request.reviewedAt, done: !!request.reviewedAt },
-    { label: 'Transmise à la Direction', date: request.reviewedAt, done: !!request.reviewedAt },
-    { label: 'Décision finale', date: request.decidedAt, done: !!request.decidedAt },
-  ];
+  const steps = [];
+  steps.push({ label: 'Demande créée', date: request.createdAt, author: request.employee?.user?.email, done: !!request.createdAt });
+  if (request.status !== 'BROUILLON') {
+    steps.push({ label: 'Transmise au RH', date: request.createdAt, author: request.employee?.user?.email, done: true });
+  }
+  if (request.reviewedAt) {
+    steps.push({ label: 'Avis RH', date: request.reviewedAt, author: request.reviewedBy?.email, done: true, detail: request.hrOpinion === 'Favorable' ? 'Favorable' : 'Défavorable' });
+  }
+  if (request.decidedAt) {
+    steps.push({
+      label: 'Décision finale',
+      date: request.decidedAt,
+      author: request.decidedBy?.email,
+      done: true,
+      detail: request.status === 'APPROUVE' ? 'Approuvée' : 'Refusée',
+    });
+  }
 
   return (
-    <div className="space-y-2">
-      <p className="text-sm text-gray-500">Historique</p>
-      <div className="space-y-0">
-        {steps.map((step, i) => (
-          <div key={i} className="flex items-start gap-3 py-1.5">
-            <div className="flex flex-col items-center">
-              <div className={`w-2.5 h-2.5 rounded-full mt-1.5 ${step.done ? 'bg-primary' : 'bg-gray-200'}`} />
-              {i < steps.length - 1 && <div className="w-px h-4 bg-gray-200" />}
-            </div>
-            <div>
-              <p className={`text-sm ${step.done ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+    <div className="space-y-0">
+      {steps.map((step, i) => (
+        <div key={i} className="flex items-start gap-3 py-2">
+          <div className="flex flex-col items-center">
+            <div className={`w-3 h-3 rounded-full mt-1.5 ${step.done ? 'bg-primary ring-2 ring-primary/20' : 'bg-gray-200'}`} />
+            {i < steps.length - 1 && <div className="w-px h-5 bg-gray-200" />}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className={`text-sm font-medium ${step.done ? 'text-foreground' : 'text-muted-foreground'}`}>
                 {step.label}
               </p>
+              {step.detail && (
+                <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${step.detail === 'Favorable' || step.detail === 'Approuvée' ? 'bg-green-100 text-green-700' : step.detail === 'Défavorable' || step.detail === 'Refusée' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                  {step.detail}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-0.5">
               {step.date && (
-                <p className="text-xs text-muted-foreground">{new Date(step.date).toLocaleDateString('fr-FR')}</p>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(step.date).toLocaleDateString('fr-FR')} à {new Date(step.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+              {step.author && (
+                <span className="text-xs text-muted-foreground">par {step.author}</span>
               )}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
+  );
+}
+
+function SectionCard({ icon, title, children }: { icon?: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          {icon && <span className="text-muted-foreground">{icon}</span>}
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{title}</p>
+        </div>
+        {children}
+      </CardContent>
+    </Card>
   );
 }
 
 export default function RequestDetailModal({ request, type, role, onClose, onRefresh }: Props) {
   const [cancelling, setCancelling] = useState(false);
+  const [hrOpinion, setHrOpinion] = useState('Favorable');
+  const [hrComment, setHrComment] = useState('');
+  const [directorComment, setDirectorComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const r = request as any;
 
   const handleHrReview = async () => {
-    const hrComment = (document.getElementById('hrComment') as HTMLTextAreaElement)?.value || '';
-    const hrOpinion = (document.getElementById('hrOpinion') as HTMLSelectElement)?.value || 'Favorable';
-    const endpoint = type === 'leave' ? `/leave/requests/${r.id}/hr-review` : `/permissions/requests/${r.id}/hr-review`;
-    await api.patch(endpoint, { hrComment, hrOpinion });
-    onRefresh();
-    onClose();
+    setSubmitting(true);
+    try {
+      const endpoint = type === 'leave' ? `/leave/requests/${r.id}/hr-review` : `/permissions/requests/${r.id}/hr-review`;
+      await api.patch(endpoint, { hrComment, hrOpinion });
+      onRefresh();
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDecision = async (decision: 'APPROVED' | 'REJECTED') => {
-    const directorComment = (document.getElementById('directorComment') as HTMLTextAreaElement)?.value || '';
-    const endpoint = type === 'leave' ? `/leave/requests/${r.id}/decide` : `/permissions/requests/${r.id}/decide`;
-    await api.patch(endpoint, { decision, directorComment });
-    onRefresh();
-    onClose();
+  const handleDecision = async (decision: 'APPROUVE' | 'REFUSE') => {
+    if (!directorComment.trim()) return;
+    setSubmitting(true);
+    try {
+      const endpoint = type === 'leave' ? `/leave/requests/${r.id}/decide` : `/permissions/requests/${r.id}/decide`;
+      await api.patch(endpoint, { decision, directorComment });
+      onRefresh();
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleCancel = async () => {
@@ -97,116 +139,134 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
     }
   };
 
-  const canReview = (role === 'HR' || role === 'ADMIN') && r.status === 'PENDING';
-  const canDecide = (role === 'DIRECTOR' || role === 'ADMIN') && r.status === 'RH_REVIEWED';
-  const canCancel = (role === 'EMPLOYEE' || role === 'HR') && (r.status === 'PENDING' || r.status === 'DRAFT');
+  const canReview = (role === 'HR' || role === 'ADMIN') && r.status === 'EN_ATTENTE_RH';
+  const canDecide = (role === 'DIRECTOR' || role === 'ADMIN') && r.status === 'AVIS_RH_RENDU';
+  const canCancel = role === 'EMPLOYEE' && (r.status === 'EN_ATTENTE_RH' || r.status === 'BROUILLON');
   const isLeave = type === 'leave';
+  const status = statusConfig[r.status];
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold">
-            {isLeave ? 'Demande de congé' : 'Demande de permission'}
-          </h2>
-          <span className={`px-3 py-1 rounded text-sm font-medium ${statusColors[r.status] || ''}`}>
-            {statusLabels[r.status] || r.status}
-          </span>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white border-b z-10 p-5 flex items-center justify-between rounded-t-xl">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold">
+              {isLeave ? 'Demande de congé' : 'Demande de permission'}
+            </h2>
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${status?.color || ''}`}>
+              {status?.label || r.status}
+            </span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>Fermer</Button>
         </div>
 
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Employé</p>
-              <p className="font-medium">{r.employee?.user?.email || 'N/A'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">{isLeave ? 'Type' : 'Durée'}</p>
-              <p className="font-medium">{r.leaveType?.name || `${r.duration} jour(s)`}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Date de début</p>
-              <p className="font-medium">{new Date(r.startDate).toLocaleDateString('fr-FR')}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Date de fin</p>
-              <p className="font-medium">{new Date(r.endDate).toLocaleDateString('fr-FR')}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Nombre de jours</p>
-              <p className="font-medium">{r.duration} jour(s)</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Soumis le</p>
-              <p className="font-medium">{r.createdAt ? new Date(r.createdAt).toLocaleDateString('fr-FR') : '—'}</p>
-            </div>
+        <div className="p-5 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SectionCard icon={<User className="size-4" />} title="Employé">
+              <p className="font-medium">{r.employee?.user?.firstName || ''} {r.employee?.user?.lastName || ''}</p>
+              <p className="text-sm text-muted-foreground">{r.employee?.user?.email || 'N/A'}</p>
+              {r.employee?.department?.name && (
+                <p className="text-sm text-muted-foreground">{r.employee.department.name}</p>
+              )}
+            </SectionCard>
+
+            <SectionCard icon={<CalendarDays className="size-4" />} title="Période">
+              <p className="font-medium">{r.leaveType?.name || 'Permission'}</p>
+              <p className="text-sm text-muted-foreground">
+                {new Date(r.startDate).toLocaleDateString('fr-FR')} — {new Date(r.endDate).toLocaleDateString('fr-FR')}
+              </p>
+              <p className="text-sm text-muted-foreground">{r.duration} jour{r.duration > 1 ? 's' : ''}</p>
+            </SectionCard>
           </div>
 
-          <div>
-            <p className="text-sm text-muted-foreground">Motif</p>
-            <p className="mt-1 p-3 bg-gray-50 rounded text-sm whitespace-pre-wrap">{r.reason}</p>
-          </div>
+          <SectionCard icon={<FileText className="size-4" />} title="Motif">
+            <p className="text-sm whitespace-pre-wrap">{r.reason}</p>
+          </SectionCard>
 
           {r.hrComment && (
-            <div>
-              <p className="text-sm text-muted-foreground">Avis du RH</p>
-              <div className="mt-1 p-3 bg-blue-50 rounded text-sm">
-                <p className="font-medium">{r.hrOpinion === 'Favorable' ? 'Favorable' : 'Défavorable'}</p>
-                {r.hrComment && <p className="mt-1">{r.hrComment}</p>}
-                {r.reviewedBy && <p className="mt-1 text-xs text-muted-foreground">Par {r.reviewedBy.email}</p>}
+            <SectionCard icon={<MessageSquare className="size-4" />} title="Avis du RH">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${r.hrOpinion === 'Favorable' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {r.hrOpinion === 'Favorable' ? 'Favorable' : 'Défavorable'}
+                </span>
+                {r.reviewedBy && <span className="text-xs text-muted-foreground">par {r.reviewedBy.email}</span>}
               </div>
-            </div>
+              <p className="text-sm">{r.hrComment}</p>
+            </SectionCard>
           )}
 
           {r.directorComment && (
-            <div>
-              <p className="text-sm text-muted-foreground">Commentaire de la direction</p>
-              <p className="mt-1 p-3 bg-green-50 rounded text-sm">{r.directorComment}</p>
-            </div>
+            <SectionCard icon={<Scale className="size-4" />} title="Décision de la direction">
+              <p className="text-sm">{r.directorComment}</p>
+              {r.decidedBy && <p className="text-xs text-muted-foreground mt-1">Par {r.decidedBy.email}</p>}
+            </SectionCard>
           )}
 
-          <Timeline request={r} />
+          <SectionCard icon={<History className="size-4" />} title="Historique">
+            <Timeline request={r} />
+          </SectionCard>
 
           {canReview && (
-            <div className="border-t pt-4 space-y-3">
-              <h3 className="font-semibold">Donner un avis</h3>
-              <select id="hrOpinion" className="w-full px-3 py-2 border rounded-lg text-sm" defaultValue="Favorable">
-                <option value="Favorable">Favorable</option>
-                <option value="Défavorable">Défavorable</option>
-              </select>
-              <textarea id="hrComment" rows={3} placeholder="Commentaire (optionnel)" className="w-full px-3 py-2 border rounded-lg text-sm" />
-              <div className="flex justify-end">
-                <Button onClick={handleHrReview}>Envoyer l'avis à la direction</Button>
-              </div>
-            </div>
+            <Card className="border-2 border-primary/10 bg-primary/5">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="size-4 text-primary" />
+                  <h3 className="font-semibold">Avis RH</h3>
+                </div>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="hrOpinion" value="Favorable" checked={hrOpinion === 'Favorable'} onChange={() => setHrOpinion('Favorable')} className="accent-primary" />
+                    <span className="text-sm font-medium">Favorable</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="hrOpinion" value="Défavorable" checked={hrOpinion === 'Défavorable'} onChange={() => setHrOpinion('Défavorable')} className="accent-red-500" />
+                    <span className="text-sm font-medium text-red-600">Défavorable</span>
+                  </label>
+                </div>
+                <Textarea rows={3} placeholder="Commentaire (optionnel)" value={hrComment} onChange={(e) => setHrComment(e.target.value)} />
+                <div className="flex justify-end">
+                  <Button onClick={handleHrReview} disabled={submitting}>
+                    {submitting ? 'Transmission...' : 'Transmettre à la Direction'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {canDecide && (
-            <div className="border-t pt-4 space-y-3">
-              <h3 className="font-semibold">Décision de la direction</h3>
-              <textarea id="directorComment" rows={2} placeholder="Commentaire (optionnel)" className="w-full px-3 py-2 border rounded-lg text-sm" />
-              <div className="flex gap-2 justify-end">
-                <Button onClick={() => handleDecision('APPROVED')} className="bg-success hover:bg-success/90">
-                  Approuver
-                </Button>
-                <Button onClick={() => handleDecision('REJECTED')} className="bg-destructive hover:bg-destructive/90">
-                  Refuser
-                </Button>
-              </div>
-            </div>
+            <Card className="border-2 border-primary/10 bg-primary/5">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Scale className="size-4 text-primary" />
+                  <h3 className="font-semibold">Décision de la direction</h3>
+                </div>
+                <Textarea rows={3} placeholder="Commentaire (obligatoire)" value={directorComment} onChange={(e) => setDirectorComment(e.target.value)} />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    onClick={() => handleDecision('REFUSE')}
+                    disabled={submitting || !directorComment.trim()}
+                    className="bg-destructive hover:bg-destructive/90"
+                  >
+                    {submitting ? 'Traitement...' : 'Refuser'}
+                  </Button>
+                  <Button
+                    onClick={() => handleDecision('APPROUVE')}
+                    disabled={submitting || !directorComment.trim()}
+                  >
+                    {submitting ? 'Traitement...' : 'Approuver'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {canCancel && isLeave && (
-            <div className="border-t pt-4 flex justify-end">
+          {canCancel && (
+            <div className="flex justify-end">
               <Button onClick={handleCancel} disabled={cancelling} className="bg-destructive hover:bg-destructive/90">
                 {cancelling ? 'Annulation...' : 'Annuler la demande'}
               </Button>
             </div>
           )}
-        </div>
-
-        <div className="p-4 border-t flex justify-end">
-          <Button variant="ghost" onClick={onClose}>Fermer</Button>
         </div>
       </div>
     </div>

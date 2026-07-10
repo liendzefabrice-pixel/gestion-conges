@@ -1,11 +1,10 @@
-import { IsString, IsOptional, MaxLength, IsEnum } from 'class-validator';
+import { IsString, MaxLength, IsEnum } from 'class-validator';
 
 export class DirectorDecisionDto {
-  @IsEnum(['APPROVED', 'REJECTED'])
-  decision: 'APPROVED' | 'REJECTED';
+  @IsEnum(['APPROUVE', 'REFUSE'])
+  decision: 'APPROUVE' | 'REFUSE';
 
-  @IsOptional()
   @IsString()
   @MaxLength(500)
-  directorComment?: string;
+  directorComment: string;
 }

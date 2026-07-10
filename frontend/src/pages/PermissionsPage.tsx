@@ -12,11 +12,11 @@ import { PageHeader } from '../components/ui/page-header';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import { Label } from '../components/ui/label';
 
-const statusConfig: Record<string, { label: string; variant: 'default' | 'warning' | 'success' | 'danger' | 'info' }> = {
-  PENDING: { label: 'En attente', variant: 'warning' },
-  RH_REVIEWED: { label: 'Examinée', variant: 'info' },
-  APPROVED: { label: 'Approuvée', variant: 'success' },
-  REJECTED: { label: 'Refusée', variant: 'danger' },
+const statusConfig: Record<string, { label: string; variant: 'default' | 'warning' | 'success' | 'danger' | 'info' | 'secondary' | 'outline' }> = {
+  EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning' },
+  AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info' },
+  APPROUVE: { label: 'Approuvée', variant: 'success' },
+  REFUSE: { label: 'Refusée', variant: 'danger' },
 };
 
 export default function PermissionsPage() {

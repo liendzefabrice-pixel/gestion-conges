@@ -108,9 +108,9 @@ function computeMonthlyChart(requests: LeaveRequest[]): { month: string; request
 }
 
 function computeStatusDonut(requests: LeaveRequest[]): { name: string; value: number; color: string }[] {
-  const pending = requests.filter((r) => r.status === 'PENDING' || r.status === 'RH_REVIEWED').length
-  const approved = requests.filter((r) => r.status === 'APPROVED').length
-  const rejected = requests.filter((r) => r.status === 'REJECTED').length
+  const pending = requests.filter((r) => r.status === 'EN_ATTENTE_RH' || r.status === 'AVIS_RH_RENDU').length
+  const approved = requests.filter((r) => r.status === 'APPROUVE').length
+  const rejected = requests.filter((r) => r.status === 'REFUSE').length
   return [
     { name: 'En attente', value: pending, color: '#F59E0B' },
     { name: 'Approuvées', value: approved, color: '#16A34A' },
@@ -211,17 +211,17 @@ function AdminDashboard({
   }
 
   const statusLabels: Record<string, string> = {
-    PENDING: 'En attente',
-    RH_REVIEWED: 'Examiné (RH)',
-    APPROVED: 'Validé',
-    REJECTED: 'Refusé',
+    EN_ATTENTE_RH: 'En attente RH',
+    AVIS_RH_RENDU: 'Avis RH rendu',
+    APPROUVE: 'Approuvé',
+    REFUSE: 'Refusé',
   }
 
   const statusColors: Record<string, string> = {
-    PENDING: '#F59E0B',
-    RH_REVIEWED: '#3B82F6',
-    APPROVED: '#10B981',
-    REJECTED: '#EF4444',
+    EN_ATTENTE_RH: '#F59E0B',
+    AVIS_RH_RENDU: '#3B82F6',
+    APPROUVE: '#10B981',
+    REFUSE: '#EF4444',
   }
 
   const roleCounts: Record<string, number> = {}
@@ -245,7 +245,7 @@ function AdminDashboard({
     demandes: monthlyCounts[i] as number,
   }))
 
-  const statusCounts: Record<string, number> = { PENDING: 0, RH_REVIEWED: 0, APPROVED: 0, REJECTED: 0 }
+  const statusCounts: Record<string, number> = { EN_ATTENTE_RH: 0, AVIS_RH_RENDU: 0, APPROUVE: 0, REFUSE: 0 }
   leaveRequests.forEach((r) => {
     if (r.status in statusCounts) statusCounts[r.status]++
   })
@@ -425,15 +425,15 @@ function AdminDashboard({
               const d = new Date(r.createdAt || r.startDate)
               return {
                 id: `leave-${r.id}`,
-                icon: r.status === 'APPROVED' ? CheckCircle : r.status === 'REJECTED' ? FileText : Calendar,
-                colorClass: r.status === 'APPROVED'
+                icon: r.status === 'APPROUVE' ? CheckCircle : r.status === 'REFUSE' ? FileText : Calendar,
+                colorClass: r.status === 'APPROUVE'
                   ? 'text-emerald-600 bg-emerald-100'
-                  : r.status === 'REJECTED'
+                  : r.status === 'REFUSE'
                     ? 'text-red-600 bg-red-100'
                     : 'text-amber-600 bg-amber-100',
-                title: r.status === 'APPROVED'
+                title: r.status === 'APPROUVE'
                   ? 'Demande de congé validée'
-                  : r.status === 'REJECTED'
+                  : r.status === 'REFUSE'
                     ? 'Demande de congé refusée'
                     : 'Demande de congé déposée',
                 description: `Par ${r.employee?.user?.email || 'un collaborateur'}`,
@@ -1007,7 +1007,7 @@ function EmployeeDashboard({ data }: { data: DashboardEmployee }) {
   })
 
   const totalRemaining = data.balances.reduce((sum, b) => sum + b.remaining, 0)
-  const approvedCount = myLeaves.filter((l) => l.status === 'APPROVED').length
+  const approvedCount = myLeaves.filter((l) => l.status === 'APPROUVE').length
 
   const monthlyActivity = Array.from({ length: 12 }, (_, i) => ({
     month: monthsShort[i],
@@ -1015,9 +1015,9 @@ function EmployeeDashboard({ data }: { data: DashboardEmployee }) {
   }))
 
   const statusDonut = [
-    { name: 'En attente', value: myLeaves.filter((l) => l.status === 'PENDING' || l.status === 'RH_REVIEWED').length, color: '#F59E0B' },
-    { name: 'Approuvées', value: myLeaves.filter((l) => l.status === 'APPROVED').length, color: '#10B981' },
-    { name: 'Refusées', value: myLeaves.filter((l) => l.status === 'REJECTED').length, color: '#EF4444' },
+    { name: 'En attente', value: myLeaves.filter((l) => l.status === 'EN_ATTENTE_RH' || l.status === 'AVIS_RH_RENDU').length, color: '#F59E0B' },
+    { name: 'Approuvées', value: myLeaves.filter((l) => l.status === 'APPROUVE').length, color: '#10B981' },
+    { name: 'Refusées', value: myLeaves.filter((l) => l.status === 'REFUSE').length, color: '#EF4444' },
   ].filter((d) => d.value > 0)
 
   const typeCounts: Record<string, number> = {}
@@ -1036,17 +1036,17 @@ function EmployeeDashboard({ data }: { data: DashboardEmployee }) {
     : null
 
   const statusLabel: Record<string, string> = {
-    PENDING: 'En attente',
-    RH_REVIEWED: 'Examinée',
-    APPROVED: 'Approuvée',
-    REJECTED: 'Refusée',
+    EN_ATTENTE_RH: 'En attente RH',
+    AVIS_RH_RENDU: 'Avis RH rendu',
+    APPROUVE: 'Approuvée',
+    REFUSE: 'Refusée',
   }
 
   const statusBadgeColor: Record<string, string> = {
-    PENDING: 'bg-amber-100 text-amber-700',
-    RH_REVIEWED: 'bg-blue-100 text-blue-700',
-    APPROVED: 'bg-emerald-100 text-emerald-700',
-    REJECTED: 'bg-red-100 text-red-700',
+    EN_ATTENTE_RH: 'bg-amber-100 text-amber-700',
+    AVIS_RH_RENDU: 'bg-blue-100 text-blue-700',
+    APPROUVE: 'bg-emerald-100 text-emerald-700',
+    REFUSE: 'bg-red-100 text-red-700',
   }
 
   return (

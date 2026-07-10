@@ -15,8 +15,8 @@ export class DashboardService {
       ]);
 
     const [pendingLeaves, pendingPermissions] = await Promise.all([
-      this.prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
-      this.prisma.permissionRequest.count({ where: { status: 'PENDING' } }),
+      this.prisma.leaveRequest.count({ where: { status: 'EN_ATTENTE_RH' } }),
+      this.prisma.permissionRequest.count({ where: { status: 'EN_ATTENTE_RH' } }),
     ]);
 
     return {
@@ -34,8 +34,8 @@ export class DashboardService {
 
   async getHrStats() {
     const [pendingLeaves, pendingPermissions] = await Promise.all([
-      this.prisma.leaveRequest.count({ where: { status: 'PENDING' } }),
-      this.prisma.permissionRequest.count({ where: { status: 'PENDING' } }),
+      this.prisma.leaveRequest.count({ where: { status: 'EN_ATTENTE_RH' } }),
+      this.prisma.permissionRequest.count({ where: { status: 'EN_ATTENTE_RH' } }),
     ]);
 
     const [totalLeaves, totalPermissions] = await Promise.all([
@@ -69,13 +69,13 @@ export class DashboardService {
 
   async getDirectorStats() {
     const [leavesToDecide, permissionsToDecide] = await Promise.all([
-      this.prisma.leaveRequest.count({ where: { status: 'RH_REVIEWED' } }),
-      this.prisma.permissionRequest.count({ where: { status: 'RH_REVIEWED' } }),
+      this.prisma.leaveRequest.count({ where: { status: 'AVIS_RH_RENDU' } }),
+      this.prisma.permissionRequest.count({ where: { status: 'AVIS_RH_RENDU' } }),
     ]);
 
     const [approvedLeaves, rejectedLeaves] = await Promise.all([
-      this.prisma.leaveRequest.count({ where: { status: 'APPROVED' } }),
-      this.prisma.leaveRequest.count({ where: { status: 'REJECTED' } }),
+      this.prisma.leaveRequest.count({ where: { status: 'APPROUVE' } }),
+      this.prisma.leaveRequest.count({ where: { status: 'REFUSE' } }),
     ]);
 
     return {
@@ -119,10 +119,10 @@ export class DashboardService {
           orderBy: { year: 'desc' },
         }),
         this.prisma.leaveRequest.count({
-          where: { employeeId: employee.id, status: 'PENDING' },
+          where: { employeeId: employee.id, status: 'EN_ATTENTE_RH' },
         }),
         this.prisma.permissionRequest.count({
-          where: { employeeId: employee.id, status: 'PENDING' },
+          where: { employeeId: employee.id, status: 'EN_ATTENTE_RH' },
         }),
         this.prisma.annualLeavePlanning.findUnique({
           where: { employeeId_year: { employeeId: employee.id, year: currentYear } },

@@ -74,11 +74,12 @@ export interface LeaveRequest {
   endDate: string;
   duration: number;
   reason: string;
-  status: 'DRAFT' | 'PENDING' | 'RH_REVIEWED' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+  status: 'BROUILLON' | 'EN_ATTENTE_RH' | 'AVIS_RH_RENDU' | 'APPROUVE' | 'REFUSE' | 'ANNULE';
   hrComment?: string;
   hrOpinion?: string;
   directorComment?: string;
-  employee: { id: number; user: { email: string } };
+  employee: { id: number; user: { email: string; firstName?: string; lastName?: string } };
+  employeeDetails?: { firstName: string; lastName: string; matricule: string; department?: { name: string } };
   leaveType: LeaveType;
   reviewedBy?: { id: number; email: string };
   decidedBy?: { id: number; email: string };
@@ -93,7 +94,7 @@ export interface PermissionRequest {
   endDate: string;
   duration: number;
   reason: string;
-  status: 'PENDING' | 'RH_REVIEWED' | 'APPROVED' | 'REJECTED';
+  status: 'EN_ATTENTE_RH' | 'AVIS_RH_RENDU' | 'APPROUVE' | 'REFUSE';
   employee: { id: number; user: { email: string } };
   reviewedBy?: { id: number; email: string };
   decidedBy?: { id: number; email: string };
