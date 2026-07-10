@@ -54,7 +54,6 @@ import {
   Clock,
   CalendarDays,
   Calendar,
-  Plus,
   UserPlus,
   UserCog,
   Settings,
@@ -294,7 +293,6 @@ function AdminDashboard({
             <span>{formattedTime}</span>
           </div>
           <Button>
-            <Plus className="size-4" />
             Nouvelle action
           </Button>
         </div>
@@ -541,7 +539,6 @@ function HrDashboard({ data }: { data: DashboardHr }) {
             <span>{formattedTime}</span>
           </div>
           <Button>
-            <Plus className="size-4" />
             Nouveau dossier
           </Button>
         </div>

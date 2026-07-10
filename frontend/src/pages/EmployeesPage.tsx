@@ -18,7 +18,7 @@ import {
 } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Plus, X, Search } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 
 function computeSeniority(hireDate: string): string {
   const now = new Date();
@@ -175,7 +175,6 @@ export default function EmployeesPage() {
         description="Gérez les employés de l'entreprise"
         actions={
           <Button onClick={() => setShowCreate(!showCreate)}>
-            <Plus className="size-4" />
             Nouvel employé
           </Button>
         }

@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import { Label } from '../components/ui/label';
-import { Plus } from 'lucide-react';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'warning' | 'success' | 'danger' | 'info' }> = {
   PENDING: { label: 'En attente', variant: 'warning' },
@@ -61,7 +60,6 @@ export default function PermissionsPage() {
         actions={
           role === 'EMPLOYEE' && (
             <Button onClick={() => setShowForm(!showForm)}>
-              <Plus className="size-4" />
               Nouvelle demande
             </Button>
           )

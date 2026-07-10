@@ -18,7 +18,7 @@ import {
 } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Plus, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 type ModalMode = 'create' | 'edit' | null;
 
@@ -156,7 +156,6 @@ export default function DepartmentsPage() {
         actions={
           isAdmin ? (
             <Button onClick={openCreate}>
-              <Plus className="size-4" />
               Nouveau département
             </Button>
           ) : undefined

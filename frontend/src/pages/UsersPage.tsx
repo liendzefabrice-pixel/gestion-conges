@@ -19,7 +19,6 @@ import {
 } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Plus } from 'lucide-react';
 
 type ModalMode = 'create' | 'edit' | null;
 
@@ -149,7 +148,6 @@ export default function UsersPage() {
         description="Gérez les accès à l'application"
         actions={
           <Button onClick={openCreate}>
-            <Plus className="size-4" />
             Nouvel utilisateur
           </Button>
         }

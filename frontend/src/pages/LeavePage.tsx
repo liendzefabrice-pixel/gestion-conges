@@ -22,7 +22,7 @@ import {
 } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import RequestDetailModal from '../components/RequestDetailModal'
-import { Plus, Calendar } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 
 const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -155,7 +155,6 @@ export default function LeavePage() {
         actions={
           role === 'EMPLOYEE' && (
             <Button onClick={() => setShowForm(!showForm)}>
-              <Plus className="size-4" />
               Nouvelle demande
             </Button>
           )
