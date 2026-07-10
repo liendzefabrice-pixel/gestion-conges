@@ -18,10 +18,6 @@ interface RecentUsersTableProps {
   title?: string
 }
 
-function getInitials(email: string): string {
-  return email.charAt(0).toUpperCase()
-}
-
 export function RecentUsersTable({ users, title = 'Derniers utilisateurs' }: RecentUsersTableProps) {
   return (
     <Card>
@@ -39,9 +35,7 @@ export function RecentUsersTable({ users, title = 'Derniers utilisateurs' }: Rec
                 key={user.id}
                 className="flex items-center gap-3 px-6 py-3 transition-colors hover:bg-muted/30"
               >
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-bold text-primary">{getInitials(user.email)}</span>
-                </div>
+                <img src="/images/Avatar.png" alt="" className="w-9 h-9 rounded-full shrink-0 object-cover" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{user.email}</p>
                   <p className="text-xs text-muted-foreground">{translateRole(user.role?.name || '')}</p>

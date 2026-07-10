@@ -4,29 +4,29 @@
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-  --color-primary: #2563EB;
+  --color-primary: #0B6B3A;
   --color-primary-foreground: #FFFFFF;
-  --color-secondary: #F1F5F9;
-  --color-secondary-foreground: #0F172A;
-  --color-muted: #F8FAFC;
-  --color-muted-foreground: #64748B;
-  --color-accent: #F1F5F9;
-  --color-accent-foreground: #0F172A;
-  --color-destructive: #DC2626;
+  --color-secondary: #8DBB52;
+  --color-secondary-foreground: #FFFFFF;
+  --color-muted: #F7FAF7;
+  --color-muted-foreground: #6B7280;
+  --color-accent: #E8F5E9;
+  --color-accent-foreground: #07522D;
+  --color-destructive: #D91F26;
   --color-destructive-foreground: #FFFFFF;
-  --color-success: #16A34A;
+  --color-success: #0B6B3A;
   --color-success-foreground: #FFFFFF;
   --color-warning: #F59E0B;
   --color-warning-foreground: #FFFFFF;
-  --color-background: #F8FAFC;
-  --color-foreground: #0F172A;
+  --color-background: #F7FAF7;
+  --color-foreground: #111827;
   --color-card: #FFFFFF;
-  --color-card-foreground: #0F172A;
+  --color-card-foreground: #111827;
   --color-popover: #FFFFFF;
-  --color-popover-foreground: #0F172A;
-  --color-border: #E2E8F0;
-  --color-input: #E2E8F0;
-  --color-ring: #2563EB;
+  --color-popover-foreground: #111827;
+  --color-border: #D1D5DB;
+  --color-input: #D1D5DB;
+  --color-ring: #0B6B3A;
 
   --radius-xs: 0.375rem;
   --radius-sm: 0.5rem;

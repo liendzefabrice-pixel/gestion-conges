@@ -62,10 +62,6 @@ const navSections: NavSection[] = [
   },
 ]
 
-function getInitials(email: string): string {
-  return email.charAt(0).toUpperCase()
-}
-
 export default function MainLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -88,15 +84,17 @@ export default function MainLayout() {
         )}
       >
         {/* Logo */}
-        <div className={cn('flex items-center h-[72px] shrink-0', collapsed ? 'justify-center px-0' : 'gap-3 px-6')}>
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm">
-            <Calendar className="w-5 h-5 text-white" />
-          </div>
+        <div className={cn('flex items-center h-[72px] shrink-0 gap-3', collapsed ? 'justify-center px-0' : 'px-6')}>
+          <img
+            src="/images/Logo.png"
+            alt="SIAP PHARMA"
+            className={cn('shrink-0', collapsed ? 'w-8 h-8' : 'w-10 h-10')}
+          />
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-base font-bold text-foreground leading-tight">Gestion Congés</p>
               <p className="text-[11px] font-semibold text-muted-foreground tracking-wider uppercase leading-tight mt-0.5">
-                SIAP Pharma
+                SIAP PHARMA
               </p>
             </div>
           )}
@@ -134,7 +132,7 @@ export default function MainLayout() {
                               : 'gap-3 px-3 py-2.5',
                             isActive
                               ? 'bg-primary text-white shadow-sm'
-                              : 'text-gray-600 hover:bg-blue-50 hover:text-primary',
+                              : 'text-gray-600 hover:bg-green-50 hover:text-primary',
                           )
                         }
                         title={collapsed ? item.label : undefined}
@@ -167,7 +165,7 @@ export default function MainLayout() {
                     : 'gap-3 px-3 py-2.5',
                   isActive
                     ? 'bg-primary text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-blue-50 hover:text-primary',
+                    : 'text-gray-600 hover:bg-green-50 hover:text-primary',
                 )
               }
               title={collapsed ? 'Mon compte' : undefined}
@@ -200,9 +198,7 @@ export default function MainLayout() {
         <div className="shrink-0 px-4 pb-4 pt-3">
           {collapsed ? (
             <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <span className="text-sm font-bold text-primary">{getInitials(userEmail)}</span>
-              </div>
+              <img src="/images/Avatar.png" alt="" className="w-10 h-10 rounded-full shrink-0 object-cover" />
               <button
                 onClick={handleLogout}
                 className="flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-destructive hover:bg-red-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
@@ -214,9 +210,7 @@ export default function MainLayout() {
           ) : (
             <>
               <div className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gray-50 border border-gray-100">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-bold text-primary">{getInitials(userEmail)}</span>
-                </div>
+                <img src="/images/Avatar.png" alt="" className="w-10 h-10 rounded-full shrink-0 object-cover" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-foreground truncate">{userEmail}</p>
                   <p className="text-xs text-muted-foreground truncate">{translateRole(roleName)}</p>

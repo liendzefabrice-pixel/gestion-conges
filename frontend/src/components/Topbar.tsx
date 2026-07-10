@@ -35,10 +35,6 @@ const pageTitles: Record<string, string> = {
   '/change-password': 'Changement de mot de passe',
 }
 
-function getInitials(email: string): string {
-  return email.charAt(0).toUpperCase()
-}
-
 function formatDate(): string {
   return new Date().toLocaleDateString('fr-FR', {
     weekday: 'long',
@@ -156,9 +152,7 @@ export default function Topbar({ collapsed, onToggleCollapse }: TopbarProps) {
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-gray-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             >
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-primary">{getInitials(userEmail)}</span>
-              </div>
+              <img src="/images/Avatar.png" alt="" className="w-8 h-8 rounded-full shrink-0 object-cover" />
               <div className="hidden lg:block text-left min-w-0">
                 <p className="text-sm font-medium text-foreground leading-tight truncate max-w-[120px]">
                   {userEmail}
@@ -185,14 +179,14 @@ export default function Topbar({ collapsed, onToggleCollapse }: TopbarProps) {
                 <div className="py-1">
                   <button
                     onClick={() => { setDropdownOpen(false); navigate('/account') }}
-                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition-colors duration-100"
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-primary transition-colors duration-100"
                   >
                     <User className="size-4 shrink-0" />
                     Mon compte
                   </button>
                   <button
                     onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-primary transition-colors duration-100"
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-primary transition-colors duration-100"
                   >
                     <Settings className="size-4 shrink-0" />
                     Paramètres
