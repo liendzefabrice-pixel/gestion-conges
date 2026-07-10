@@ -10,6 +10,7 @@ datasource db {
 enum LeaveStatus {
   BROUILLON
   EN_ATTENTE_RH
+  EN_ATTENTE_DIRECTION
   AVIS_RH_RENDU
   APPROUVE
   REFUSE
@@ -20,6 +21,7 @@ enum NotificationType {
   LEAVE_CREATED
   LEAVE_RH_REVIEWED
   LEAVE_DECIDED
+  LEAVE_TRANSMITTED
   PERMISSION_CREATED
   PERMISSION_RH_REVIEWED
   PERMISSION_DECIDED
@@ -65,6 +67,7 @@ model User {
   notifications Notification[]
   auditLogs     AuditLog[]
   balanceAdjustments BalanceAdjustment[]
+  leaveRequestHistories LeaveRequestHistory[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -202,9 +205,25 @@ model LeaveRequest {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  histories    LeaveRequestHistory[]
+
   @@index([employeeId])
   @@index([status])
   @@index([annualLeavePlanningId])
+}
+
+model LeaveRequestHistory {
+  id             Int         @id @default(autoincrement())
+  previousStatus String?
+  newStatus      String
+  comment        String?
+  userId         Int
+  user           User        @relation(fields: [userId], references: [id])
+  leaveRequestId Int
+  leaveRequest   LeaveRequest @relation(fields: [leaveRequestId], references: [id], onDelete: Cascade)
+  createdAt      DateTime    @default(now())
+
+  @@index([leaveRequestId])
 }
 
 model PermissionRequest {

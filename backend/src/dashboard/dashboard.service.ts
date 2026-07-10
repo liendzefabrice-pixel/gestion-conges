@@ -69,7 +69,9 @@ export class DashboardService {
 
   async getDirectorStats() {
     const [leavesToDecide, permissionsToDecide] = await Promise.all([
-      this.prisma.leaveRequest.count({ where: { status: 'AVIS_RH_RENDU' } }),
+      this.prisma.leaveRequest.count({
+        where: { status: { in: ['AVIS_RH_RENDU', 'EN_ATTENTE_DIRECTION'] } },
+      }),
       this.prisma.permissionRequest.count({ where: { status: 'AVIS_RH_RENDU' } }),
     ]);
 
@@ -119,7 +121,7 @@ export class DashboardService {
           orderBy: { year: 'desc' },
         }),
         this.prisma.leaveRequest.count({
-          where: { employeeId: employee.id, status: 'EN_ATTENTE_RH' },
+          where: { employeeId: employee.id, status: { in: ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION', 'AVIS_RH_RENDU'] } },
         }),
         this.prisma.permissionRequest.count({
           where: { employeeId: employee.id, status: 'EN_ATTENTE_RH' },

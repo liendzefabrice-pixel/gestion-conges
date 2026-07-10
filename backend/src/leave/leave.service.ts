@@ -20,6 +20,25 @@ export class LeaveService {
     private workingDaysService: WorkingDaysService,
   ) {}
 
+  private async recordHistory(
+    tx: any,
+    leaveRequestId: number,
+    previousStatus: string | null,
+    newStatus: string,
+    userId: number,
+    comment?: string,
+  ) {
+    await tx.leaveRequestHistory.create({
+      data: {
+        leaveRequestId,
+        previousStatus,
+        newStatus,
+        comment,
+        userId,
+      },
+    });
+  }
+
   async createLeaveType(createLeaveTypeDto: CreateLeaveTypeDto) {
     const existing = await this.prisma.leaveType.findUnique({
       where: { name: createLeaveTypeDto.name },
@@ -131,6 +150,8 @@ export class LeaveService {
         },
       });
 
+      await this.recordHistory(tx, request.id, null, 'EN_ATTENTE_RH', request.employee.user.id);
+
       const year = startDate.getFullYear();
       const leaveBalance = await tx.leaveBalance.findUnique({
         where: {
@@ -176,6 +197,10 @@ export class LeaveService {
         leaveType: true,
         reviewedBy: { select: { id: true, email: true } },
         decidedBy: { select: { id: true, email: true } },
+        histories: {
+          include: { user: { select: { id: true, email: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -216,38 +241,49 @@ export class LeaveService {
       );
     }
 
-    const updated = await this.prisma.leaveRequest.update({
-      where: { id },
-      data: {
-        status: 'AVIS_RH_RENDU',
-        hrComment: hrReviewDto.hrComment,
-        hrOpinion: hrReviewDto.hrOpinion,
-        reviewedById: userId,
-        reviewedAt: new Date(),
-      },
-      include: {
-        employee: {
-          include: { user: { select: { id: true, email: true } } },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.leaveRequest.update({
+        where: { id },
+        data: {
+          status: 'EN_ATTENTE_DIRECTION',
+          hrComment: hrReviewDto.hrComment,
+          hrOpinion: hrReviewDto.hrOpinion,
+          reviewedById: userId,
+          reviewedAt: new Date(),
         },
-        leaveType: true,
-        reviewedBy: { select: { id: true, email: true } },
-      },
+        include: {
+          employee: {
+            include: { user: { select: { id: true, email: true } } },
+          },
+          leaveType: true,
+          reviewedBy: { select: { id: true, email: true } },
+        },
+      });
+
+      await this.recordHistory(
+        tx,
+        id,
+        'EN_ATTENTE_RH',
+        'EN_ATTENTE_DIRECTION',
+        userId,
+        hrReviewDto.hrComment || undefined,
+      );
+
+      this.notificationsService.notifyEmployee(
+        request.employeeId,
+        'Demande de congé examinée',
+        'Votre demande de congé a été examinée par le RH. En attente de décision de la direction.',
+        'LEAVE_RH_REVIEWED',
+      );
+
+      this.notificationsService.notifyDirector(
+        'Avis RH donné',
+        `Le RH a examiné la demande de ${request.employee.user.email}. Décision requise.`,
+        'LEAVE_TRANSMITTED',
+      );
+
+      return updated;
     });
-
-    this.notificationsService.notifyEmployee(
-      request.employeeId,
-      'Demande de congé examinée',
-      'Votre demande de congé a été examinée par le RH. En attente de décision de la direction.',
-      'LEAVE_RH_REVIEWED',
-    );
-
-    this.notificationsService.notifyDirector(
-      'Avis RH donné',
-      `Le RH a examiné la demande de ${request.employee.user.email}. Décision requise.`,
-      'LEAVE_RH_REVIEWED',
-    );
-
-    return updated;
   }
 
   async directorDecision(id: number, userId: number, dto: DirectorDecisionDto) {
@@ -263,7 +299,7 @@ export class LeaveService {
       throw new NotFoundException('Demande introuvable');
     }
 
-    if (request.status !== 'AVIS_RH_RENDU') {
+    if (request.status !== 'AVIS_RH_RENDU' && request.status !== 'EN_ATTENTE_DIRECTION') {
       throw new BadRequestException(
         'La demande doit d\'abord être examinée par le RH',
       );
@@ -285,6 +321,15 @@ export class LeaveService {
           leaveType: true,
         },
       });
+
+      await this.recordHistory(
+        tx,
+        id,
+        request.status,
+        dto.decision,
+        userId,
+        dto.directorComment,
+      );
 
       const year = request.startDate.getFullYear();
       const leaveBalance = await tx.leaveBalance.findUnique({
@@ -368,9 +413,15 @@ export class LeaveService {
       );
     }
 
-    return this.prisma.leaveRequest.update({
-      where: { id },
-      data: { status: 'ANNULE' },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.leaveRequest.update({
+        where: { id },
+        data: { status: 'ANNULE' },
+      });
+
+      await this.recordHistory(tx, id, request.status, 'ANNULE', employeeId);
+
+      return updated;
     });
   }
 
@@ -450,6 +501,10 @@ export class LeaveService {
         leaveType: true,
         reviewedBy: { select: { id: true, email: true } },
         decidedBy: { select: { id: true, email: true } },
+        histories: {
+          include: { user: { select: { id: true, email: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 

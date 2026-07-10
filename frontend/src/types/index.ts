@@ -74,7 +74,7 @@ export interface LeaveRequest {
   endDate: string;
   duration: number;
   reason: string;
-  status: 'BROUILLON' | 'EN_ATTENTE_RH' | 'AVIS_RH_RENDU' | 'APPROUVE' | 'REFUSE' | 'ANNULE';
+  status: 'BROUILLON' | 'EN_ATTENTE_RH' | 'EN_ATTENTE_DIRECTION' | 'AVIS_RH_RENDU' | 'APPROUVE' | 'REFUSE' | 'ANNULE';
   hrComment?: string;
   hrOpinion?: string;
   directorComment?: string;

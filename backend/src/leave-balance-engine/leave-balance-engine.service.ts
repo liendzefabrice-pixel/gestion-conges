@@ -6,7 +6,7 @@ import type { BalanceStrategy } from './interfaces/balance-strategy.interface';
 import type { EmployeeBalanceResult, LeaveTypeBalance } from './interfaces/balance-result.interface';
 
 const APPROVED_STATUSES = ['APPROUVE'];
-const PENDING_STATUSES = ['EN_ATTENTE_RH', 'AVIS_RH_RENDU'];
+const PENDING_STATUSES = ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION', 'AVIS_RH_RENDU'];
 
 @Injectable()
 export class LeaveBalanceEngineService {

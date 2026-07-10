@@ -20,6 +20,7 @@ interface Props {
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info'; color: string }> = {
   BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
   EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning', color: 'text-amber-700 bg-amber-100' },
+  EN_ATTENTE_DIRECTION: { label: 'En attente Direction', variant: 'info', color: 'text-blue-700 bg-blue-100' },
   AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info', color: 'text-blue-700 bg-blue-100' },
   APPROUVE: { label: 'Approuvé', variant: 'success', color: 'text-green-700 bg-green-100' },
   REFUSE: { label: 'Refusé', variant: 'danger', color: 'text-red-700 bg-red-100' },
@@ -140,7 +141,7 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
   };
 
   const canReview = (role === 'HR' || role === 'ADMIN') && r.status === 'EN_ATTENTE_RH';
-  const canDecide = (role === 'DIRECTOR' || role === 'ADMIN') && r.status === 'AVIS_RH_RENDU';
+  const canDecide = (role === 'DIRECTOR' || role === 'ADMIN') && (r.status === 'AVIS_RH_RENDU' || r.status === 'EN_ATTENTE_DIRECTION');
   const canCancel = role === 'EMPLOYEE' && (r.status === 'EN_ATTENTE_RH' || r.status === 'BROUILLON');
   const isLeave = type === 'leave';
   const status = statusConfig[r.status];

@@ -28,6 +28,7 @@ const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juil
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info'; color: string }> = {
   BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
   EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning', color: 'text-amber-700 bg-amber-100' },
+  EN_ATTENTE_DIRECTION: { label: 'En attente Direction', variant: 'info', color: 'text-blue-700 bg-blue-100' },
   AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info', color: 'text-blue-700 bg-blue-100' },
   APPROUVE: { label: 'Approuvé', variant: 'success', color: 'text-green-700 bg-green-100' },
   REFUSE: { label: 'Refusé', variant: 'danger', color: 'text-red-700 bg-red-100' },
@@ -221,8 +222,8 @@ export default function LeavePage() {
 
   const statusOptions = Object.entries(statusConfig).filter(([key]) => {
     if (role === 'EMPLOYEE') return true
-    if (role === 'HR') return ['EN_ATTENTE_RH', 'AVIS_RH_RENDU', 'APPROUVE', 'REFUSE', 'ANNULE'].includes(key)
-    if (role === 'DIRECTOR' || role === 'ADMIN') return ['AVIS_RH_RENDU', 'APPROUVE', 'REFUSE', 'ANNULE', 'EN_ATTENTE_RH'].includes(key)
+    if (role === 'HR') return ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION', 'APPROUVE', 'REFUSE', 'ANNULE'].includes(key)
+    if (role === 'DIRECTOR' || role === 'ADMIN') return ['EN_ATTENTE_DIRECTION', 'APPROUVE', 'REFUSE', 'ANNULE', 'EN_ATTENTE_RH'].includes(key)
     return true
   })
 

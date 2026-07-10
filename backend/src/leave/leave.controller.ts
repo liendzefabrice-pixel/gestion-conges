@@ -112,10 +112,16 @@ export class LeaveController {
     return this.leaveService.findRequestsByStatus(['EN_ATTENTE_RH']);
   }
 
+  @Get('requests/pending-direction')
+  @Roles('DIRECTOR', 'ADMIN')
+  findDirectionPendingRequests() {
+    return this.leaveService.findRequestsByStatus(['EN_ATTENTE_DIRECTION']);
+  }
+
   @Get('requests/hr-reviewed')
   @Roles('DIRECTOR', 'ADMIN')
   findHrReviewedRequests() {
-    return this.leaveService.findRequestsByStatus(['AVIS_RH_RENDU']);
+    return this.leaveService.findRequestsByStatus(['AVIS_RH_RENDU', 'EN_ATTENTE_DIRECTION']);
   }
 
   @Get('requests/:id')

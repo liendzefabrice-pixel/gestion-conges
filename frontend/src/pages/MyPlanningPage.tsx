@@ -13,6 +13,7 @@ const months = [
 const statusConfig: Record<string, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'secondary' | 'outline' }> = {
   BROUILLON: { label: 'Brouillon', variant: 'default' },
   EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning' },
+  EN_ATTENTE_DIRECTION: { label: 'En attente Direction', variant: 'info' },
   AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info' },
   APPROUVE: { label: 'Approuvée', variant: 'success' },
   REFUSE: { label: 'Refusée', variant: 'danger' },
