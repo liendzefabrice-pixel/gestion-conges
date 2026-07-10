@@ -16,6 +16,7 @@ import LeavePage from '../pages/LeavePage';
 import LeavePlanningPage from '../pages/LeavePlanningPage';
 import MyPlanningPage from '../pages/MyPlanningPage';
 import SoldesPage from '../pages/SoldesPage';
+import HolidaysPage from '../pages/HolidaysPage';
 import PermissionsPage from '../pages/PermissionsPage';
 import UsersPage from '../pages/UsersPage';
 import NotificationsPage from '../pages/NotificationsPage';
@@ -65,6 +66,7 @@ function AppRoutes() {
         <Route path="leave-planning" element={<LeavePlanningPage />} />
         <Route path="my-planning" element={<MyPlanningPage />} />
         <Route path="soldes" element={<SoldesPage />} />
+        <Route path="holidays" element={<HolidaysPage />} />
         <Route path="permissions" element={<PermissionsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="notifications" element={<NotificationsPage />} />

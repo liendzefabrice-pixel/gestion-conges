@@ -63,7 +63,8 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
       onSuccess()
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message?.[0] || err.response?.data?.message || 'Erreur lors de la soumission')
+      const msg = err.response?.data?.message
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur lors de la soumission')
     },
   })
 
@@ -181,17 +182,18 @@ export default function LeavePage() {
 
       {role !== 'EMPLOYEE' && (
         <div className="flex items-center gap-2 mb-4">
-          <Filter className="size-4 text-muted-foreground" />
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-1.5 border rounded-lg text-sm bg-white"
-          >
-            <option value="">Tous les statuts</option>
-            {statusOptions.map(([key, cfg]) => (
-              <option key={key} value={key}>{cfg.label}</option>
-            ))}
-          </select>
+          <Filter className="size-4 text-muted-foreground shrink-0" />
+          <Select value={filterStatus || null} onValueChange={(v) => setFilterStatus(v || '')}>
+            <SelectTrigger className="w-56">
+              <SelectValue placeholder="Tous les statuts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Tous les statuts</SelectItem>
+              {statusOptions.map(([key, cfg]) => (
+                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       )}
 

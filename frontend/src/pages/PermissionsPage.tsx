@@ -48,7 +48,7 @@ export default function PermissionsPage() {
       setReason('');
       loadRequests();
     } catch (err: any) {
-      setError(err.response?.data?.message?.[0] || err.response?.data?.message || 'Erreur lors de la soumission');
+      const msg = err.response?.data?.message; setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur lors de la soumission');
     }
   };
 

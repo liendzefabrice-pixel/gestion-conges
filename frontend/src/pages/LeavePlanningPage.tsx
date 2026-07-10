@@ -114,6 +114,10 @@ export default function LeavePlanningPage() {
               <Select
                 value={formData.employeeId || null}
                 onValueChange={(v) => setFormData({ ...formData, employeeId: v || '' })}
+                itemToStringLabel={(v: string | null) => {
+                  const e = employees.find(emp => String(emp.id) === v)
+                  return e ? `${e.firstName} ${e.lastName} - ${e.department?.name}` : ''
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un employé" />
@@ -137,6 +141,7 @@ export default function LeavePlanningPage() {
                 <Select
                   value={formData.month || null}
                   onValueChange={(v) => setFormData({ ...formData, month: v || '' })}
+                  itemToStringLabel={(v: string | null) => months.find(m => m.value === v)?.label || ''}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un mois" />
