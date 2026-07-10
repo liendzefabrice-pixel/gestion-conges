@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import api from '../services/api'
-import type { AnnualLeavePlanning, LeaveEligibility } from '../types'
+import type { AnnualLeavePlanning, LeaveEligibility, LeaveAccrual } from '../types'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
 import { PageHeader } from '../components/ui/page-header'
@@ -30,6 +30,12 @@ export default function MyPlanningPage() {
     queryFn: () => api.get('/leave-planning/eligibility').then((r) => r.data),
   })
 
+  const { data: accrual, isLoading: accrualLoading } = useQuery<LeaveAccrual>({
+    queryKey: ['leave-accrual'],
+    queryFn: () => api.get('/leave-accrual').then((r) => r.data),
+    retry: false,
+  })
+
   const loading = planningLoading || eligibilityLoading
 
   if (loading) return <p className="text-muted-foreground">Chargement...</p>
@@ -38,10 +44,10 @@ export default function MyPlanningPage() {
     <div>
       <PageHeader
         title="Mon planning annuel"
-        description="Consultez votre éligibilité et votre planning de congés"
+        description="Consultez votre éligibilité et vos droits à congés"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Éligibilité</CardTitle>
@@ -59,6 +65,37 @@ export default function MyPlanningPage() {
                 Date d'embauche : {new Date(eligibility.hireDate).toLocaleDateString()} —
                 Ancienneté : {eligibility.seniorityYears} an{eligibility.seniorityYears > 1 ? 's' : ''}
               </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Droits acquis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {accrualLoading ? (
+              <p className="text-sm text-muted-foreground">Chargement...</p>
+            ) : accrual ? (
+              <>
+                <p className="text-lg font-semibold">
+                  {accrual.daysAccrued} jour{accrual.daysAccrued > 1 ? 's' : ''} acquis
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {accrual.seniorityLabel} d'ancienneté — Année de référence {accrual.referenceYear}
+                </p>
+                {accrual.canTakeLeave ? (
+                  <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl p-3 mt-2">
+                    Vous pouvez poser un congé annuel
+                  </p>
+                ) : accrual.message && (
+                  <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2">
+                    {accrual.message}
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Indisponible</p>
             )}
           </CardContent>
         </Card>

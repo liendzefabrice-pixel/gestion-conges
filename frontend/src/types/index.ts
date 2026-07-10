@@ -186,6 +186,15 @@ export interface DashboardDirector {
   decisions: { approved: number; rejected: number };
 }
 
+export interface LeaveAccrual {
+  monthsWorked: number;
+  daysAccrued: number;
+  referenceYear: number;
+  seniorityLabel: string;
+  canTakeLeave: boolean;
+  message: string | null;
+}
+
 export interface WorkingDaysResult {
   startDate: string;
   endDate: string;

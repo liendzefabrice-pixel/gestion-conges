@@ -14,6 +14,7 @@ import { PositionsModule } from './positions/positions.module';
 import { LeaveTypesModule } from './leave-types/leave-types.module';
 import { LeaveBalancesModule } from './leave-balances/leave-balances.module';
 import { HolidaysModule } from './holidays/holidays.module';
+import { LeaveAccrualModule } from './leave-accrual/leave-accrual.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { HolidaysModule } from './holidays/holidays.module';
     LeaveTypesModule,
     LeaveBalancesModule,
     HolidaysModule,
+    LeaveAccrualModule,
     EmployeesModule,
     LeaveModule,
     LeavePlanningModule,
