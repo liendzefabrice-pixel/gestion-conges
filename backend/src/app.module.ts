@@ -12,6 +12,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { UsersModule } from './users/users.module';
 import { PositionsModule } from './positions/positions.module';
 import { LeaveTypesModule } from './leave-types/leave-types.module';
+import { LeaveBalancesModule } from './leave-balances/leave-balances.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { LeaveTypesModule } from './leave-types/leave-types.module';
     DepartmentsModule,
     PositionsModule,
     LeaveTypesModule,
+    LeaveBalancesModule,
     EmployeesModule,
     LeaveModule,
     LeavePlanningModule,

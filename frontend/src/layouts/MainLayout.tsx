@@ -19,6 +19,7 @@ import {
   Bell,
   LogOut,
   ChevronLeft,
+  Wallet,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -48,6 +49,8 @@ const navSections: NavSection[] = [
       { label: 'Employés', path: '/employees', icon: Users, roles: ['ADMIN', 'HR'] },
       { label: 'Départements', path: '/departments', icon: Building2, roles: ['ADMIN'] },
       { label: 'Congés', path: '/leave', icon: Calendar, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
+      { label: 'Soldes', path: '/soldes', icon: Wallet, roles: ['HR', 'DIRECTOR', 'ADMIN'] },
+      { label: 'Mes soldes', path: '/soldes', icon: Wallet, roles: ['EMPLOYEE'] },
       { label: 'Mon planning', path: '/my-planning', icon: CalendarCheck, roles: ['EMPLOYEE'] },
       { label: 'Planification', path: '/leave-planning', icon: ClipboardList, roles: ['HR', 'ADMIN'] },
       { label: 'Permissions', path: '/permissions', icon: FileText, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },

@@ -64,6 +64,7 @@ model User {
 
   notifications Notification[]
   auditLogs     AuditLog[]
+  balanceAdjustments BalanceAdjustment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -239,8 +240,10 @@ model LeaveBalance {
   id           Int   @id @default(autoincrement())
   year         Int
   totalDays    Int   @default(0)
+  adjustedDays Int   @default(0)
   usedDays     Int   @default(0)
   pendingDays  Int   @default(0)
+  status       String @default("ACTIF")
 
   employeeId   Int
   employee     Employee @relation(fields: [employeeId], references: [id])
@@ -248,11 +251,31 @@ model LeaveBalance {
   leaveTypeId  Int
   leaveType    LeaveType @relation(fields: [leaveTypeId], references: [id])
 
+  adjustments BalanceAdjustment[]
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([employeeId, leaveTypeId, year])
   @@index([employeeId])
+}
+
+model BalanceAdjustment {
+  id                Int      @id @default(autoincrement())
+  operationType     String
+  previousRemaining Int      @default(0)
+  newRemaining      Int      @default(0)
+  comment           String?
+
+  leaveBalanceId    Int
+  leaveBalance      LeaveBalance @relation(fields: [leaveBalanceId], references: [id])
+
+  authorId          Int
+  author            User     @relation(fields: [authorId], references: [id])
+
+  createdAt         DateTime @default(now())
+
+  @@index([leaveBalanceId])
 }
 
 model Notification {

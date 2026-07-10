@@ -103,9 +103,34 @@ export interface LeaveBalance {
   id: number;
   year: number;
   totalDays: number;
+  adjustedDays: number;
   usedDays: number;
   pendingDays: number;
+  status: string;
+  remaining: number;
   leaveType: LeaveType;
+}
+
+export interface BalanceAdjustment {
+  id: number;
+  operationType: string;
+  previousRemaining: number;
+  newRemaining: number;
+  comment?: string;
+  author: { id: number; email: string };
+  createdAt: string;
+}
+
+export interface EmployeeBalance {
+  employee: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    matricule: string;
+    user: { email: string };
+    department: { id: number; name: string };
+  };
+  balances: LeaveBalance[];
 }
 
 export interface Notification {

@@ -318,6 +318,19 @@ export class LeaveService {
               usedDays: leaveBalance.usedDays + request.duration,
             },
           });
+
+          const currentRemaining = leaveBalance.totalDays + leaveBalance.adjustedDays - (leaveBalance.usedDays + request.duration) - (leaveBalance.pendingDays - request.duration);
+          const remainingAfter = leaveBalance.totalDays + leaveBalance.adjustedDays - (leaveBalance.usedDays + request.duration) - Math.max(0, newPendingDays);
+          await tx.balanceAdjustment.create({
+            data: {
+              operationType: 'DEDUCTION_CONGES',
+              previousRemaining: currentRemaining,
+              newRemaining: remainingAfter,
+              comment: `Congé ${request.leaveType.name} approuvé : ${request.duration} jour(s) du ${request.startDate.toLocaleDateString()} au ${request.endDate.toLocaleDateString()}`,
+              leaveBalanceId: leaveBalance.id,
+              authorId: userId,
+            },
+          });
         } else {
           await tx.leaveBalance.update({
             where: { id: leaveBalance.id },
@@ -378,22 +391,43 @@ export class LeaveService {
       where: { isActive: true },
     });
 
+    const admin = await this.prisma.user.findFirst({
+      where: { role: { name: 'ADMIN' } },
+      orderBy: { id: 'asc' },
+    });
+
     for (const leaveType of leaveTypes) {
-      await this.prisma.leaveBalance.upsert({
-        where: {
-          employeeId_leaveTypeId_year: {
+      await this.prisma.$transaction(async (tx) => {
+        const balance = await tx.leaveBalance.upsert({
+          where: {
+            employeeId_leaveTypeId_year: {
+              employeeId,
+              leaveTypeId: leaveType.id,
+              year,
+            },
+          },
+          update: {},
+          create: {
             employeeId,
             leaveTypeId: leaveType.id,
             year,
+            totalDays: leaveType.defaultDays,
           },
-        },
-        update: {},
-        create: {
-          employeeId,
-          leaveTypeId: leaveType.id,
-          year,
-          totalDays: leaveType.defaultDays,
-        },
+        });
+
+        if (admin && balance.createdAt === balance.updatedAt) {
+          const remaining = balance.totalDays + balance.adjustedDays - balance.usedDays - balance.pendingDays;
+          await tx.balanceAdjustment.create({
+            data: {
+              operationType: 'INITIALISATION',
+              previousRemaining: 0,
+              newRemaining: remaining,
+              comment: `Initialisation du compteur pour ${leaveType.name} — Année ${year}`,
+              leaveBalanceId: balance.id,
+              authorId: admin.id,
+            },
+          });
+        }
       });
     }
   }
