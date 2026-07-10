@@ -186,6 +186,15 @@ export interface DashboardDirector {
   decisions: { approved: number; rejected: number };
 }
 
+export interface WorkingDaysResult {
+  startDate: string;
+  endDate: string;
+  calendarDays: number;
+  sundays: number;
+  holidaysExcluded: number;
+  workingDays: number;
+}
+
 export interface DashboardEmployee {
   balances: {
     type: string;

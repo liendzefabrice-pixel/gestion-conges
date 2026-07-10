@@ -10,18 +10,15 @@ import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { HrReviewDto } from './dto/hr-review.dto';
 import { DirectorDecisionDto } from './dto/director-decision.dto';
 import { NotificationsService } from '../notifications/notifications.service';
-import { calculateWorkingDays } from '../common/working-days';
+import { WorkingDaysService } from '../working-days/working-days.service';
 
 @Injectable()
 export class LeaveService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private workingDaysService: WorkingDaysService,
   ) {}
-
-  private calculateDuration(startDate: Date, endDate: Date): number {
-    return calculateWorkingDays(startDate, endDate);
-  }
 
   async createLeaveType(createLeaveTypeDto: CreateLeaveTypeDto) {
     const existing = await this.prisma.leaveType.findUnique({
@@ -109,7 +106,10 @@ export class LeaveService {
       );
     }
 
-    const duration = this.calculateDuration(startDate, endDate);
+    const { workingDays: duration } = await this.workingDaysService.calculate(startDate, endDate);
+    if (duration === 0) {
+      throw new BadRequestException('La période sélectionnée ne contient aucun jour ouvrable');
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const request = await tx.leaveRequest.create({

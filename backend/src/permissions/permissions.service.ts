@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { calculateWorkingDays } from '../common/working-days';
+import { WorkingDaysService } from '../working-days/working-days.service';
 import { CreatePermissionRequestDto } from './dto/create-permission-request.dto';
 import { HrReviewDto } from './dto/hr-review.dto';
 import { DirectorDecisionDto } from './dto/director-decision.dto';
@@ -15,11 +15,8 @@ export class PermissionsService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private workingDaysService: WorkingDaysService,
   ) {}
-
-  private calculateDuration(startDate: Date, endDate: Date): number {
-    return calculateWorkingDays(startDate, endDate);
-  }
 
   async getEmployeeByUserId(userId: number) {
     const employee = await this.prisma.employee.findUnique({
@@ -41,7 +38,10 @@ export class PermissionsService {
       throw new BadRequestException('La date de fin doit être après la date de début');
     }
 
-    const duration = this.calculateDuration(startDate, endDate);
+    const { workingDays: duration } = await this.workingDaysService.calculate(startDate, endDate);
+    if (duration === 0) {
+      throw new BadRequestException('La période sélectionnée ne contient aucun jour ouvrable');
+    }
 
     const request = await this.prisma.permissionRequest.create({
       data: {

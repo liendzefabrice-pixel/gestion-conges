@@ -10,6 +10,9 @@ export const leaveRequestSchema = z.object({
   startDate: z.string().min(1, 'Date de début requise'),
   endDate: z.string().min(1, 'Date de fin requise'),
   reason: z.string().min(3, 'Le motif doit contenir au moins 3 caractères'),
+}).refine((data) => !data.startDate || !data.endDate || new Date(data.endDate) >= new Date(data.startDate), {
+  message: 'La date de fin doit être après ou égale à la date de début',
+  path: ['endDate'],
 })
 
 export const changePasswordSchema = z.object({

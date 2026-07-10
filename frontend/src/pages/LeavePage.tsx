@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { leaveRequestSchema, type LeaveRequestFormData } from '../lib/schemas'
-import type { LeaveRequest, LeaveType, LeaveEligibility } from '../types'
+import type { LeaveRequest, LeaveType, LeaveEligibility, WorkingDaysResult } from '../types'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
@@ -46,9 +46,42 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
   const [selectedType, setSelectedType] = useState('')
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<LeaveRequestFormData>({
+  const [calcResult, setCalcResult] = useState<WorkingDaysResult | null>(null)
+  const [calcLoading, setCalcLoading] = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<LeaveRequestFormData>({
     resolver: zodResolver(leaveRequestSchema),
   })
+
+  const startDate = watch('startDate')
+  const endDate = watch('endDate')
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    if (!startDate || !endDate) {
+      setCalcResult(null)
+      return
+    }
+    if (new Date(endDate) < new Date(startDate)) {
+      setCalcResult(null)
+      return
+    }
+    setCalcLoading(true)
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await api.get('/leave/calculate', { params: { startDate, endDate } })
+        setCalcResult(res.data)
+      } catch {
+        setCalcResult(null)
+      } finally {
+        setCalcLoading(false)
+      }
+    }, 300)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [startDate, endDate])
 
   const mutation = useMutation({
     mutationFn: (data: LeaveRequestFormData) =>
@@ -76,6 +109,11 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
     } else {
       setValue('leaveTypeId', '')
     }
+  }
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso)
+    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
   }
 
   return (
@@ -126,12 +164,36 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
               {errors.endDate && <p className="text-sm text-destructive">{errors.endDate.message}</p>}
             </div>
           </div>
+
+          {calcResult && (
+            <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-sm space-y-1">
+              <p className="font-semibold text-green-800 mb-2">Résumé du calcul</p>
+              <p className="text-green-700">
+                Période : {formatDate(calcResult.startDate)} → {formatDate(calcResult.endDate)}
+              </p>
+              <div className="flex gap-6 text-green-700">
+                <span>Jours calendaires : <strong>{calcResult.calendarDays}</strong></span>
+                <span>Dimanches exclus : <strong>{calcResult.sundays}</strong></span>
+                <span>Jours fériés exclus : <strong>{calcResult.holidaysExcluded}</strong></span>
+              </div>
+              <div className="pt-2 mt-2 border-t border-green-200">
+                <span className="text-green-800 font-medium">Jours ouvrables déduits : <strong>{calcResult.workingDays}</strong></span>
+              </div>
+            </div>
+          )}
+
+          {calcLoading && (
+            <div className="p-3 text-sm text-muted-foreground bg-muted/30 rounded-xl border border-border">
+              Calcul en cours...
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>Motif</Label>
             <Textarea {...register('reason')} placeholder="Motif de la demande" />
             {errors.reason && <p className="text-sm text-destructive">{errors.reason.message}</p>}
           </div>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || calcLoading}>
             {isSubmitting ? 'Soumission...' : 'Soumettre la demande'}
           </Button>
         </form>

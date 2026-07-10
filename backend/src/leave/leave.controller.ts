@@ -16,15 +16,29 @@ import { UpdateLeaveTypeDto } from './dto/update-leave-type.dto';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 import { HrReviewDto } from './dto/hr-review.dto';
 import { DirectorDecisionDto } from './dto/director-decision.dto';
+import { CalculateDto } from '../working-days/dto/calculate.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { WorkingDaysService } from '../working-days/working-days.service';
 
 @Controller('leave')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LeaveController {
-  constructor(private readonly leaveService: LeaveService) {}
+  constructor(
+    private readonly leaveService: LeaveService,
+    private readonly workingDaysService: WorkingDaysService,
+  ) {}
+
+  @Get('calculate')
+  @Roles('EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN')
+  async calculate(@Query() dto: CalculateDto) {
+    return this.workingDaysService.calculate(
+      new Date(dto.startDate),
+      new Date(dto.endDate),
+    );
+  }
 
   @Post('types')
   @Roles('ADMIN')
