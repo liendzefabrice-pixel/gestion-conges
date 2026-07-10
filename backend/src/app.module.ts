@@ -11,6 +11,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UsersModule } from './users/users.module';
 import { PositionsModule } from './positions/positions.module';
+import { LeaveTypesModule } from './leave-types/leave-types.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PositionsModule } from './positions/positions.module';
     AuthModule,
     DepartmentsModule,
     PositionsModule,
+    LeaveTypesModule,
     EmployeesModule,
     LeaveModule,
     LeavePlanningModule,

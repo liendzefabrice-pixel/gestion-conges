@@ -9,6 +9,7 @@ import {
   Users,
   Building2,
   Briefcase,
+  List,
   Calendar,
   CalendarCheck,
   ClipboardList,
@@ -57,6 +58,7 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Utilisateurs', path: '/users', icon: UserCog, roles: ['ADMIN'] },
       { label: 'Postes', path: '/positions', icon: Briefcase, roles: ['ADMIN'] },
+      { label: 'Types de congés', path: '/leave-types', icon: List, roles: ['ADMIN'] },
       { label: 'Notifications', path: '/notifications', icon: Bell, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'], badge: true },
     ],
   },

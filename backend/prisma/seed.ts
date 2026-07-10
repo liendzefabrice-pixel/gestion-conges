@@ -39,13 +39,17 @@ async function main() {
   }
 
   const leaveTypes = [
-    { name: 'Congés annuels', description: 'Congés payés annuels', defaultDays: 25 },
+    { name: 'Congé annuel', description: 'Congés payés annuels', defaultDays: 25, color: '#0B6B3A', icon: 'Calendar', requiresRhValidation: true, requiresDirectorValidation: true, requiresJustification: false, deductsFromAnnualBalance: true, maxDuration: 30, minDuration: 1 },
+    { name: 'Congé maladie', description: 'Congé pour raison médicale', defaultDays: 15, color: '#D91F26', icon: 'HeartPulse', requiresRhValidation: true, requiresDirectorValidation: false, requiresJustification: true, deductsFromAnnualBalance: false, maxDuration: null, minDuration: 1 },
+    { name: 'Congé maternité', description: 'Congé pour maternité', defaultDays: 98, color: '#8DBB52', icon: 'Baby', requiresRhValidation: true, requiresDirectorValidation: false, requiresJustification: true, deductsFromAnnualBalance: false, maxDuration: 98, minDuration: 14 },
+    { name: 'Permission exceptionnelle', description: 'Permission pour événement familial', defaultDays: 5, color: '#F59E0B', icon: 'Star', requiresRhValidation: false, requiresDirectorValidation: false, requiresJustification: false, deductsFromAnnualBalance: true, maxDuration: 5, minDuration: 1 },
+    { name: 'Congé sans solde', description: 'Congé non rémunéré', defaultDays: 0, color: '#6B7280', icon: 'Clock', requiresRhValidation: true, requiresDirectorValidation: true, requiresJustification: false, deductsFromAnnualBalance: false, maxDuration: null, minDuration: 1 },
   ];
 
   for (const lt of leaveTypes) {
     await prisma.leaveType.upsert({
       where: { name: lt.name },
-      update: { name: lt.name, description: lt.description, defaultDays: lt.defaultDays },
+      update: lt,
       create: lt,
     });
   }

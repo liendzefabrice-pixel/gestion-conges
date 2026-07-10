@@ -57,6 +57,15 @@ export interface LeaveType {
   description?: string;
   defaultDays: number;
   isActive: boolean;
+  requiresRhValidation?: boolean;
+  requiresDirectorValidation?: boolean;
+  requiresJustification?: boolean;
+  deductsFromAnnualBalance?: boolean;
+  maxDuration?: number | null;
+  minDuration?: number | null;
+  color?: string;
+  icon?: string;
+  createdAt?: string;
 }
 
 export interface LeaveRequest {

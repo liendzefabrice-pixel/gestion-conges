@@ -132,6 +132,15 @@ model LeaveType {
   defaultDays Int      @default(0)
   isActive    Boolean  @default(true)
 
+  requiresRhValidation       Boolean  @default(true)
+  requiresDirectorValidation Boolean  @default(false)
+  requiresJustification      Boolean  @default(false)
+  deductsFromAnnualBalance   Boolean  @default(true)
+  maxDuration                Int?
+  minDuration                Int?
+  color                      String   @default("#0B6B3A")
+  icon                       String   @default("Calendar")
+
   leaveRequests LeaveRequest[]
   leaveBalances LeaveBalance[]
 

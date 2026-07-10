@@ -10,6 +10,7 @@ import AccountPage from '../pages/AccountPage';
 import AccountSecurityPage from '../pages/AccountSecurityPage';
 import DepartmentsPage from '../pages/DepartmentsPage';
 import PositionsPage from '../pages/PositionsPage';
+import LeaveTypesPage from '../pages/LeaveTypesPage';
 import EmployeesPage from '../pages/EmployeesPage';
 import LeavePage from '../pages/LeavePage';
 import LeavePlanningPage from '../pages/LeavePlanningPage';
@@ -57,6 +58,7 @@ function AppRoutes() {
         <Route path="account/security" element={<AccountSecurityPage />} />
         <Route path="departments" element={<DepartmentsPage />} />
         <Route path="positions" element={<PositionsPage />} />
+        <Route path="leave-types" element={<LeaveTypesPage />} />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="leave" element={<LeavePage />} />
         <Route path="leave-planning" element={<LeavePlanningPage />} />
