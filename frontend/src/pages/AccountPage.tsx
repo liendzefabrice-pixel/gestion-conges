@@ -28,10 +28,8 @@ export default function AccountPage() {
       <div className="space-y-6">
         <Card>
           <CardContent className="flex items-center gap-6 p-6">
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-3xl font-bold text-primary">
-                {employee ? (employee.firstName?.[0] || '') + (employee.lastName?.[0] || '') : '?'}
-              </span>
+            <div className="w-20 h-20 rounded-2xl overflow-hidden shrink-0">
+              <img src="/images/Avatar.png" alt="Avatar" className="w-full h-full object-cover" />
             </div>
             <div className="space-y-1.5">
               <h2 className="text-xl font-semibold text-foreground">
