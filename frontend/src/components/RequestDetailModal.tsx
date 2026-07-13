@@ -164,10 +164,12 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <SectionCard icon={<User className="size-4" />} title="Employé">
-              <p className="font-medium">{r.employee?.user?.firstName || ''} {r.employee?.user?.lastName || ''}</p>
-              <p className="text-sm text-muted-foreground">{r.employee?.user?.email || 'N/A'}</p>
+              <p className="font-medium">{r.employee?.lastName || r.employee?.user?.lastName || ''} {r.employee?.firstName || r.employee?.user?.firstName || ''}</p>
+              {r.employee?.position && (
+                <p className="text-sm text-muted-foreground">Poste : {r.employee.position}</p>
+              )}
               {r.employee?.department?.name && (
-                <p className="text-sm text-muted-foreground">{r.employee.department.name}</p>
+                <p className="text-sm text-muted-foreground">Département : {r.employee.department.name}</p>
               )}
             </SectionCard>
 

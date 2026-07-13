@@ -78,7 +78,7 @@ export interface LeaveRequest {
   hrComment?: string;
   hrOpinion?: string;
   directorComment?: string;
-  employee: { id: number; user: { email: string; firstName?: string; lastName?: string } };
+  employee: { id: number; firstName?: string; lastName?: string; user: { email: string; firstName?: string; lastName?: string }; position?: string; department?: { name: string } };
   employeeDetails?: { firstName: string; lastName: string; matricule: string; department?: { name: string } };
   leaveType: LeaveType;
   reviewedBy?: { id: number; email: string };
@@ -95,7 +95,7 @@ export interface PermissionRequest {
   duration: number;
   reason: string;
   status: 'EN_ATTENTE_RH' | 'AVIS_RH_RENDU' | 'APPROUVE' | 'REFUSE';
-  employee: { id: number; user: { email: string } };
+  employee: { id: number; firstName?: string; lastName?: string; user: { email: string; firstName?: string; lastName?: string }; position?: string; department?: { name: string } };
   reviewedBy?: { id: number; email: string };
   decidedBy?: { id: number; email: string };
 }

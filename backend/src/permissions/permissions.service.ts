@@ -53,7 +53,7 @@ export class PermissionsService {
       },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } }, department: { select: { name: true } } },
         },
       },
     });
@@ -75,7 +75,7 @@ export class PermissionsService {
     return this.prisma.permissionRequest.findMany({
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true } }, department: { select: { name: true } } },
         },
         reviewedBy: { select: { id: true, email: true } },
         decidedBy: { select: { id: true, email: true } },
@@ -89,7 +89,7 @@ export class PermissionsService {
       where: { status: 'EN_ATTENTE_RH' },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true } }, department: { select: { name: true } } },
         },
       },
       orderBy: { createdAt: 'asc' },
@@ -101,7 +101,7 @@ export class PermissionsService {
       where: { status: 'AVIS_RH_RENDU' },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true } }, department: { select: { name: true } } },
         },
         reviewedBy: { select: { id: true, email: true } },
       },
@@ -114,7 +114,7 @@ export class PermissionsService {
       where: { id },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true } }, department: { select: { name: true } } },
         },
         reviewedBy: { select: { id: true, email: true } },
         decidedBy: { select: { id: true, email: true } },
@@ -133,7 +133,7 @@ export class PermissionsService {
       where: { id },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true } }, department: { select: { name: true } } },
         },
       },
     });
@@ -159,7 +159,7 @@ export class PermissionsService {
       },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true } }, department: { select: { name: true } } },
         },
         reviewedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
       },
@@ -196,7 +196,7 @@ export class PermissionsService {
       },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true } }, department: { select: { name: true } } },
         },
         decidedBy: { select: { id: true, email: true } },
       },
