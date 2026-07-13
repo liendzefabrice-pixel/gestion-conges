@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanningRule, RuleContext, RuleResult } from './interfaces/planning-rule.interface';
 import { DeptConflictRule } from './rules/dept-conflict.rule';
+import { InternalEventConflictRule } from './rules/internal-event-conflict.rule';
 
 @Injectable()
 export class LeavePlanningEngineService {
@@ -11,8 +12,9 @@ export class LeavePlanningEngineService {
   constructor(
     private prisma: PrismaService,
     private deptConflictRule: DeptConflictRule,
+    private internalEventConflictRule: InternalEventConflictRule,
   ) {
-    this.rules = [this.deptConflictRule];
+    this.rules = [this.deptConflictRule, this.internalEventConflictRule];
   }
 
   registerRule(rule: PlanningRule) {

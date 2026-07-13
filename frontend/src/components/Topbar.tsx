@@ -28,6 +28,8 @@ const pageTitles: Record<string, string> = {
   '/my-planning': 'Mon planning',
   '/my-campaign': 'Ma programmation annuelle',
   '/leave-campaigns': 'Campagnes de congés',
+  '/internal-events': 'Événements internes',
+  '/calendar': 'Calendrier',
   '/leave-planning': 'Planification',
   '/permissions': 'Permissions',
   '/users': 'Utilisateurs',

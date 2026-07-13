@@ -119,11 +119,20 @@ export default function CampaignsPage() {
     })
   }
 
-  const getConflictingEmployee = (p: any) => {
+  const getConstraint = (p: any): { type: 'none' | 'dept' | 'event'; label: string } => {
     const details = p.analysisDetails as any
-    if (!details?.results) return null
-    const conflict = details.results.find((r: any) => r.status === 'CONFLIT_DEPARTEMENT' || r.status === 'PROPOSITION_AUTOMATIQUE')
-    return conflict?.details?.conflictingEmployee || null
+    if (!details?.results) return { type: 'none', label: 'En attente...' }
+    const deptConflict = details.results.find((r: any) => r.ruleName === 'DeptConflictRule' && r.status === 'CONFLIT_DEPARTEMENT')
+    if (deptConflict) {
+      const name = deptConflict.details?.conflictingEmployee
+      return { type: 'dept', label: name ? `Conflit ${name}` : 'Conflit département' }
+    }
+    const eventConflict = details.results.find((r: any) => r.ruleName === 'InternalEventConflictRule' && r.status === 'CONFLIT_DEPARTEMENT')
+    if (eventConflict) {
+      const names = eventConflict.details?.eventNames
+      return { type: 'event', label: names?.[0] || 'Événement interne' }
+    }
+    return { type: 'none', label: 'Aucune' }
   }
 
   return (
@@ -210,6 +219,7 @@ export default function CampaignsPage() {
                                     <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Département</th>
                                     <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Date souhaitée</th>
                                     <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Analyse</th>
+                                    <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Contrainte</th>
                                     <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Statut</th>
                                     <th className="h-10 px-4 text-right font-semibold text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
                                   </tr>
@@ -218,7 +228,7 @@ export default function CampaignsPage() {
                                   {proposalsData.proposals.map((p: any) => {
                                     const analysis = analysisDisplay[p.analysisStatus] || analysisDisplay.PENDING
                                     const Icon = analysis.icon
-                                    const conflictName = getConflictingEmployee(p)
+                                    const constraint = getConstraint(p)
                                     return (
                                       <tr
                                         key={p.id}
@@ -233,11 +243,18 @@ export default function CampaignsPage() {
                                         <td className="p-3 px-4">
                                           <div className="flex items-center gap-1.5">
                                             <Icon className={cn('size-4', analysis.className.split(' ')[0])} />
-                                            <span className="text-xs">
-                                              {analysis.label}
-                                              {conflictName && <span className="text-red-600"> ({conflictName})</span>}
-                                            </span>
+                                            <span className="text-xs">{analysis.label}</span>
                                           </div>
+                                        </td>
+                                        <td className="p-3 px-4">
+                                          <span className={cn(
+                                            'text-xs',
+                                            constraint.type === 'none' && 'text-green-600',
+                                            constraint.type === 'dept' && 'text-red-600',
+                                            constraint.type === 'event' && 'text-amber-600',
+                                          )}>
+                                            {constraint.label}
+                                          </span>
                                         </td>
                                         <td className="p-3 px-4">
                                           <span className={cn(

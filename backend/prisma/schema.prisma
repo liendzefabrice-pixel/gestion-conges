@@ -54,6 +54,29 @@ enum NotificationType {
   INFO
 }
 
+enum InternalEventType {
+  SEMINAIRE
+  AUDIT
+  INVENTAIRE
+  FORMATION
+  REUNION_STRATEGIQUE
+  FERMETURE_ANNUELLE
+  MAINTENANCE
+  AUTRE
+}
+
+enum InternalEventPriority {
+  FAIBLE
+  MOYENNE
+  HAUTE
+  CRITIQUE
+}
+
+enum InternalEventStatus {
+  ACTIF
+  ARCHIVE
+}
+
 model Role {
   id          Int      @id @default(autoincrement())
   name        String   @unique
@@ -123,6 +146,7 @@ model Department {
 
   employees   Employee[]
   positions   Position[]
+  internalEvents InternalEvent[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -445,4 +469,25 @@ model ProposalAnalysisLog {
   createdAt  DateTime @default(now())
 
   @@index([proposalId])
+}
+
+model InternalEvent {
+  id          Int                   @id @default(autoincrement())
+  title       String
+  description String?
+  type        InternalEventType     @default(AUTRE)
+  startDate   DateTime
+  endDate     DateTime
+  allCompany  Boolean               @default(true)
+  priority    InternalEventPriority @default(MOYENNE)
+  status      InternalEventStatus   @default(ACTIF)
+
+  departmentId Int?
+  department   Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([startDate, endDate])
+  @@index([departmentId])
 }
