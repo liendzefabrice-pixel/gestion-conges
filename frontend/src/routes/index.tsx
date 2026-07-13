@@ -22,6 +22,8 @@ import PermissionsPage from '../pages/PermissionsPage';
 import UsersPage from '../pages/UsersPage';
 import NotificationsPage from '../pages/NotificationsPage';
 import ChangePasswordPage from '../pages/ChangePasswordPage';
+import CampaignsPage from '../pages/CampaignsPage';
+import MyCampaignPage from '../pages/MyCampaignPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, mustChangePassword } = useAuth();
@@ -69,6 +71,8 @@ function AppRoutes() {
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="leave" element={<LeavePage />} />
         <Route path="leave-planning" element={<LeavePlanningPage />} />
+        <Route path="leave-campaigns" element={<CampaignsPage />} />
+        <Route path="my-campaign" element={<MyCampaignPage />} />
         <Route path="my-planning" element={<MyPlanningPage />} />
         <Route path="soldes" element={<SoldesPage />} />
         <Route path="holidays" element={<HolidaysPage />} />

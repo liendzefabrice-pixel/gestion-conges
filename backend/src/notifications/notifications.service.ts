@@ -332,6 +332,18 @@ export class NotificationsService {
     });
   }
 
+  async notifyCampaignOpened(userIds: number[], campaignLabel: string) {
+    await this.send({
+      userIds,
+      title: 'Programmation annuelle des congés',
+      message: `La campagne ${campaignLabel} est ouverte. Veuillez proposer votre période souhaitée de départ en congé.`,
+      type: 'CAMPAIGN_OPENED',
+      entityType: 'CAMPAIGN',
+      entityId: 0,
+      link: '/my-campaign',
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // STANDARD CRUD (retained)
   // ---------------------------------------------------------------------------

@@ -53,6 +53,8 @@ const navSections: NavSection[] = [
       { label: 'Soldes', path: '/soldes', icon: Wallet, roles: ['HR', 'DIRECTOR', 'ADMIN'] },
       { label: 'Mes soldes', path: '/soldes', icon: Wallet, roles: ['EMPLOYEE'] },
       { label: 'Mon planning', path: '/my-planning', icon: CalendarCheck, roles: ['EMPLOYEE'] },
+      { label: 'Ma programmation', path: '/my-campaign', icon: CalendarCheck, roles: ['EMPLOYEE'] },
+      { label: 'Campagnes', path: '/leave-campaigns', icon: ClipboardList, roles: ['HR', 'ADMIN'] },
       { label: 'Planification', path: '/leave-planning', icon: ClipboardList, roles: ['HR', 'ADMIN'] },
       { label: 'Permissions', path: '/permissions', icon: FileText, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
     ],

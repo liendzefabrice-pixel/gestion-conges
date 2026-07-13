@@ -27,6 +27,7 @@ const notificationTypeConfig: Record<string, { label: string; variant: 'info' | 
   POSITION_CREATED: { label: 'Poste créé', variant: 'secondary' },
   LEAVE_TYPE_CREATED: { label: 'Type de congé créé', variant: 'secondary' },
   HOLIDAY_ADDED: { label: 'Jour férié ajouté', variant: 'secondary' },
+  CAMPAIGN_OPENED: { label: 'Campagne ouverte', variant: 'info' },
   INFO: { label: 'Information', variant: 'default' },
 };
 

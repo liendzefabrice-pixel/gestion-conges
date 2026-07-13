@@ -26,6 +26,8 @@ const pageTitles: Record<string, string> = {
   '/departments': 'Départements',
   '/leave': 'Congés',
   '/my-planning': 'Mon planning',
+  '/my-campaign': 'Ma programmation annuelle',
+  '/leave-campaigns': 'Campagnes de congés',
   '/leave-planning': 'Planification',
   '/permissions': 'Permissions',
   '/users': 'Utilisateurs',

@@ -17,6 +17,20 @@ enum LeaveStatus {
   ANNULE
 }
 
+enum CampaignStatus {
+  BROUILLON
+  OUVERTE
+  CLOTUREE
+}
+
+enum ProposalStatus {
+  RECUE
+  EN_ANALYSE
+  ACCEPTEE
+  REPROGRAMMEE
+  REFUSEE
+}
+
 enum NotificationType {
   LEAVE_CREATED
   LEAVE_RH_REVIEWED
@@ -36,6 +50,7 @@ enum NotificationType {
   POSITION_CREATED
   LEAVE_TYPE_CREATED
   HOLIDAY_ADDED
+  CAMPAIGN_OPENED
   INFO
 }
 
@@ -151,6 +166,7 @@ model Employee {
   permissionRequests     PermissionRequest[]
   leaveBalances          LeaveBalance[]
   annualLeavePlannings   AnnualLeavePlanning[]
+  leaveProposals         LeaveProposal[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -376,4 +392,36 @@ model Setting {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model LeaveCampaign {
+  id        Int             @id @default(autoincrement())
+  year      Int             @unique
+  label     String
+  status    CampaignStatus  @default(BROUILLON)
+
+  proposals LeaveProposal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LeaveProposal {
+  id               Int             @id @default(autoincrement())
+  desiredStartDate DateTime
+  comment          String?
+  status           ProposalStatus  @default(RECUE)
+
+  campaignId       Int
+  campaign         LeaveCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  employeeId       Int
+  employee         Employee        @relation(fields: [employeeId], references: [id])
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([campaignId, employeeId])
+  @@index([campaignId])
+  @@index([employeeId])
 }
