@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import api from '../services/api';
-import type { Employee, Department, Position } from '../types';
+import type { Employee, Department, Position, LeaveBalance } from '../types';
 import { translateRole } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -43,6 +43,7 @@ export default function EmployeesPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
+  const [balances, setBalances] = useState<Record<number, number>>({});
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -67,6 +68,17 @@ export default function EmployeesPage() {
     api.get('/departments').then((res) => setDepartments(res.data));
     api.get('/positions/active').then((res) => setPositions(res.data));
     api.get('/users/roles').then((res) => setRoles(res.data));
+    api.get('/leave-balances').then((res) => {
+      const map: Record<number, number> = {};
+      for (const item of res.data) {
+        const annual = item.balances.find((b: LeaveBalance & { leaveType: { name: string } }) =>
+          b.leaveType?.name?.toLowerCase().includes('annuel') ||
+          b.leaveType?.name?.toLowerCase().includes('annual')
+        );
+        if (annual) map[item.employee.id] = annual.remaining;
+      }
+      setBalances(map);
+    }).catch(() => {});
   };
 
   useEffect(() => { load(); }, []);
@@ -158,7 +170,7 @@ export default function EmployeesPage() {
     }
   };
 
-  const colCount = isAdmin ? 9 : 8;
+  const colCount = isAdmin ? 10 : 9;
 
   const filteredEmployees = useMemo(() => {
     const q = search.toLowerCase();
@@ -384,6 +396,7 @@ export default function EmployeesPage() {
             <TableHead>Rôle</TableHead>
             <TableHead>Date d'embauche</TableHead>
             <TableHead>Ancienneté</TableHead>
+            <TableHead>Solde annuel</TableHead>
             {isAdmin && <TableHead className="text-right">ACTIONS</TableHead>}
           </TableRow>
         </TableHeader>
@@ -398,6 +411,7 @@ export default function EmployeesPage() {
               <TableCell>{translateRole(e.user?.role?.name || '')}</TableCell>
               <TableCell className="text-muted-foreground">{formatDate(e.hireDate)}</TableCell>
               <TableCell className="text-muted-foreground">{e.seniority}</TableCell>
+              <TableCell className="font-medium text-primary">{balances[e.id] !== undefined ? `${balances[e.id]} jours` : '—'}</TableCell>
               {isAdmin && (
                 <TableCell className="text-right">
                   <div className="flex flex-col items-end gap-1">

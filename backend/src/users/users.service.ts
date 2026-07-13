@@ -6,6 +6,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { LeaveBalanceEngineService } from '../leave-balance-engine/leave-balance-engine.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -14,6 +15,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private leaveBalanceEngine: LeaveBalanceEngineService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -90,6 +92,13 @@ export class UsersService {
     });
 
     this.notificationsService.userCreated(user.id, user.email, user.role.name);
+
+    if (role.name !== 'ADMIN' && createUserDto.departmentId) {
+      const employee = await this.prisma.employee.findUnique({ where: { userId: user.id } });
+      if (employee) {
+        await this.leaveBalanceEngine.syncEmployeeBalances(employee.id);
+      }
+    }
 
     return user;
   }

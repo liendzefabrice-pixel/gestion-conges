@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { PageHeader } from '../components/ui/page-header'
-import { User, Mail, Shield, Calendar, Clock, KeyRound, HelpCircle } from 'lucide-react'
+import { User, Mail, Shield, Calendar, Clock, KeyRound, HelpCircle, Umbrella } from 'lucide-react'
 
 export default function AccountPage() {
   const { user } = useAuth()
@@ -89,6 +89,54 @@ export default function AccountPage() {
             </div>
           </CardContent>
         </Card>
+
+        {employee?.leaveBalances && employee.leaveBalances.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Umbrella className="size-4" />
+                Mes droits aux congés
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {(() => {
+                  const annual = employee.leaveBalances!.find(b =>
+                    b.leaveType?.name?.toLowerCase().includes('annuel') ||
+                    b.leaveType?.name?.toLowerCase().includes('annual')
+                  );
+                  const perm = employee.leaveBalances!.find(b =>
+                    b.leaveType?.name?.toLowerCase().includes('permission')
+                  );
+                  return (
+                    <>
+                      {annual && (
+                        <div className="p-4 rounded-xl bg-primary/5 border border-primary/10">
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Congé annuel</p>
+                          <p className="text-3xl font-bold text-primary">{annual.remaining} jours</p>
+                          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+                            <span>Acquis : {annual.totalDays}</span>
+                            <span>Consommés : {annual.usedDays + annual.pendingDays}</span>
+                          </div>
+                        </div>
+                      )}
+                      {perm && (
+                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Permissions exceptionnelles</p>
+                          <p className="text-3xl font-bold text-amber-600">{perm.remaining} jours</p>
+                          <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+                            <span>Acquis : {perm.totalDays}</span>
+                            <span>Consommés : {perm.usedDays + perm.pendingDays}</span>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

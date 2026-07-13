@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DefaultBalanceStrategy } from './strategies/default-balance.strategy';
 import { AnnualLeaveBalanceStrategy } from './strategies/annual-leave-balance.strategy';
@@ -9,7 +9,8 @@ const APPROVED_STATUSES = ['APPROUVE'];
 const PENDING_STATUSES = ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION', 'AVIS_RH_RENDU'];
 
 @Injectable()
-export class LeaveBalanceEngineService {
+export class LeaveBalanceEngineService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(LeaveBalanceEngineService.name);
   private strategies: Map<string, BalanceStrategy> = new Map();
 
   constructor(
@@ -21,6 +22,12 @@ export class LeaveBalanceEngineService {
     this.strategies.set('annual', annualStrategy);
     this.strategies.set('annuel', annualStrategy);
     this.strategies.set('congé annuel', annualStrategy);
+  }
+
+  async onApplicationBootstrap() {
+    this.logger.log('Recalculating all leave balances...');
+    await this.syncAllBalances();
+    this.logger.log('Leave balances recalculated successfully');
   }
 
   async calculateEmployeeBalances(employeeId: number, year?: number): Promise<EmployeeBalanceResult> {
@@ -86,6 +93,44 @@ export class LeaveBalanceEngineService {
     if (!leaveType) throw new Error('Type de congé introuvable');
 
     return this.calculateForLeaveType(employee, leaveType, targetYear);
+  }
+
+  async syncEmployeeBalances(employeeId: number, year?: number): Promise<void> {
+    const targetYear = year ?? new Date().getFullYear();
+
+    try {
+      const result = await this.calculateEmployeeBalances(employeeId, targetYear);
+
+      for (const balance of result.balances) {
+        await this.prisma.leaveBalance.upsert({
+          where: {
+            employeeId_leaveTypeId_year: {
+              employeeId,
+              leaveTypeId: balance.leaveTypeId,
+              year: targetYear,
+            },
+          },
+          update: { totalDays: balance.acquired },
+          create: {
+            employeeId,
+            leaveTypeId: balance.leaveTypeId,
+            year: targetYear,
+            totalDays: balance.acquired,
+            status: 'ACTIF',
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(`Failed to sync balances for employee ${employeeId}: ${error.message}`);
+    }
+  }
+
+  async syncAllBalances(): Promise<void> {
+    const employees = await this.prisma.employee.findMany();
+    this.logger.log(`Syncing balances for ${employees.length} employees...`);
+    for (const emp of employees) {
+      await this.syncEmployeeBalances(emp.id);
+    }
   }
 
   private async calculateForLeaveType(

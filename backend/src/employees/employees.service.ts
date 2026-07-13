@@ -6,6 +6,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { LeaveBalanceEngineService } from '../leave-balance-engine/leave-balance-engine.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
@@ -14,6 +15,7 @@ export class EmployeesService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private leaveBalanceEngine: LeaveBalanceEngineService,
   ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto) {
@@ -47,7 +49,7 @@ export class EmployeesService {
       where: { name: 'EMPLOYEE' },
     });
 
-    return await this.prisma.$transaction(async (tx) => {
+    const employee = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: createEmployeeDto.email,
@@ -59,7 +61,7 @@ export class EmployeesService {
 
       const { position, positionId, ...empData } = createEmployeeDto;
 
-      const employee = await tx.employee.create({
+      const emp = await tx.employee.create({
         data: {
           ...empData,
           position: position || null,
@@ -74,11 +76,15 @@ export class EmployeesService {
         },
       });
 
-      const employeeName = `${employee.firstName} ${employee.lastName}`;
-      this.notificationsService.employeeCreated(employee.id, employeeName);
+      const employeeName = `${emp.firstName} ${emp.lastName}`;
+      this.notificationsService.employeeCreated(emp.id, employeeName);
 
-      return employee;
+      return emp;
     });
+
+    await this.leaveBalanceEngine.syncEmployeeBalances(employee.id);
+
+    return employee;
   }
 
   async findAll() {
@@ -180,6 +186,10 @@ export class EmployeesService {
 
     const employeeName = `${employee.firstName} ${employee.lastName}`;
     this.notificationsService.employeeModified(id, employeeName);
+
+    if (updateEmployeeDto.hireDate) {
+      await this.leaveBalanceEngine.syncEmployeeBalances(id);
+    }
 
     return employee;
   }
