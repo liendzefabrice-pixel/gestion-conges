@@ -48,7 +48,11 @@ export class LeaveService {
       throw new BadRequestException('Ce type de congé existe déjà');
     }
 
-    return this.prisma.leaveType.create({ data: createLeaveTypeDto });
+    const leaveType = await this.prisma.leaveType.create({ data: createLeaveTypeDto });
+
+    this.notificationsService.leaveTypeCreated(leaveType.id, leaveType.name);
+
+    return leaveType;
   }
 
   async findAllLeaveTypes() {
@@ -142,15 +146,15 @@ export class LeaveService {
           reason: createLeaveRequestDto.reason,
           status: 'EN_ATTENTE_RH',
         },
-        include: {
-          employee: {
-            include: { user: { select: { id: true, email: true } } },
+          include: {
+            employee: {
+              include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+            },
+            leaveType: true,
           },
-          leaveType: true,
-        },
-      });
+        });
 
-      await this.recordHistory(tx, request.id, null, 'EN_ATTENTE_RH', request.employee.user.id);
+        await this.recordHistory(tx, request.id, null, 'EN_ATTENTE_RH', request.employee.user.id);
 
       const year = startDate.getFullYear();
       const leaveBalance = await tx.leaveBalance.findUnique({
@@ -170,10 +174,14 @@ export class LeaveService {
         });
       }
 
-      this.notificationsService.notifyHR(
-        'Nouvelle demande de congé',
-        `${request.employee.user.email} a soumis une demande de ${request.leaveType.name} du ${startDate.toLocaleDateString()} au ${endDate.toLocaleDateString()}`,
-        'LEAVE_CREATED',
+      const employeeName = `${request.employee.user.firstName || ''} ${request.employee.user.lastName || ''}`.trim() || request.employee.user.email;
+      this.notificationsService.leaveCreated(
+        request.id,
+        employeeId,
+        employeeName,
+        request.leaveType.name,
+        startDate,
+        endDate,
       );
 
       return request;
@@ -226,7 +234,7 @@ export class LeaveService {
       where: { id },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
         },
       },
     });
@@ -253,7 +261,7 @@ export class LeaveService {
         },
         include: {
           employee: {
-            include: { user: { select: { id: true, email: true } } },
+            include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
           },
           leaveType: true,
           reviewedBy: { select: { id: true, email: true } },
@@ -269,18 +277,10 @@ export class LeaveService {
         hrReviewDto.hrComment || undefined,
       );
 
-      this.notificationsService.notifyEmployee(
-        request.employeeId,
-        'Demande de congé examinée',
-        'Votre demande de congé a été examinée par le RH. En attente de décision de la direction.',
-        'LEAVE_RH_REVIEWED',
-      );
-
-      this.notificationsService.notifyDirector(
-        'Avis RH donné',
-        `Le RH a examiné la demande de ${request.employee.user.email}. Décision requise.`,
-        'LEAVE_TRANSMITTED',
-      );
+      const employeeName = `${updated.employee.user.firstName || ''} ${updated.employee.user.lastName || ''}`.trim() || updated.employee.user.email;
+      const rhName = updated.reviewedBy?.email || 'RH';
+      this.notificationsService.leaveRhReviewed(id, request.employeeId, rhName);
+      this.notificationsService.leaveSentToDirector(id, request.employeeId, employeeName, updated.leaveType.name);
 
       return updated;
     });
@@ -305,7 +305,7 @@ export class LeaveService {
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
+      return this.prisma.$transaction(async (tx) => {
       const updated = await tx.leaveRequest.update({
         where: { id },
         data: {
@@ -316,9 +316,10 @@ export class LeaveService {
         },
         include: {
           employee: {
-            include: { user: { select: { id: true, email: true } } },
+            include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
           },
           leaveType: true,
+          decidedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
         },
       });
 
@@ -374,20 +375,11 @@ export class LeaveService {
         }
       }
 
+      const directorName = `${updated.decidedBy?.firstName || ''} ${updated.decidedBy?.lastName || ''}`.trim() || updated.decidedBy?.email || 'Direction';
       if (dto.decision === 'APPROUVE') {
-        this.notificationsService.notifyEmployee(
-          request.employeeId,
-          'Demande de congé approuvée',
-          'Votre demande de congé a été approuvée par la direction.',
-          'LEAVE_DECIDED',
-        );
+        this.notificationsService.leaveApproved(id, request.employeeId, request.leaveType.name, directorName);
       } else {
-        this.notificationsService.notifyEmployee(
-          request.employeeId,
-          'Demande de congé refusée',
-          'Votre demande de congé a été refusée par la direction.',
-          'LEAVE_DECIDED',
-        );
+        this.notificationsService.leaveRefused(id, request.employeeId, request.leaveType.name, directorName);
       }
 
       return updated;
@@ -417,9 +409,18 @@ export class LeaveService {
       const updated = await tx.leaveRequest.update({
         where: { id },
         data: { status: 'ANNULE' },
+        include: {
+          employee: {
+            include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+          },
+          leaveType: true,
+        },
       });
 
       await this.recordHistory(tx, id, request.status, 'ANNULE', employeeId);
+
+      const employeeName = `${updated.employee.user.firstName || ''} ${updated.employee.user.lastName || ''}`.trim() || updated.employee.user.email;
+      this.notificationsService.leaveCancelled(id, request.employeeId, employeeName, updated.leaveType.name);
 
       return updated;
     });

@@ -4,6 +4,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import MainLayout from '../layouts/MainLayout';
 import LoginPage from '../pages/LoginPage';
 import ForgotPasswordPage from '../pages/ForgotPasswordPage';
+import OtpVerificationPage from '../pages/OtpVerificationPage';
 import ResetPasswordPage from '../pages/ResetPasswordPage';
 import DashboardPage from '../pages/DashboardPage';
 import AccountPage from '../pages/AccountPage';
@@ -45,6 +46,10 @@ function AppRoutes() {
 
       <Route path="/forgot-password" element={<PublicRoute><AuthLayout /></PublicRoute>}>
         <Route index element={<ForgotPasswordPage />} />
+      </Route>
+
+      <Route path="/verify-otp" element={<PublicRoute><AuthLayout /></PublicRoute>}>
+        <Route index element={<OtpVerificationPage />} />
       </Route>
 
       <Route path="/reset-password" element={<PublicRoute><AuthLayout /></PublicRoute>}>

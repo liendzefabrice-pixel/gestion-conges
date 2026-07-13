@@ -22,9 +22,20 @@ enum NotificationType {
   LEAVE_RH_REVIEWED
   LEAVE_DECIDED
   LEAVE_TRANSMITTED
+  LEAVE_CANCELLED
   PERMISSION_CREATED
   PERMISSION_RH_REVIEWED
   PERMISSION_DECIDED
+  USER_CREATED
+  USER_ACTIVATED
+  USER_DEACTIVATED
+  USER_MODIFIED
+  EMPLOYEE_CREATED
+  EMPLOYEE_MODIFIED
+  DEPARTMENT_CREATED
+  POSITION_CREATED
+  LEAVE_TYPE_CREATED
+  HOLIDAY_ADDED
   INFO
 }
 
@@ -68,9 +79,23 @@ model User {
   auditLogs     AuditLog[]
   balanceAdjustments BalanceAdjustment[]
   leaveRequestHistories LeaveRequestHistory[]
+  passwordResetOtps PasswordResetOtp[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PasswordResetOtp {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([otp])
 }
 
 model Department {
@@ -298,18 +323,22 @@ model BalanceAdjustment {
 }
 
 model Notification {
-  id        Int              @id @default(autoincrement())
-  title     String
-  message   String
-  isRead    Boolean          @default(false)
-  type      NotificationType
+  id         Int              @id @default(autoincrement())
+  title      String
+  message    String
+  isRead     Boolean          @default(false)
+  type       NotificationType
+  link       String?
+  entityType String?
+  entityId   Int?
 
-  userId    Int
-  user      User             @relation(fields: [userId], references: [id])
+  userId     Int
+  user       User             @relation(fields: [userId], references: [id])
 
-  createdAt DateTime         @default(now())
+  createdAt  DateTime         @default(now())
 
   @@index([userId, isRead])
+  @@index([entityType, entityId])
 }
 
 model AuditLog {

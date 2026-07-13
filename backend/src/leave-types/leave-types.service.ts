@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateLeaveTypeDto } from './dto/create-leave-type.dto';
 import { UpdateLeaveTypeDto } from './dto/update-leave-type.dto';
 
 @Injectable()
 export class LeaveTypesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(createLeaveTypeDto: CreateLeaveTypeDto) {
     const existing = await this.prisma.leaveType.findUnique({
@@ -16,7 +20,11 @@ export class LeaveTypesService {
       throw new ConflictException('Ce type de congé existe déjà');
     }
 
-    return this.prisma.leaveType.create({ data: createLeaveTypeDto });
+    const leaveType = await this.prisma.leaveType.create({ data: createLeaveTypeDto });
+
+    this.notificationsService.leaveTypeCreated(leaveType.id, leaveType.name);
+
+    return leaveType;
   }
 
   async findAll() {

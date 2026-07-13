@@ -5,12 +5,16 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 @Injectable()
 export class EmployeesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(createEmployeeDto: CreateEmployeeDto) {
     const existingUser = await this.prisma.user.findUnique({
@@ -55,7 +59,7 @@ export class EmployeesService {
 
       const { position, positionId, ...empData } = createEmployeeDto;
 
-      return tx.employee.create({
+      const employee = await tx.employee.create({
         data: {
           ...empData,
           position: position || null,
@@ -69,6 +73,11 @@ export class EmployeesService {
           positionRef: true,
         },
       });
+
+      const employeeName = `${employee.firstName} ${employee.lastName}`;
+      this.notificationsService.employeeCreated(employee.id, employeeName);
+
+      return employee;
     });
   }
 
@@ -134,24 +143,45 @@ export class EmployeesService {
       }
     }
 
-    const { position, positionId, ...rest } = updateEmployeeDto;
+    const { position, positionId, roleId, ...rest } = updateEmployeeDto;
 
-    return this.prisma.employee.update({
-      where: { id },
-      data: {
-        ...rest,
-        position: position ?? undefined,
-        positionId: positionId ?? undefined,
-        hireDate: updateEmployeeDto.hireDate
-          ? new Date(updateEmployeeDto.hireDate)
-          : undefined,
-      },
-      include: {
-        user: { select: { id: true, email: true, isActive: true, role: true } },
-        department: true,
-        positionRef: true,
-      },
+    const employee = await this.prisma.$transaction(async (tx) => {
+      if (roleId !== undefined) {
+        const role = await tx.role.findUnique({ where: { id: roleId } });
+        if (!role) {
+          throw new NotFoundException('Rôle introuvable');
+        }
+        const emp = await tx.employee.findUnique({ where: { id }, select: { userId: true } });
+        if (emp) {
+          await tx.user.update({
+            where: { id: emp.userId },
+            data: { roleId },
+          });
+        }
+      }
+
+      return tx.employee.update({
+        where: { id },
+        data: {
+          ...rest,
+          position: position ?? undefined,
+          positionId: positionId ?? undefined,
+          hireDate: updateEmployeeDto.hireDate
+            ? new Date(updateEmployeeDto.hireDate)
+            : undefined,
+        },
+        include: {
+          user: { select: { id: true, email: true, isActive: true, role: true } },
+          department: true,
+          positionRef: true,
+        },
+      });
     });
+
+    const employeeName = `${employee.firstName} ${employee.lastName}`;
+    this.notificationsService.employeeModified(id, employeeName);
+
+    return employee;
   }
 
   async remove(id: number) {

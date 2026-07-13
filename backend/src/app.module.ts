@@ -16,6 +16,7 @@ import { LeaveBalancesModule } from './leave-balances/leave-balances.module';
 import { HolidaysModule } from './holidays/holidays.module';
 import { LeaveAccrualModule } from './leave-accrual/leave-accrual.module';
 import { LeaveBalanceEngineModule } from './leave-balance-engine/leave-balance-engine.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { LeaveBalanceEngineModule } from './leave-balance-engine/leave-balance-e
     HolidaysModule,
     LeaveAccrualModule,
     LeaveBalanceEngineModule,
+    MailModule,
     EmployeesModule,
     LeaveModule,
     LeavePlanningModule,

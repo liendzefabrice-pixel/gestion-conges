@@ -25,6 +25,7 @@ type ModalMode = 'create' | 'edit' | null;
 export default function UsersPage() {
   const [users, setUsers] = useState<(User & { employee?: { firstName: string; lastName: string }; isActive: boolean; mustChangePassword?: boolean })[]>([]);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingUser, setEditingUser] = useState<any>(null);
 
@@ -35,14 +36,16 @@ export default function UsersPage() {
   const [gender, setGender] = useState('');
   const [roleId, setRoleId] = useState('');
   const [isActive, setIsActive] = useState('true');
+  const [departmentId, setDepartmentId] = useState('');
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   const loadUsers = useCallback(() => api.get('/users').then((res) => setUsers(res.data)), []);
   const loadRoles = useCallback(() => api.get('/users/roles').then((res) => setRoles(res.data)), []);
+  const loadDepartments = useCallback(() => api.get('/departments').then((res) => setDepartments(res.data)), []);
 
-  useEffect(() => { loadUsers(); loadRoles(); }, [loadUsers, loadRoles]);
+  useEffect(() => { loadUsers(); loadRoles(); loadDepartments(); }, [loadUsers, loadRoles, loadDepartments]);
 
   const openCreate = () => {
     setModalMode('create');
@@ -54,6 +57,7 @@ export default function UsersPage() {
     setGender('');
     setRoleId('');
     setIsActive('true');
+    setDepartmentId('');
     setTempPassword(null);
     setError('');
     setSuccess('');
@@ -88,14 +92,16 @@ export default function UsersPage() {
 
     if (modalMode === 'create') {
       try {
-        await api.post('/users', {
+        const body: Record<string, any> = {
           email,
           password: password || email,
           firstName,
           lastName,
           gender,
           roleId: Number(roleId),
-        });
+        };
+        if (departmentId) body.departmentId = Number(departmentId);
+        await api.post('/users', body);
         setTempPassword(password || email);
         setEmail('');
         setPassword('');
@@ -235,6 +241,26 @@ export default function UsersPage() {
                   </Select>
                 </div>
               </div>
+              {modalMode === 'create' && (
+                <div className="space-y-2">
+                  <Label>Département</Label>
+                  <Select value={departmentId || null} onValueChange={(v) => setDepartmentId(v || '')}>
+                    <SelectTrigger>
+                      <span className="flex flex-1 text-left">
+                        {departmentId
+                          ? departments.find(d => d.id === Number(departmentId))?.name || ''
+                          : <span className="text-muted-foreground">Sélectionner un département</span>
+                        }
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((d) => (
+                        <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {modalMode === 'edit' && (
                 <div className="space-y-2">
                   <Label>Statut</Label>

@@ -5,12 +5,16 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 
 @Injectable()
 export class DepartmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(createDepartmentDto: CreateDepartmentDto) {
     const existing = await this.prisma.department.findUnique({
@@ -36,13 +40,17 @@ export class DepartmentsService {
       }
     }
 
-    return this.prisma.department.create({
+    const department = await this.prisma.department.create({
       data: createDepartmentDto,
       include: {
         head: { select: { id: true, firstName: true, lastName: true } },
         _count: { select: { employees: true } },
       },
     });
+
+    this.notificationsService.departmentCreated(department.id, department.name);
+
+    return department;
   }
 
   async findAll() {

@@ -4,12 +4,16 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreatePositionDto } from './dto/create-position.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
 
 @Injectable()
 export class PositionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(createPositionDto: CreatePositionDto) {
     const department = await this.prisma.department.findUnique({
@@ -28,13 +32,17 @@ export class PositionsService {
       throw new ConflictException('Ce poste existe déjà dans ce département');
     }
 
-    return this.prisma.position.create({
+    const position = await this.prisma.position.create({
       data: createPositionDto,
       include: {
         department: true,
         _count: { select: { employees: true } },
       },
     });
+
+    this.notificationsService.positionCreated(position.id, position.name);
+
+    return position;
   }
 
   async findAll() {

@@ -53,16 +53,13 @@ export class PermissionsService {
       },
       include: {
         employee: {
-          include: { user: { select: { id: true, email: true } } },
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
         },
       },
     });
 
-    this.notificationsService.notifyHR(
-      'Nouvelle demande de permission',
-      `${request.employee.user.email} a soumis une demande de permission`,
-      'PERMISSION_CREATED',
-    );
+    const employeeName = `${request.employee.user.firstName || ''} ${request.employee.user.lastName || ''}`.trim() || request.employee.user.email;
+    this.notificationsService.permissionCreated(request.id, employeeId, employeeName, startDate, endDate);
 
     return request;
   }
@@ -164,21 +161,12 @@ export class PermissionsService {
         employee: {
           include: { user: { select: { id: true, email: true } } },
         },
+        reviewedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
       },
     });
 
-    this.notificationsService.notifyEmployee(
-      request.employeeId,
-      'Demande de permission examinée',
-      'Votre demande de permission a été examinée par le RH. En attente de décision de la direction.',
-      'PERMISSION_RH_REVIEWED',
-    );
-
-    this.notificationsService.notifyDirector(
-      'Avis RH donné',
-      `Le RH a examiné la demande de permission de ${request.employee.user.email}. Décision requise.`,
-      'PERMISSION_RH_REVIEWED',
-    );
+    const rhName = updated.reviewedBy?.email || 'RH';
+    this.notificationsService.permissionRhReviewed(id, request.employeeId, rhName);
 
     return updated;
   }
@@ -210,24 +198,12 @@ export class PermissionsService {
         employee: {
           include: { user: { select: { id: true, email: true } } },
         },
+        decidedBy: { select: { id: true, email: true } },
       },
     });
 
-    if (dto.decision === 'APPROUVE') {
-      this.notificationsService.notifyEmployee(
-        request.employeeId,
-        'Demande de permission approuvée',
-        'Votre demande de permission a été approuvée par la direction.',
-        'PERMISSION_DECIDED',
-      );
-    } else {
-      this.notificationsService.notifyEmployee(
-        request.employeeId,
-        'Demande de permission refusée',
-        'Votre demande de permission a été refusée par la direction.',
-        'PERMISSION_DECIDED',
-      );
-    }
+    const directorEmail = updated.decidedBy?.email || 'Direction';
+    this.notificationsService.permissionDecided(id, request.employeeId, dto.decision, directorEmail);
 
     return updated;
   }

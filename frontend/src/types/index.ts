@@ -140,6 +140,9 @@ export interface Notification {
   message: string;
   isRead: boolean;
   type: string;
+  link?: string;
+  entityType?: string;
+  entityId?: number;
   createdAt: string;
 }
 

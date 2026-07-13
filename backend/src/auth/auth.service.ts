@@ -1,12 +1,14 @@
-import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../mail/mail.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
@@ -15,6 +17,8 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private notificationsService: NotificationsService,
+    private mailService: MailService,
+    private configService: ConfigService,
   ) {}
 
   async login(loginDto: LoginDto) {
@@ -41,12 +45,7 @@ export class AuthService {
     }
 
     if (!user.welcomeSent) {
-      await this.notificationsService.create({
-        userId: user.id,
-        title: 'Bienvenue sur Gestion Congés',
-        message: 'Bienvenue ! Vous pouvez dès à présent soumettre vos demandes de congés et permissions depuis votre espace.',
-        type: 'INFO',
-      });
+      await this.notificationsService.welcomeNotification(user.id);
       await this.prisma.user.update({
         where: { id: user.id },
         data: { welcomeSent: true },
@@ -106,31 +105,115 @@ export class AuthService {
       where: { email: forgotPasswordDto.email },
     });
 
+    const alwaysOk = { message: 'Si cet email existe, un code de vérification a été envoyé.' };
+
     if (!user) {
-      return { message: 'Si cet email existe, un code de vérification a été envoyé.' };
+      return alwaysOk;
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
+    const otpExpiration = this.configService.get<number>('OTP_EXPIRATION_MINUTES') || 10;
+    const maxRequests = this.configService.get<number>('OTP_MAX_REQUESTS') || 3;
+    const rateWindowMinutes = this.configService.get<number>('OTP_RATE_LIMIT_WINDOW_MINUTES') || 15;
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        resetToken: hashedOtp,
-        resetTokenExpires: expires,
+    const recentCount = await this.prisma.passwordResetOtp.count({
+      where: {
+        userId: user.id,
+        createdAt: { gte: new Date(Date.now() - rateWindowMinutes * 60 * 1000) },
       },
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      return {
-        message: 'Un code de vérification a été envoyé (mode développement)',
-        devOtp: otp,
-        email: user.email,
-      };
+    if (recentCount >= maxRequests) {
+      throw new BadRequestException(
+        `Vous avez atteint la limite de ${maxRequests} demandes en ${rateWindowMinutes} minutes. Réessayez plus tard.`,
+      );
     }
 
-    return { message: 'Un code de vérification a été envoyé par email.' };
+    await this.prisma.passwordResetOtp.deleteMany({ where: { userId: user.id } });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + otpExpiration * 60 * 1000);
+
+    await this.prisma.passwordResetOtp.create({
+      data: {
+        userId: user.id,
+        otp,
+        expiresAt,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        action: 'OTP_GENERATED',
+        entityType: 'USER',
+        entityId: user.id,
+        userId: user.id,
+      },
+    });
+
+    const firstName = user.firstName || user.email;
+
+    await this.mailService.sendForgotPasswordOTP(user.email, firstName, otp, otpExpiration);
+
+    return alwaysOk;
+  }
+
+  async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: verifyOtpDto.email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    const otpRecord = await this.prisma.passwordResetOtp.findFirst({
+      where: {
+        userId: user.id,
+        otp: verifyOtpDto.otp,
+        used: false,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!otpRecord) {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'OTP_INVALID_ATTEMPT',
+          entityType: 'USER',
+          entityId: user.id,
+          userId: user.id,
+        },
+      });
+      throw new BadRequestException('Code de vérification invalide.');
+    }
+
+    if (otpRecord.expiresAt < new Date()) {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'OTP_EXPIRED_ATTEMPT',
+          entityType: 'USER',
+          entityId: user.id,
+          userId: user.id,
+        },
+      });
+      throw new BadRequestException('Le code de vérification a expiré. Veuillez en demander un nouveau.');
+    }
+
+    await this.prisma.passwordResetOtp.update({
+      where: { id: otpRecord.id },
+      data: { used: true },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        action: 'OTP_VERIFIED',
+        entityType: 'USER',
+        entityId: user.id,
+        userId: user.id,
+      },
+    });
+
+    return { message: 'Code vérifié avec succès.' };
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
@@ -142,32 +225,46 @@ export class AuthService {
       throw new NotFoundException('Utilisateur introuvable');
     }
 
-    if (!user.resetToken || !user.resetTokenExpires) {
-      throw new BadRequestException('Aucune demande de réinitialisation en cours');
+    const validOtp = await this.prisma.passwordResetOtp.findFirst({
+      where: {
+        userId: user.id,
+        otp: resetPasswordDto.otp,
+        used: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!validOtp) {
+      throw new BadRequestException('Veuillez d\'abord vérifier votre code de réinitialisation.');
     }
 
-    if (user.resetTokenExpires < new Date()) {
-      throw new BadRequestException('Le code de vérification a expiré');
-    }
-
-    const hashedOtp = crypto.createHash('sha256').update(resetPasswordDto.otp).digest('hex');
-
-    if (user.resetToken !== hashedOtp) {
-      throw new BadRequestException('Code de vérification invalide');
+    if (validOtp.expiresAt < new Date()) {
+      throw new BadRequestException('Le code de vérification a expiré. Veuillez recommencer.');
     }
 
     const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
 
-    await this.prisma.user.update({
-      where: { id: user.id },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          password: hashedPassword,
+          mustChangePassword: false,
+        },
+      });
+
+      await tx.passwordResetOtp.deleteMany({ where: { userId: user.id } });
+    });
+
+    await this.prisma.auditLog.create({
       data: {
-        password: hashedPassword,
-        resetToken: null,
-        resetTokenExpires: null,
-        mustChangePassword: false,
+        action: 'PASSWORD_RESET',
+        entityType: 'USER',
+        entityId: user.id,
+        userId: user.id,
       },
     });
 
-    return { message: 'Mot de passe réinitialisé avec succès' };
+    return { message: 'Mot de passe réinitialisé avec succès.' };
   }
 }

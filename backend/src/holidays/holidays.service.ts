@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateHolidayDto } from './dto/create-holiday.dto';
 import { UpdateHolidayDto } from './dto/update-holiday.dto';
 
 @Injectable()
 export class HolidaysService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(dto: CreateHolidayDto) {
     const date = new Date(dto.date);
@@ -18,7 +22,7 @@ export class HolidaysService {
       throw new ConflictException('Un jour férié avec ce nom et cette date existe déjà');
     }
 
-    return this.prisma.holiday.create({
+    const holiday = await this.prisma.holiday.create({
       data: {
         name: dto.name,
         date,
@@ -26,6 +30,10 @@ export class HolidaysService {
         description: dto.description,
       },
     });
+
+    this.notificationsService.holidayAdded(holiday.id, holiday.name, date);
+
+    return holiday;
   }
 
   async findAll() {

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import api from '../services/api';
 import type { Employee, Department, Position } from '../types';
+import { translateRole } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -41,6 +42,7 @@ export default function EmployeesPage() {
   const [employees, setEmployees] = useState<(Employee & { seniority?: string })[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -54,7 +56,7 @@ export default function EmployeesPage() {
   });
   const [form, setForm] = useState(initForm());
   const [editForm, setEditForm] = useState({
-    matricule: '', firstName: '', lastName: '', position: '', positionId: '', hireDate: '', departmentId: '',
+    matricule: '', firstName: '', lastName: '', position: '', positionId: '', hireDate: '', departmentId: '', roleId: '',
   });
 
   const load = () => {
@@ -64,6 +66,7 @@ export default function EmployeesPage() {
     });
     api.get('/departments').then((res) => setDepartments(res.data));
     api.get('/positions/active').then((res) => setPositions(res.data));
+    api.get('/users/roles').then((res) => setRoles(res.data));
   };
 
   useEffect(() => { load(); }, []);
@@ -106,6 +109,7 @@ export default function EmployeesPage() {
       positionId: emp.positionId ? String(emp.positionId) : '',
       hireDate: emp.hireDate ? emp.hireDate.split('T')[0] : '',
       departmentId: emp.department?.id ? String(emp.department.id) : '',
+      roleId: emp.user?.role?.id ? String(emp.user.role.id) : '',
     });
     setError('');
     setSuccess('');
@@ -125,7 +129,7 @@ export default function EmployeesPage() {
     if (!editingEmployee) return;
 
     try {
-      await api.patch(`/employees/${editingEmployee.id}`, {
+      const patchBody: Record<string, any> = {
         matricule: editForm.matricule,
         firstName: editForm.firstName,
         lastName: editForm.lastName,
@@ -133,7 +137,9 @@ export default function EmployeesPage() {
         position: editForm.position || undefined,
         hireDate: editForm.hireDate,
         departmentId: Number(editForm.departmentId),
-      });
+      };
+      if (editForm.roleId) patchBody.roleId = Number(editForm.roleId);
+      await api.patch(`/employees/${editingEmployee.id}`, patchBody);
       setSuccess('Employé modifié avec succès');
       setModalMode(null);
       setEditingEmployee(null);
@@ -152,7 +158,7 @@ export default function EmployeesPage() {
     }
   };
 
-  const colCount = isAdmin ? 8 : 7;
+  const colCount = isAdmin ? 9 : 8;
 
   const filteredEmployees = useMemo(() => {
     const q = search.toLowerCase();
@@ -330,6 +336,24 @@ export default function EmployeesPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Rôle</Label>
+                <Select value={editForm.roleId || null} onValueChange={(v) => setEditForm(p => ({ ...p, roleId: v || '' }))}>
+                  <SelectTrigger>
+                    <span className="flex flex-1 text-left">
+                      {editForm.roleId
+                        ? translateRole(roles.find(r => r.id === Number(editForm.roleId))?.name || '')
+                        : <span className="text-muted-foreground">Sélectionner un rôle</span>
+                      }
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.filter((r) => r.name !== 'ADMIN').map((r) => (
+                      <SelectItem key={r.id} value={String(r.id)}>{translateRole(r.name)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <DialogFooter showCloseButton className="mt-6">
               <Button type="submit">Enregistrer</Button>
@@ -357,6 +381,7 @@ export default function EmployeesPage() {
             <TableHead>Prénom</TableHead>
             <TableHead>Poste</TableHead>
             <TableHead>Département</TableHead>
+            <TableHead>Rôle</TableHead>
             <TableHead>Date d'embauche</TableHead>
             <TableHead>Ancienneté</TableHead>
             {isAdmin && <TableHead className="text-right">ACTIONS</TableHead>}
@@ -370,6 +395,7 @@ export default function EmployeesPage() {
               <TableCell>{e.firstName}</TableCell>
               <TableCell className="text-muted-foreground">{e.positionRef?.name || e.position || '—'}</TableCell>
               <TableCell className="text-muted-foreground">{e.department?.name}</TableCell>
+              <TableCell>{translateRole(e.user?.role?.name || '')}</TableCell>
               <TableCell className="text-muted-foreground">{formatDate(e.hireDate)}</TableCell>
               <TableCell className="text-muted-foreground">{e.seniority}</TableCell>
               {isAdmin && (

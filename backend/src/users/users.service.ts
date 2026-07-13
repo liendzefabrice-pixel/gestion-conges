@@ -5,12 +5,16 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     const existingUser = await this.prisma.user.findUnique({
@@ -31,28 +35,63 @@ export class UsersService {
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    return this.prisma.user.create({
-      data: {
-        email: createUserDto.email,
-        password: hashedPassword,
-        firstName: createUserDto.firstName,
-        lastName: createUserDto.lastName,
-        gender: createUserDto.gender,
-        roleId: createUserDto.roleId,
-        mustChangePassword: true,
-      },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        gender: true,
-        isActive: true,
-        mustChangePassword: true,
-        role: { select: { id: true, name: true } },
-        createdAt: true,
-      },
+    if (role.name !== 'ADMIN' && !createUserDto.departmentId) {
+      throw new NotFoundException('Le département est requis pour ce rôle');
+    }
+
+    if (createUserDto.departmentId) {
+      const department = await this.prisma.department.findUnique({
+        where: { id: createUserDto.departmentId },
+      });
+      if (!department) {
+        throw new NotFoundException('Département introuvable');
+      }
+    }
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          email: createUserDto.email,
+          password: hashedPassword,
+          firstName: createUserDto.firstName,
+          lastName: createUserDto.lastName,
+          gender: createUserDto.gender,
+          roleId: createUserDto.roleId,
+          mustChangePassword: true,
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          gender: true,
+          isActive: true,
+          mustChangePassword: true,
+          role: { select: { id: true, name: true } },
+          createdAt: true,
+        },
+      });
+
+      if (role.name !== 'ADMIN' && createUserDto.departmentId) {
+        const randomSuffix = Math.random().toString(36).substring(2, 6);
+        await tx.employee.create({
+          data: {
+            matricule: `${createUserDto.email.split('@')[0]}-${randomSuffix}`,
+            firstName: createUserDto.firstName,
+            lastName: createUserDto.lastName,
+            hireDate: new Date(),
+            userId: created.id,
+            departmentId: createUserDto.departmentId,
+          },
+        });
+      }
+
+      return created;
     });
+
+    this.notificationsService.userCreated(user.id, user.email, user.role.name);
+
+    return user;
   }
 
   async findAll() {
@@ -134,7 +173,12 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.update({
+    const oldUser = await this.prisma.user.findUnique({
+      where: { id },
+      select: { isActive: true, email: true },
+    });
+
+    const updated = await this.prisma.user.update({
       where: { id },
       data: updateUserDto,
       select: {
@@ -157,22 +201,27 @@ export class UsersService {
         updatedAt: true,
       },
     });
+
+    if (oldUser && updateUserDto.isActive !== undefined && updateUserDto.isActive !== oldUser.isActive) {
+      if (updateUserDto.isActive) {
+        this.notificationsService.userActivated(id, updated.email);
+      } else {
+        this.notificationsService.userDeactivated(id, updated.email);
+      }
+    } else if (updateUserDto.email !== undefined || updateUserDto.firstName !== undefined || updateUserDto.lastName !== undefined || updateUserDto.roleId !== undefined) {
+      this.notificationsService.userModified(id, updated.email);
+    }
+
+    return updated;
   }
 
   async remove(id: number) {
-    const user = await this.findOne(id);
+    await this.findOne(id);
 
-    const employee = await this.prisma.employee.findUnique({
-      where: { userId: id },
+    return this.prisma.$transaction(async (tx) => {
+      await tx.employee.deleteMany({ where: { userId: id } });
+      return tx.user.delete({ where: { id } });
     });
-
-    if (employee) {
-      throw new ConflictException(
-        'Cet utilisateur est lié à un employé. Supprimez d\'abord l\'employé.',
-      );
-    }
-
-    return this.prisma.user.delete({ where: { id } });
   }
 
   async findAllRoles() {

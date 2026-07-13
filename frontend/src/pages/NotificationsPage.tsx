@@ -1,32 +1,48 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import type { Notification } from '../types';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { PageHeader } from '../components/ui/page-header';
 import { Card, CardContent } from '../components/ui/card';
-import { CheckCheck } from 'lucide-react';
+import { CheckCheck, ExternalLink } from 'lucide-react';
 
-const notificationTypeConfig: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'default' | 'danger' }> = {
-  LEAVE_REQUEST: { label: 'Congé', variant: 'info' },
-  PERMISSION_REQUEST: { label: 'Permission', variant: 'warning' },
-  APPROVAL: { label: 'Approbation', variant: 'success' },
-  REJECTION: { label: 'Refus', variant: 'danger' },
-  SYSTEM: { label: 'Système', variant: 'default' },
+const notificationTypeConfig: Record<string, { label: string; variant: 'info' | 'warning' | 'success' | 'default' | 'danger' | 'secondary' | 'outline' }> = {
+  LEAVE_CREATED: { label: 'Congé créé', variant: 'info' },
+  LEAVE_RH_REVIEWED: { label: 'Congé examiné', variant: 'info' },
+  LEAVE_DECIDED: { label: 'Congé décidé', variant: 'success' },
+  LEAVE_TRANSMITTED: { label: 'Transmis à la Direction', variant: 'warning' },
+  LEAVE_CANCELLED: { label: 'Congé annulé', variant: 'outline' },
+  PERMISSION_CREATED: { label: 'Permission créée', variant: 'info' },
+  PERMISSION_RH_REVIEWED: { label: 'Permission examinée', variant: 'info' },
+  PERMISSION_DECIDED: { label: 'Permission décidée', variant: 'success' },
+  USER_CREATED: { label: 'Utilisateur créé', variant: 'secondary' },
+  USER_ACTIVATED: { label: 'Utilisateur activé', variant: 'success' },
+  USER_DEACTIVATED: { label: 'Utilisateur désactivé', variant: 'danger' },
+  USER_MODIFIED: { label: 'Utilisateur modifié', variant: 'secondary' },
+  EMPLOYEE_CREATED: { label: 'Employé créé', variant: 'secondary' },
+  EMPLOYEE_MODIFIED: { label: 'Employé modifié', variant: 'secondary' },
+  DEPARTMENT_CREATED: { label: 'Département créé', variant: 'secondary' },
+  POSITION_CREATED: { label: 'Poste créé', variant: 'secondary' },
+  LEAVE_TYPE_CREATED: { label: 'Type de congé créé', variant: 'secondary' },
+  HOLIDAY_ADDED: { label: 'Jour férié ajouté', variant: 'secondary' },
+  INFO: { label: 'Information', variant: 'default' },
 };
 
 export default function NotificationsPage() {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const load = () => {
+  const load = useCallback(() => {
     api.get('/notifications').then((res) => {
       setNotifications(res.data);
       setLoading(false);
     });
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const markAsRead = async (id: number) => {
     await api.patch(`/notifications/${id}/read`);
@@ -36,6 +52,11 @@ export default function NotificationsPage() {
   const markAllAsRead = async () => {
     await api.patch('/notifications/read-all');
     load();
+  };
+
+  const handleClick = (n: Notification) => {
+    if (!n.isRead) markAsRead(n.id);
+    if (n.link) navigate(n.link);
   };
 
   if (loading) return <p className="text-muted-foreground">Chargement...</p>;
@@ -69,7 +90,7 @@ export default function NotificationsPage() {
               className={`animate-slide-in-up cursor-pointer transition-all duration-150 hover:shadow-md ${
                 n.isRead ? '' : 'ring-1 ring-primary/20 bg-primary/[0.02]'
               }`}
-              onClick={() => !n.isRead && markAsRead(n.id)}
+              onClick={() => handleClick(n)}
             >
               <CardContent className="flex items-start gap-4 p-5">
                 <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${n.isRead ? 'bg-transparent' : 'bg-primary'}`} />
@@ -85,6 +106,11 @@ export default function NotificationsPage() {
                   <h3 className="font-medium text-sm text-foreground">{n.title}</h3>
                   <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
                 </div>
+                {n.link && (
+                  <div className="shrink-0 mt-1 text-muted-foreground">
+                    <ExternalLink className="size-4" />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

@@ -5,7 +5,6 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import api from '../services/api'
 import { resetPasswordSchema, type ResetPasswordFormData } from '../lib/schemas'
 import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
 import { PasswordInput } from '../components/ui/password-input'
 import { Label } from '../components/ui/label'
 import {
@@ -18,13 +17,14 @@ import {
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
-  const emailFromUrl = searchParams.get('email') || ''
+  const email = searchParams.get('email') || ''
+  const otp = searchParams.get('otp') || ''
   const navigate = useNavigate()
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
-    defaultValues: { email: emailFromUrl, otp: '', newPassword: '', confirmPassword: '' },
+    defaultValues: { email, otp, newPassword: '', confirmPassword: '' },
   })
 
   const onSubmit = async (data: ResetPasswordFormData) => {
@@ -36,7 +36,6 @@ export default function ResetPasswordPage() {
         newPassword: data.newPassword,
       })
       setSuccess(true)
-      setTimeout(() => navigate('/login'), 3000)
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur lors de la réinitialisation')
     }
@@ -46,11 +45,16 @@ export default function ResetPasswordPage() {
     return (
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-xl text-success">Mot de passe réinitialisé</CardTitle>
+          <CardTitle className="text-xl text-green-600">Mot de passe réinitialisé</CardTitle>
           <CardDescription>
-            Tu vas être redirigé vers la page de connexion...
+            Votre mot de passe a été modifié avec succès.
           </CardDescription>
         </CardHeader>
+        <CardContent className="text-center">
+          <Link to="/login" className="text-sm text-primary hover:underline">
+            Retour à la connexion
+          </Link>
+        </CardContent>
       </Card>
     )
   }
@@ -58,24 +62,14 @@ export default function ResetPasswordPage() {
   return (
     <Card>
       <CardHeader className="text-center">
-        <CardTitle className="text-xl">Réinitialisation</CardTitle>
-        <CardDescription>Saisis le code reçu et ton nouveau mot de passe</CardDescription>
+        <CardTitle className="text-xl">Nouveau mot de passe</CardTitle>
+        <CardDescription>Saisissez votre nouveau mot de passe</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
             <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200">{error}</div>
           )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" {...register('email')} />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="otp">Code de vérification (6 chiffres)</Label>
-            <Input id="otp" type="text" maxLength={6} placeholder="000000" {...register('otp')} />
-            {errors.otp && <p className="text-sm text-destructive">{errors.otp.message}</p>}
-          </div>
           <div className="space-y-2">
             <Label htmlFor="newPassword">Nouveau mot de passe</Label>
             <PasswordInput id="newPassword" {...register('newPassword')} />
