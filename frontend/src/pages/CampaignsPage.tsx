@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '../components/ui/select'
 import { cn } from '../lib/utils'
-import { Play, XCircle, ChevronDown, ChevronRight } from 'lucide-react'
+import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X } from 'lucide-react'
 
 const proposalStatusLabels: Record<string, string> = {
   RECUE: 'Reçue',
@@ -39,12 +39,27 @@ const proposalStatusColors: Record<string, string> = {
   REFUSEE: 'bg-red-100 text-red-700',
 }
 
+const analysisDisplay: Record<string, { label: string; icon: any; className: string }> = {
+  COMPATIBLE: { label: 'Compatible', icon: CheckCircle2, className: 'text-green-600 bg-green-50' },
+  CONFLIT_DEPARTEMENT: { label: 'Conflit département', icon: AlertTriangle, className: 'text-red-600 bg-red-50' },
+  PROPOSITION_AUTOMATIQUE: { label: 'Nouvelle période proposée', icon: CalendarClock, className: 'text-amber-600 bg-amber-50' },
+  PENDING: { label: 'En attente...', icon: History, className: 'text-gray-500 bg-gray-50' },
+}
+
+function formatDate(d: string) {
+  return new Date(d).toLocaleDateString('fr-FR')
+}
+
 export default function CampaignsPage() {
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
   const [formData, setFormData] = useState({ year: String(new Date().getFullYear()), label: '' })
   const [error, setError] = useState('')
   const [expandedCampaign, setExpandedCampaign] = useState<number | null>(null)
+  const [selectedProposal, setSelectedProposal] = useState<any>(null)
+  const [manualEdit, setManualEdit] = useState(false)
+  const [manualStart, setManualStart] = useState('')
+  const [manualEnd, setManualEnd] = useState('')
 
   const { data: campaigns = [], isLoading } = useQuery<any[]>({
     queryKey: ['leave-campaigns'],
@@ -86,10 +101,12 @@ export default function CampaignsPage() {
   })
 
   const updateProposalStatusMutation = useMutation({
-    mutationFn: ({ proposalId, status }: { proposalId: number; status: string }) =>
-      api.patch(`/leave-campaigns/proposals/${proposalId}/status`, { status }),
+    mutationFn: (payload: { proposalId: number; status: string; newStartDate?: string; newEndDate?: string }) =>
+      api.patch(`/leave-campaigns/proposals/${payload.proposalId}/status`, payload),
     onSuccess: () => {
       refetchProposals()
+      setSelectedProposal(null)
+      setManualEdit(false)
     },
   })
 
@@ -100,6 +117,13 @@ export default function CampaignsPage() {
       year: Number(formData.year),
       label: formData.label,
     })
+  }
+
+  const getConflictingEmployee = (p: any) => {
+    const details = p.analysisDetails as any
+    if (!details?.results) return null
+    const conflict = details.results.find((r: any) => r.status === 'CONFLIT_DEPARTEMENT' || r.status === 'PROPOSITION_AUTOMATIQUE')
+    return conflict?.details?.conflictingEmployee || null
   }
 
   return (
@@ -185,47 +209,56 @@ export default function CampaignsPage() {
                                     <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Employé</th>
                                     <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Département</th>
                                     <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Date souhaitée</th>
-                                    <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Solde</th>
-                                    <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Ancienneté</th>
+                                    <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Analyse</th>
                                     <th className="h-10 px-4 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Statut</th>
                                     <th className="h-10 px-4 text-right font-semibold text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {proposalsData.proposals.map((p: any) => (
-                                    <tr key={p.id} className="bg-white border-b last:border-0 hover:bg-gray-50/50">
-                                      <td className="p-3 px-4">
-                                        {p.employee?.user?.firstName} {p.employee?.user?.lastName}
-                                      </td>
-                                      <td className="p-3 px-4 text-muted-foreground">{p.employee?.department?.name}</td>
-                                      <td className="p-3 px-4">{new Date(p.desiredStartDate).toLocaleDateString('fr-FR')}</td>
-                                      <td className="p-3 px-4">{p.annualBalance ?? '-'} j</td>
-                                      <td className="p-3 px-4 text-muted-foreground">{p.seniority}</td>
-                                      <td className="p-3 px-4">
-                                        <span className={cn(
-                                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                                          proposalStatusColors[p.status] || 'bg-gray-100 text-gray-600',
-                                        )}>
-                                          {proposalStatusLabels[p.status] || p.status}
-                                        </span>
-                                      </td>
-                                      <td className="p-3 px-4 text-right">
-                                        <Select
-                                          value={p.status}
-                                          onValueChange={(v) => updateProposalStatusMutation.mutate({ proposalId: p.id, status: v })}
-                                        >
-                                          <SelectTrigger className="h-8 text-xs w-[130px]">
-                                            <SelectValue />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {Object.entries(proposalStatusLabels).map(([value, label]) => (
-                                              <SelectItem key={value} value={value}>{label}</SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </td>
-                                    </tr>
-                                  ))}
+                                  {proposalsData.proposals.map((p: any) => {
+                                    const analysis = analysisDisplay[p.analysisStatus] || analysisDisplay.PENDING
+                                    const Icon = analysis.icon
+                                    const conflictName = getConflictingEmployee(p)
+                                    return (
+                                      <tr
+                                        key={p.id}
+                                        className="bg-white border-b last:border-0 hover:bg-gray-50/50 cursor-pointer"
+                                        onClick={() => { setSelectedProposal(p); setManualEdit(false) }}
+                                      >
+                                        <td className="p-3 px-4 font-medium">
+                                          {p.employee?.user?.firstName} {p.employee?.user?.lastName}
+                                        </td>
+                                        <td className="p-3 px-4 text-muted-foreground">{p.employee?.department?.name}</td>
+                                        <td className="p-3 px-4">{formatDate(p.desiredStartDate)}</td>
+                                        <td className="p-3 px-4">
+                                          <div className="flex items-center gap-1.5">
+                                            <Icon className={cn('size-4', analysis.className.split(' ')[0])} />
+                                            <span className="text-xs">
+                                              {analysis.label}
+                                              {conflictName && <span className="text-red-600"> ({conflictName})</span>}
+                                            </span>
+                                          </div>
+                                        </td>
+                                        <td className="p-3 px-4">
+                                          <span className={cn(
+                                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                                            proposalStatusColors[p.status] || 'bg-gray-100 text-gray-600',
+                                          )}>
+                                            {proposalStatusLabels[p.status] || p.status}
+                                          </span>
+                                        </td>
+                                        <td className="p-3 px-4 text-right">
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={(e) => { e.stopPropagation(); setSelectedProposal(p); setManualEdit(false) }}
+                                          >
+                                            Détails
+                                          </Button>
+                                        </td>
+                                      </tr>
+                                    )
+                                  })}
                                 </tbody>
                               </table>
                             )}
@@ -241,6 +274,206 @@ export default function CampaignsPage() {
         </CardContent>
       </Card>
 
+      {/* Proposal detail modal */}
+      <Dialog open={!!selectedProposal} onOpenChange={(o) => { if (!o) { setSelectedProposal(null); setManualEdit(false) } }}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Détail de la proposition</DialogTitle>
+          </DialogHeader>
+          {selectedProposal && (
+            <div className="space-y-5">
+              {/* Employee info */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl border">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Employé</p>
+                  <p className="text-sm font-medium mt-0.5">
+                    {selectedProposal.employee?.user?.firstName} {selectedProposal.employee?.user?.lastName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Département</p>
+                  <p className="text-sm font-medium mt-0.5">{selectedProposal.employee?.department?.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Date souhaitée</p>
+                  <p className="text-sm font-medium mt-0.5">{formatDate(selectedProposal.desiredStartDate)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Durée</p>
+                  <p className="text-sm font-medium mt-0.5">{selectedProposal.duration} jour{selectedProposal.duration > 1 ? 's' : ''}</p>
+                </div>
+              </div>
+
+              {/* Analysis */}
+              <div>
+                <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <AlertTriangle className="size-4 text-amber-500" />
+                  Analyse automatique
+                </h4>
+                {selectedProposal.analysisDetails?.results?.map((r: any, i: number) => (
+                  <div key={i} className={cn(
+                    'flex items-start gap-3 p-3 rounded-xl border mb-2',
+                    r.status === 'CONFLIT_DEPARTEMENT' && 'bg-red-50 border-red-200',
+                    r.status === 'PROPOSITION_AUTOMATIQUE' && 'bg-amber-50 border-amber-200',
+                    r.status === 'COMPATIBLE' && 'bg-green-50 border-green-200',
+                  )}>
+                    {r.status === 'CONFLIT_DEPARTEMENT' ? <AlertTriangle className="size-5 text-red-500 shrink-0 mt-0.5" /> :
+                     r.status === 'PROPOSITION_AUTOMATIQUE' ? <CalendarClock className="size-5 text-amber-500 shrink-0 mt-0.5" /> :
+                     <CheckCircle2 className="size-5 text-green-500 shrink-0 mt-0.5" />}
+                    <div>
+                      <p className="text-sm font-medium">{r.message}</p>
+                      {r.suggestedStartDate && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Période suggérée : {formatDate(String(r.suggestedStartDate))} → {r.suggestedEndDate ? formatDate(String(r.suggestedEndDate)) : ''}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {(!selectedProposal.analysisDetails?.results || selectedProposal.analysisDetails.results.length === 0) && (
+                  <p className="text-sm text-muted-foreground">Analyse non disponible</p>
+                )}
+              </div>
+
+              {/* Actions */}
+              {selectedProposal.analysisStatus === 'PROPOSITION_AUTOMATIQUE' && !manualEdit && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Actions RH</h4>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => updateProposalStatusMutation.mutate({
+                        proposalId: selectedProposal.id,
+                        status: 'ACCEPTEE',
+                        newStartDate: String(selectedProposal.suggestedStartDate),
+                        newEndDate: String(selectedProposal.suggestedEndDate),
+                      })}
+                    >
+                      <ThumbsUp className="size-4 mr-1.5" />
+                      Valider la proposition du moteur
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setManualEdit(true)
+                        setManualStart(String(selectedProposal.suggestedStartDate).slice(0, 10))
+                        setManualEnd(String(selectedProposal.suggestedEndDate).slice(0, 10))
+                      }}
+                    >
+                      <Pencil className="size-4 mr-1.5" />
+                      Modifier manuellement
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive border-destructive/30 hover:bg-red-50"
+                      onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'REFUSEE' })}
+                    >
+                      <X className="size-4 mr-1.5" />
+                      Refuser
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {manualEdit && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Modification manuelle</h4>
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div className="space-y-1">
+                      <Label>Nouvelle date de début</Label>
+                      <Input type="date" value={manualStart} onChange={(e) => setManualStart(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Nouvelle date de fin</Label>
+                      <Input type="date" value={manualEnd} onChange={(e) => setManualEnd(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => updateProposalStatusMutation.mutate({
+                        proposalId: selectedProposal.id,
+                        status: 'ACCEPTEE',
+                        newStartDate: manualStart,
+                        newEndDate: manualEnd,
+                      })}
+                    >
+                      Valider
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setManualEdit(false)}>
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {selectedProposal.analysisStatus === 'COMPATIBLE' && selectedProposal.status === 'RECUE' && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'ACCEPTEE' })}
+                  >
+                    <ThumbsUp className="size-4 mr-1.5" />
+                    Accepter
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive border-destructive/30 hover:bg-red-50"
+                    onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'REFUSEE' })}
+                  >
+                    <X className="size-4 mr-1.5" />
+                    Refuser
+                  </Button>
+                </div>
+              )}
+
+              {/* History */}
+              {selectedProposal.analysisLogs?.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                    <History className="size-4 text-muted-foreground" />
+                    Historique
+                  </h4>
+                  <div className="space-y-2">
+                    {selectedProposal.analysisLogs.map((log: any) => (
+                      <div key={log.id} className="flex items-start gap-3 text-sm">
+                        <div className="w-2 h-2 rounded-full bg-primary/40 mt-1.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-muted-foreground">{new Date(log.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                          <p className="text-sm truncate">{log.details}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Current status update */}
+              <div className="flex items-center gap-3 pt-3 border-t border-border/50">
+                <p className="text-xs text-muted-foreground">Modifier le statut :</p>
+                <Select
+                  value={selectedProposal.status}
+                  onValueChange={(v) => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: v })}
+                >
+                  <SelectTrigger className="h-8 text-xs w-[150px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(proposalStatusLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Create campaign dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
         <DialogContent>
           <DialogHeader>

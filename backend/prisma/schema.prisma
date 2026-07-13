@@ -409,8 +409,14 @@ model LeaveCampaign {
 model LeaveProposal {
   id               Int             @id @default(autoincrement())
   desiredStartDate DateTime
+  duration         Int             @default(0)
   comment          String?
   status           ProposalStatus  @default(RECUE)
+
+  analysisStatus   String?         @default("PENDING")
+  analysisDetails  Json?
+  suggestedStartDate DateTime?
+  suggestedEndDate   DateTime?
 
   campaignId       Int
   campaign         LeaveCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -418,10 +424,25 @@ model LeaveProposal {
   employeeId       Int
   employee         Employee        @relation(fields: [employeeId], references: [id])
 
+  analysisLogs     ProposalAnalysisLog[]
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   @@unique([campaignId, employeeId])
   @@index([campaignId])
   @@index([employeeId])
+}
+
+model ProposalAnalysisLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  details    String?
+
+  proposalId Int
+  proposal   LeaveProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@index([proposalId])
 }
