@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import api from '../services/api';
 import type { User } from '../types';
 import { translateRole } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { PasswordInput } from '../components/ui/password-input';
@@ -17,12 +18,26 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { Label } from '../components/ui/label';
+import { Loader2, AlertTriangle, Trash2 } from 'lucide-react';
+import { toast } from '../components/Toast';
 
 type ModalMode = 'create' | 'edit' | null;
 
+const namePattern = /^[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF\-' ]+$/;
+const nameMessage = 'Le nom ne peut contenir que des lettres, espaces, apostrophes et traits d\'union.';
+
+function validateName(value: string, field: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return `Ce champ est obligatoire`;
+  if (trimmed.length > 100) return `Le ${field} ne peut pas dépasser 100 caractères`;
+  if (!namePattern.test(trimmed)) return nameMessage;
+  return null;
+}
+
 export default function UsersPage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<(User & { employee?: { firstName: string; lastName: string }; isActive: boolean; mustChangePassword?: boolean })[]>([]);
   const [roles, setRoles] = useState<{ id: number; name: string }[]>([]);
   const [departments, setDepartments] = useState<{ id: number; name: string }[]>([]);
@@ -40,6 +55,18 @@ export default function UsersPage() {
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    action: 'deactivate' | 'activate' | 'delete';
+    targetId: number;
+  }>({ open: false, title: '', message: '', action: 'deactivate', targetId: 0 });
+
+  const isAdminUser = currentUser?.role?.name === 'ADMIN';
+  const currentUserId = currentUser?.id;
 
   const loadUsers = useCallback(() => api.get('/users').then((res) => setUsers(res.data)), []);
   const loadRoles = useCallback(() => api.get('/users/roles').then((res) => setRoles(res.data)), []);
@@ -90,36 +117,43 @@ export default function UsersPage() {
     setError('');
     setSuccess('');
 
-    if (modalMode === 'create') {
-      try {
+    const fnErr = validateName(firstName, 'prénom');
+    if (fnErr) { setError(fnErr); return; }
+    const lnErr = validateName(lastName, 'nom');
+    if (lnErr) { setError(lnErr); return; }
+
+    if (!roleId) {
+      setError('Veuillez sélectionner un rôle');
+      return;
+    }
+
+    if (modalMode === 'create' && !gender) {
+      setError('Veuillez sélectionner le sexe');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      if (modalMode === 'create') {
         const body: Record<string, any> = {
           email,
           password: password || email,
-          firstName,
-          lastName,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
           gender,
           roleId: Number(roleId),
         };
         if (departmentId) body.departmentId = Number(departmentId);
         await api.post('/users', body);
         setTempPassword(password || email);
-        setEmail('');
-        setPassword('');
-        setFirstName('');
-        setLastName('');
-        setGender('');
-        setRoleId('');
-        setModalMode(null);
+        toast('Utilisateur créé avec succès', 'success');
+        closeModal();
         loadUsers();
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Erreur lors de la création');
-      }
-    } else if (modalMode === 'edit' && editingUser) {
-      try {
+      } else if (modalMode === 'edit' && editingUser) {
         const body: Record<string, any> = {};
         if (email !== editingUser.email) body.email = email;
-        if (firstName !== (editingUser.firstName || '')) body.firstName = firstName;
-        if (lastName !== (editingUser.lastName || '')) body.lastName = lastName;
+        if (firstName.trim() !== (editingUser.firstName || '')) body.firstName = firstName.trim();
+        if (lastName.trim() !== (editingUser.lastName || '')) body.lastName = lastName.trim();
         if (gender !== (editingUser.gender || '')) body.gender = gender;
         if (Number(roleId) !== editingUser.role?.id) body.roleId = Number(roleId);
         if ((isActive === 'true') !== editingUser.isActive) body.isActive = isActive === 'true';
@@ -127,19 +161,63 @@ export default function UsersPage() {
         if (Object.keys(body).length > 0) {
           await api.patch(`/users/${editingUser.id}`, body);
         }
-        setSuccess('Utilisateur modifié avec succès');
-        setModalMode(null);
-        setEditingUser(null);
+        toast('Utilisateur modifié avec succès', 'success');
+        closeModal();
         loadUsers();
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Erreur lors de la modification');
       }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Une erreur est survenue');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const toggleActive = async (id: number, current: boolean) => {
-    await api.patch(`/users/${id}`, { isActive: !current });
-    loadUsers();
+  const confirmToggleActive = (id: number, currentActive: boolean, name: string) => {
+    if (id === currentUserId) {
+      setError('Cette action est interdite pour votre propre compte Administrateur');
+      return;
+    }
+    setConfirmDialog({
+      open: true,
+      title: currentActive ? 'Désactiver l\'utilisateur' : 'Activer l\'utilisateur',
+      message: `Êtes-vous certain de vouloir ${currentActive ? 'désactiver' : 'activer'} l'utilisateur « ${name} » ?`,
+      action: currentActive ? 'deactivate' : 'activate',
+      targetId: id,
+    });
+  };
+
+  const confirmDelete = (id: number, name: string) => {
+    if (id === currentUserId) {
+      setError('Cette action est interdite pour votre propre compte Administrateur');
+      return;
+    }
+    setConfirmDialog({
+      open: true,
+      title: 'Supprimer l\'utilisateur',
+      message: `Êtes-vous certain de vouloir supprimer l'utilisateur « ${name} » ? Cette action est irréversible.`,
+      action: 'delete',
+      targetId: id,
+    });
+  };
+
+  const executeConfirmAction = async () => {
+    setSubmitting(true);
+    setConfirmDialog((prev) => ({ ...prev, open: false }));
+    try {
+      if (confirmDialog.action === 'delete') {
+        await api.delete(`/users/${confirmDialog.targetId}`);
+        toast('Utilisateur supprimé avec succès', 'success');
+      } else {
+        const isActive = confirmDialog.action === 'activate';
+        await api.patch(`/users/${confirmDialog.targetId}`, { isActive });
+        toast(isActive ? 'Utilisateur activé avec succès' : 'Utilisateur désactivé avec succès', 'success');
+      }
+      loadUsers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Une erreur est survenue');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const modalTitle = modalMode === 'create' ? 'Nouvel utilisateur' : 'Modifier l\'utilisateur';
@@ -172,6 +250,14 @@ export default function UsersPage() {
         </Card>
       )}
 
+      {error && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">{error}</div>
+          </CardContent>
+        </Card>
+      )}
+
       {success && (
         <Card className="mb-6">
           <CardContent className="p-4">
@@ -179,6 +265,40 @@ export default function UsersPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmDialog.open} onOpenChange={(open) => { if (!open) setConfirmDialog((prev) => ({ ...prev, open: false })); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                <AlertTriangle className="size-5 text-amber-600" />
+              </div>
+              <div>
+                <DialogTitle>{confirmDialog.title}</DialogTitle>
+                <DialogDescription>{confirmDialog.message}</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDialog((prev) => ({ ...prev, open: false }))}
+            >
+              Annuler
+            </Button>
+            <Button
+              variant={confirmDialog.action === 'delete' ? 'destructive' : 'default'}
+              onClick={executeConfirmAction}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <><Loader2 className="size-4 mr-2 animate-spin" />Traitement...</>
+              ) : 'Confirmer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={modalMode !== null} onOpenChange={(open) => { if (!open) closeModal(); }}>
         <DialogContent className="sm:max-w-lg">
@@ -202,11 +322,23 @@ export default function UsersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Prénom(s)</Label>
-                  <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" required />
+                  <Input
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Jean"
+                    required
+                    maxLength={100}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Nom(s)</Label>
-                  <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Douala" required />
+                  <Input
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Douala"
+                    required
+                    maxLength={100}
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -214,7 +346,12 @@ export default function UsersPage() {
                   <Label>Sexe</Label>
                   <Select value={gender || null} onValueChange={(v) => setGender(v || '')}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner" />
+                      <span className="flex flex-1 text-left">
+                        {gender
+                          ? gender
+                          : <span className="text-muted-foreground">Sélectionner</span>
+                        }
+                      </span>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Homme">Homme</SelectItem>
@@ -224,7 +361,11 @@ export default function UsersPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Rôle</Label>
-                  <Select value={roleId || null} onValueChange={(v) => setRoleId(v || '')}>
+                  <Select
+                    value={roleId || null}
+                    onValueChange={(v) => setRoleId(v || '')}
+                    disabled={modalMode === 'edit' && editingUser?.id === currentUserId}
+                  >
                     <SelectTrigger>
                       <span className="flex flex-1 text-left">
                         {roleId
@@ -241,6 +382,22 @@ export default function UsersPage() {
                   </Select>
                 </div>
               </div>
+              {modalMode === 'edit' && (
+                <div className="space-y-2">
+                  <Label>Statut</Label>
+                  <Select value={isActive} onValueChange={setIsActive}>
+                    <SelectTrigger>
+                      <span className="flex flex-1 text-left">
+                        {isActive === 'true' ? 'Actif' : isActive === 'false' ? 'Inactif' : <span className="text-muted-foreground">Sélectionner</span>}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Actif</SelectItem>
+                      <SelectItem value="false">Inactif</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {modalMode === 'create' && (
                 <div className="space-y-2">
                   <Label>Département</Label>
@@ -261,26 +418,14 @@ export default function UsersPage() {
                   </Select>
                 </div>
               )}
-              {modalMode === 'edit' && (
-                <div className="space-y-2">
-                  <Label>Statut</Label>
-                  <Select value={isActive} onValueChange={setIsActive}>
-                    <SelectTrigger>
-                      <span className="flex flex-1 text-left">
-                        {isActive === 'true' ? 'Actif' : isActive === 'false' ? 'Inactif' : <span className="text-muted-foreground">Sélectionner</span>}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="true">Actif</SelectItem>
-                      <SelectItem value="false">Inactif</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
             </div>
             <DialogFooter showCloseButton className="mt-6">
-              <Button type="submit">
-                {modalMode === 'create' ? 'Créer l\'utilisateur' : 'Enregistrer'}
+              <Button type="submit" disabled={submitting}>
+                {submitting ? (
+                  <><Loader2 className="size-4 mr-2 animate-spin" />Traitement en cours...</>
+                ) : (
+                  modalMode === 'create' ? 'Créer l\'utilisateur' : 'Enregistrer'
+                )}
               </Button>
             </DialogFooter>
           </form>
@@ -305,6 +450,7 @@ export default function UsersPage() {
               : u.employee?.firstName && u.employee?.lastName
                 ? `${u.employee.firstName} ${u.employee.lastName}`
                 : '—'
+            const isSelf = u.id === currentUserId;
             return (
               <TableRow key={u.id}>
                 <TableCell className="font-medium">{u.email}</TableCell>
@@ -326,14 +472,32 @@ export default function UsersPage() {
                     >
                       Modifier
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-auto py-1 ${u.isActive ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
-                      onClick={() => toggleActive(u.id, u.isActive)}
-                    >
-                      {u.isActive ? 'Désactiver' : 'Activer'}
-                    </Button>
+                    {!isSelf && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`h-auto py-1 ${u.isActive ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
+                          onClick={() => confirmToggleActive(u.id, u.isActive, displayName)}
+                          disabled={submitting}
+                        >
+                          {u.isActive ? 'Désactiver' : 'Activer'}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-auto py-1 px-1 text-destructive hover:text-destructive"
+                          onClick={() => confirmDelete(u.id, displayName)}
+                          disabled={submitting}
+                          title="Supprimer"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </>
+                    )}
+                    {isSelf && (
+                      <span className="text-xs text-muted-foreground italic">Vous</span>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

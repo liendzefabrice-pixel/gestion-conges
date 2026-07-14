@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,7 +20,7 @@ export class UsersService {
     private leaveBalanceEngine: LeaveBalanceEngineService,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto, currentUserId: number) {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
     });
@@ -32,13 +34,13 @@ export class UsersService {
     });
 
     if (!role) {
-      throw new NotFoundException('Rôle introuvable');
+      throw new BadRequestException('Veuillez sélectionner un rôle');
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
     if (role.name !== 'ADMIN' && !createUserDto.departmentId) {
-      throw new NotFoundException('Le département est requis pour ce rôle');
+      throw new BadRequestException('Le département est requis pour ce rôle');
     }
 
     if (createUserDto.departmentId) {
@@ -53,10 +55,10 @@ export class UsersService {
     const user = await this.prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {
-          email: createUserDto.email,
+          email: createUserDto.email.trim().toLowerCase(),
           password: hashedPassword,
-          firstName: createUserDto.firstName,
-          lastName: createUserDto.lastName,
+          firstName: createUserDto.firstName.trim(),
+          lastName: createUserDto.lastName.trim(),
           gender: createUserDto.gender,
           roleId: createUserDto.roleId,
           mustChangePassword: true,
@@ -74,13 +76,23 @@ export class UsersService {
         },
       });
 
+      await tx.auditLog.create({
+        data: {
+          action: 'USER_CREATED',
+          entityType: 'USER',
+          entityId: created.id,
+          newValue: { email: created.email, role: role.name } as any,
+          userId: currentUserId,
+        },
+      });
+
       if (role.name !== 'ADMIN' && createUserDto.departmentId) {
         const randomSuffix = Math.random().toString(36).substring(2, 6);
         await tx.employee.create({
           data: {
             matricule: `${createUserDto.email.split('@')[0]}-${randomSuffix}`,
-            firstName: createUserDto.firstName,
-            lastName: createUserDto.lastName,
+            firstName: createUserDto.firstName.trim(),
+            lastName: createUserDto.lastName.trim(),
             hireDate: new Date(),
             userId: created.id,
             departmentId: createUserDto.departmentId,
@@ -160,12 +172,24 @@ export class UsersService {
     return user;
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto) {
-    await this.findOne(id);
+  async update(id: number, updateUserDto: UpdateUserDto, currentUserId: number) {
+    const target = await this.findOne(id);
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: currentUserId },
+      include: { role: true },
+    });
+
+    if (id === currentUserId && updateUserDto.roleId && updateUserDto.roleId !== target.role?.id) {
+      throw new ForbiddenException('Cette action est interdite pour votre propre compte Administrateur');
+    }
+
+    if (id === currentUserId && updateUserDto.isActive !== undefined && updateUserDto.isActive !== target.isActive && !updateUserDto.isActive) {
+      throw new ForbiddenException('Cette action est interdite pour votre propre compte Administrateur');
+    }
 
     if (updateUserDto.email) {
       const existing = await this.prisma.user.findUnique({
-        where: { email: updateUserDto.email },
+        where: { email: updateUserDto.email.trim().toLowerCase() },
       });
       if (existing && existing.id !== id) {
         throw new ConflictException('Un utilisateur avec cet email existe déjà');
@@ -178,18 +202,27 @@ export class UsersService {
       });
 
       if (!role) {
-        throw new NotFoundException('Rôle introuvable');
+        throw new BadRequestException('Veuillez sélectionner un rôle');
       }
     }
 
     const oldUser = await this.prisma.user.findUnique({
       where: { id },
-      select: { isActive: true, email: true },
+      select: { isActive: true, email: true, firstName: true, lastName: true, roleId: true },
     });
+
+    if (!oldUser) {
+      throw new NotFoundException('Utilisateur introuvable');
+    }
+
+    const data: any = { ...updateUserDto };
+    if (data.email) data.email = data.email.trim().toLowerCase();
+    if (data.firstName !== undefined) data.firstName = data.firstName.trim();
+    if (data.lastName !== undefined) data.lastName = data.lastName.trim();
 
     const updated = await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data,
       select: {
         id: true,
         email: true,
@@ -211,26 +244,63 @@ export class UsersService {
       },
     });
 
+    const changedFields: string[] = [];
+    if (updateUserDto.email !== undefined && updateUserDto.email !== oldUser.email) changedFields.push('email');
+    if (updateUserDto.firstName !== undefined && updateUserDto.firstName !== oldUser.firstName) changedFields.push('firstName');
+    if (updateUserDto.lastName !== undefined && updateUserDto.lastName !== oldUser.lastName) changedFields.push('lastName');
+    if (updateUserDto.roleId !== undefined && updateUserDto.roleId !== oldUser.roleId) changedFields.push('roleId');
+    if (updateUserDto.isActive !== undefined && updateUserDto.isActive !== oldUser.isActive) changedFields.push('isActive');
+
+    if (changedFields.length > 0) {
+      await this.prisma.auditLog.create({
+        data: {
+          action: updateUserDto.isActive !== undefined && updateUserDto.isActive !== oldUser.isActive
+            ? (updateUserDto.isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED')
+            : 'USER_MODIFIED',
+          entityType: 'USER',
+          entityId: id,
+          oldValue: { email: oldUser.email, isActive: oldUser.isActive } as any,
+          newValue: { email: updated.email, isActive: updated.isActive, changedFields } as any,
+          userId: currentUserId,
+        },
+      });
+    }
+
     if (oldUser && updateUserDto.isActive !== undefined && updateUserDto.isActive !== oldUser.isActive) {
       if (updateUserDto.isActive) {
         this.notificationsService.userActivated(id, updated.email);
       } else {
         this.notificationsService.userDeactivated(id, updated.email);
       }
-    } else if (updateUserDto.email !== undefined || updateUserDto.firstName !== undefined || updateUserDto.lastName !== undefined || updateUserDto.roleId !== undefined) {
+    } else if (changedFields.some((f) => f !== 'isActive')) {
       this.notificationsService.userModified(id, updated.email);
     }
 
     return updated;
   }
 
-  async remove(id: number) {
+  async remove(id: number, currentUserId: number) {
+    if (id === currentUserId) {
+      throw new ForbiddenException('Cette action est interdite pour votre propre compte Administrateur');
+    }
+
     await this.findOne(id);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          action: 'USER_DELETED',
+          entityType: 'USER',
+          entityId: id,
+          userId: currentUserId,
+        },
+      });
+
       await tx.employee.deleteMany({ where: { userId: id } });
       return tx.user.delete({ where: { id } });
     });
+
+    return result;
   }
 
   async findAllRoles() {

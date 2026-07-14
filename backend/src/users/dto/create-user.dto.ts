@@ -1,26 +1,33 @@
-import { IsString, IsEmail, IsInt, IsOptional, MinLength, IsIn } from 'class-validator';
+import { IsString, IsEmail, IsInt, IsOptional, MinLength, IsIn, MaxLength, Matches } from 'class-validator';
+
+const namePattern = /^[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF\-' ]+$/;
+const nameMessage = 'Le nom ne peut contenir que des lettres, espaces, apostrophes et traits d\'union.';
 
 export class CreateUserDto {
-  @IsEmail()
+  @IsEmail({}, { message: 'Adresse email invalide' })
   email: string;
 
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: 'Le mot de passe doit être une chaîne de caractères' })
+  @MinLength(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' })
   password: string;
 
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: 'Ce champ est obligatoire' })
+  @MinLength(1, { message: 'Ce champ est obligatoire' })
+  @MaxLength(100, { message: 'Le prénom ne peut pas dépasser 100 caractères' })
+  @Matches(namePattern, { message: nameMessage })
   firstName: string;
 
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: 'Ce champ est obligatoire' })
+  @MinLength(1, { message: 'Ce champ est obligatoire' })
+  @MaxLength(100, { message: 'Le nom ne peut pas dépasser 100 caractères' })
+  @Matches(namePattern, { message: nameMessage })
   lastName: string;
 
-  @IsString()
-  @IsIn(['Homme', 'Femme'])
+  @IsString({ message: 'Veuillez sélectionner le sexe' })
+  @IsIn(['Homme', 'Femme'], { message: 'Veuillez sélectionner le sexe' })
   gender: string;
 
-  @IsInt()
+  @IsInt({ message: 'Veuillez sélectionner un rôle' })
   roleId: number;
 
   @IsOptional()
