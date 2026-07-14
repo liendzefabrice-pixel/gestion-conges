@@ -10,7 +10,7 @@ export class CreateInternalEventDto {
   description?: string;
 
   @IsString()
-  @IsIn(['SEMINAIRE', 'AUDIT', 'INVENTAIRE', 'FORMATION', 'REUNION_STRATEGIQUE', 'FERMETURE_ANNUELLE', 'MAINTENANCE', 'AUTRE'])
+  @IsIn(['SEMINAIRE', 'AUDIT', 'INVENTAIRE', 'FORMATION', 'REUNION', 'MAINTENANCE', 'FERMETURE_ANNUELLE', 'AUTRE'])
   type: string;
 
   @IsDateString()
@@ -31,4 +31,9 @@ export class CreateInternalEventDto {
   @IsString()
   @IsIn(['FAIBLE', 'MOYENNE', 'HAUTE', 'CRITIQUE'])
   priority?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['BROUILLON', 'ACTIF', 'ARCHIVE'])
+  status?: string;
 }

@@ -12,7 +12,7 @@ export class UpdateInternalEventDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['SEMINAIRE', 'AUDIT', 'INVENTAIRE', 'FORMATION', 'REUNION_STRATEGIQUE', 'FERMETURE_ANNUELLE', 'MAINTENANCE', 'AUTRE'])
+  @IsIn(['SEMINAIRE', 'AUDIT', 'INVENTAIRE', 'FORMATION', 'REUNION', 'MAINTENANCE', 'FERMETURE_ANNUELLE', 'AUTRE'])
   type?: string;
 
   @IsOptional()
@@ -38,6 +38,6 @@ export class UpdateInternalEventDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['ACTIF', 'ARCHIVE'])
+  @IsIn(['BROUILLON', 'ACTIF', 'ARCHIVE'])
   status?: string;
 }

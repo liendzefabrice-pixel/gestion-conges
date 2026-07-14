@@ -73,6 +73,7 @@ enum InternalEventPriority {
 }
 
 enum InternalEventStatus {
+  BROUILLON
   ACTIF
   ARCHIVE
 }
@@ -480,7 +481,7 @@ model InternalEvent {
   endDate     DateTime
   allCompany  Boolean               @default(true)
   priority    InternalEventPriority @default(MOYENNE)
-  status      InternalEventStatus   @default(ACTIF)
+  status      InternalEventStatus   @default(BROUILLON)
 
   departmentId Int?
   department   Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
