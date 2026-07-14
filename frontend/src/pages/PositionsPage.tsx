@@ -48,6 +48,8 @@ export default function PositionsPage() {
   const [formDesc, setFormDesc] = useState('');
   const [formDeptId, setFormDeptId] = useState('');
   const [formIsActive, setFormIsActive] = useState('true');
+  const [formIsCritical, setFormIsCritical] = useState(false);
+  const [formCanBeReplaced, setFormCanBeReplaced] = useState(true);
 
   const load = () => {
     api.get('/positions').then((res) => setPositions(res.data));
@@ -86,6 +88,8 @@ export default function PositionsPage() {
     setFormDesc('');
     setFormDeptId('');
     setFormIsActive('true');
+    setFormIsCritical(false);
+    setFormCanBeReplaced(true);
     setError('');
     setSuccess('');
   };
@@ -97,6 +101,8 @@ export default function PositionsPage() {
     setFormDesc(p.description || '');
     setFormDeptId(String(p.departmentId));
     setFormIsActive(p.isActive !== false ? 'true' : 'false');
+    setFormIsCritical(p.isCritical ?? false);
+    setFormCanBeReplaced(p.canBeReplaced ?? true);
     setError('');
     setSuccess('');
   };
@@ -117,6 +123,8 @@ export default function PositionsPage() {
       name: formName,
       description: formDesc || undefined,
       isActive: formIsActive === 'true',
+      isCritical: formIsCritical,
+      canBeReplaced: formCanBeReplaced,
     };
     if (modalMode === 'create' || editingPosition) {
       body.departmentId = Number(formDeptId);
@@ -147,7 +155,7 @@ export default function PositionsPage() {
   };
 
   const modalTitle = modalMode === 'create' ? 'Nouveau poste' : 'Modifier le poste';
-  const colCount = isAdmin ? 7 : 6;
+  const colCount = isAdmin ? 9 : 8;
 
   return (
     <div>
@@ -229,6 +237,8 @@ export default function PositionsPage() {
             <TableHead>Département</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Nombre d'employés</TableHead>
+            <TableHead>Poste critique</TableHead>
+            <TableHead>Remplaçable</TableHead>
             <TableHead>Statut</TableHead>
             <TableHead>Date de création</TableHead>
             {isAdmin && <TableHead className="text-right">Actions</TableHead>}
@@ -241,6 +251,18 @@ export default function PositionsPage() {
               <TableCell className="text-muted-foreground">{p.department?.name || '—'}</TableCell>
               <TableCell className="text-muted-foreground max-w-[200px] truncate">{p.description || '—'}</TableCell>
               <TableCell>{p._count?.employees || 0}</TableCell>
+              <TableCell>
+                {p.isCritical
+                  ? <Badge variant="danger">Critique</Badge>
+                  : <span className="text-muted-foreground">—</span>
+                }
+              </TableCell>
+              <TableCell>
+                {p.canBeReplaced !== false
+                  ? <Badge variant="success">Oui</Badge>
+                  : <Badge variant="danger">Non</Badge>
+                }
+              </TableCell>
               <TableCell>
                 <Badge variant={p.isActive !== false ? 'success' : 'danger'}>
                   {p.isActive !== false ? 'Actif' : 'Inactif'}
@@ -326,6 +348,16 @@ export default function PositionsPage() {
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Optionnelle" />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="isCritical" checked={formIsCritical} onChange={(e) => setFormIsCritical(e.target.checked)} className="rounded border-gray-300" />
+                  <Label htmlFor="isCritical" className="mb-0">Poste critique</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="canBeReplaced" checked={formCanBeReplaced} onChange={(e) => setFormCanBeReplaced(e.target.checked)} className="rounded border-gray-300" />
+                  <Label htmlFor="canBeReplaced" className="mb-0">Peut être remplacé</Label>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Statut</Label>

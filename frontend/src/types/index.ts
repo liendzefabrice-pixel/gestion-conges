@@ -23,6 +23,8 @@ export interface Position {
   departmentId: number;
   department?: { id: number; name: string };
   isActive?: boolean;
+  isCritical?: boolean;
+  canBeReplaced?: boolean;
   _count?: { employees: number };
   createdAt?: string;
 }
@@ -33,6 +35,7 @@ export interface Department {
   description?: string;
   head?: { id: number; firstName: string; lastName: string } | null;
   isActive?: boolean;
+  minEmployees?: number;
   _count?: { employees: number };
   createdAt?: string;
 }

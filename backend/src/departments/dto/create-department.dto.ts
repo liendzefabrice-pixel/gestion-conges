@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsOptional, IsBoolean, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsBoolean, MinLength, MaxLength, Min } from 'class-validator';
 
 export class CreateDepartmentDto {
   @IsString()
@@ -18,4 +18,9 @@ export class CreateDepartmentDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  minEmployees?: number;
 }

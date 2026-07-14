@@ -108,24 +108,27 @@ export default function DecisionPanel({ entityType, entityId }: DecisionPanelPro
             {/* Rules */}
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Règles évaluées</p>
-              {latest.rules?.map((rule: any, i: number) => (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100">
-                  {statusIcon(rule.status)}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{rule.label}</p>
-                      <span className={cn('w-2 h-2 rounded-full shrink-0', statusDot(rule.status))} />
+              {latest.rules?.map((rule: any, i: number) => {
+                const operational = rule.name === 'operational_risk'
+                return (
+                  <div key={i} className={cn('flex items-start gap-3 p-3 rounded-xl border', operational ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-100')}>
+                    {statusIcon(rule.status)}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{rule.label}</p>
+                        <span className={cn('w-2 h-2 rounded-full shrink-0', statusDot(rule.status))} />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{rule.message}</p>
+                      {rule.details && (
+                        <pre className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap font-sans">{rule.details}</pre>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{rule.message}</p>
-                    {rule.details && (
-                      <pre className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap font-sans">{rule.details}</pre>
-                    )}
+                    <p className={cn('text-xs font-semibold shrink-0', scoreColor((rule.score / rule.maxScore) * 100))}>
+                      {rule.score}/{rule.maxScore}
+                    </p>
                   </div>
-                  <p className={cn('text-xs font-semibold shrink-0', scoreColor((rule.score / rule.maxScore) * 100))}>
-                    {rule.score}/{rule.maxScore}
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             {/* Suggestion */}

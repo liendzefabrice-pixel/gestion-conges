@@ -17,4 +17,12 @@ export class CreatePositionDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isCritical?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  canBeReplaced?: boolean;
 }

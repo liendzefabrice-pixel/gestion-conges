@@ -146,6 +146,7 @@ model Department {
   headId      Int?     @unique
   head        Employee? @relation("DepartmentHead", fields: [headId], references: [id])
   isActive    Boolean  @default(true)
+  minEmployees Int     @default(0)
 
   employees   Employee[]
   positions   Position[]
@@ -160,6 +161,8 @@ model Position {
   name        String
   description String?
   isActive    Boolean  @default(true)
+  isCritical  Boolean  @default(false)
+  canBeReplaced Boolean @default(true)
   departmentId Int
   department   Department @relation(fields: [departmentId], references: [id])
 

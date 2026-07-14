@@ -46,6 +46,7 @@ export default function DepartmentsPage() {
   const [formName, setFormName] = useState('');
   const [formDesc, setFormDesc] = useState('');
   const [formHeadId, setFormHeadId] = useState('');
+  const [formMinEmployees, setFormMinEmployees] = useState('0');
   const [formIsActive, setFormIsActive] = useState('true');
 
   const load = () => {
@@ -86,6 +87,7 @@ export default function DepartmentsPage() {
     setFormName('');
     setFormDesc('');
     setFormHeadId('');
+    setFormMinEmployees('0');
     setFormIsActive('true');
     setError('');
     setSuccess('');
@@ -97,6 +99,7 @@ export default function DepartmentsPage() {
     setFormName(d.name);
     setFormDesc(d.description || '');
     setFormHeadId(d.head?.id ? String(d.head.id) : '');
+    setFormMinEmployees(String(d.minEmployees ?? 0));
     setFormIsActive(d.isActive !== false ? 'true' : 'false');
     setError('');
     setSuccess('');
@@ -117,6 +120,7 @@ export default function DepartmentsPage() {
     const body: Record<string, any> = {
       name: formName,
       description: formDesc || undefined,
+      minEmployees: Number(formMinEmployees) || 0,
     };
     if (formHeadId) body.headId = Number(formHeadId);
     else body.headId = null;
@@ -211,6 +215,7 @@ export default function DepartmentsPage() {
             <TableHead>Nom du département</TableHead>
             <TableHead>Responsable</TableHead>
             <TableHead>Nombre d'employés</TableHead>
+            <TableHead>Min. requis</TableHead>
             <TableHead>Description</TableHead>
             <TableHead>Date de création</TableHead>
             <TableHead>Statut</TableHead>
@@ -225,6 +230,7 @@ export default function DepartmentsPage() {
                 {d.head ? `${d.head.firstName} ${d.head.lastName}` : '—'}
               </TableCell>
               <TableCell>{d._count?.employees || 0}</TableCell>
+              <TableCell>{d.minEmployees ?? 0}</TableCell>
               <TableCell className="text-muted-foreground max-w-[200px] truncate">{d.description || '—'}</TableCell>
               <TableCell className="text-muted-foreground">{d.createdAt ? formatDate(d.createdAt) : '—'}</TableCell>
               <TableCell>
@@ -295,6 +301,10 @@ export default function DepartmentsPage() {
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Optionnelle" />
+              </div>
+              <div className="space-y-2">
+                <Label>Effectif minimum requis</Label>
+                <Input type="number" min="0" value={formMinEmployees} onChange={(e) => setFormMinEmployees(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label>Responsable</Label>
