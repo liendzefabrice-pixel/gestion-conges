@@ -30,6 +30,7 @@ const pageTitles: Record<string, string> = {
   '/leave-campaigns': 'Campagnes de congés',
   '/internal-events': 'Événements internes',
   '/calendar': 'Calendrier',
+  '/calendar-rh': 'Calendrier RH',
   '/leave-planning': 'Planification',
   '/permissions': 'Permissions',
   '/users': 'Utilisateurs',

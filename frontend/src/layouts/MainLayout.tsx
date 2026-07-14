@@ -59,6 +59,7 @@ const navSections: NavSection[] = [
       { label: 'Planification', path: '/leave-planning', icon: ClipboardList, roles: ['HR', 'ADMIN'] },
       { label: 'Événements', path: '/internal-events', icon: CalendarX, roles: ['HR', 'ADMIN'] },
       { label: 'Calendrier', path: '/calendar', icon: CalendarDays, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
+      { label: 'Calendrier RH', path: '/calendar-rh', icon: CalendarDays, roles: ['ADMIN', 'HR'] },
       { label: 'Permissions', path: '/permissions', icon: FileText, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
     ],
   },

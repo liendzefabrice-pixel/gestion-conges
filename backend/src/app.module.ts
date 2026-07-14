@@ -19,6 +19,7 @@ import { LeaveBalanceEngineModule } from './leave-balance-engine/leave-balance-e
 import { LeaveCampaignModule } from './leave-campaign/leave-campaign.module';
 import { InternalEventsModule } from './internal-events/internal-events.module';
 import { CalendarModule } from './calendar/calendar.module';
+import { CalendarRhModule } from './calendar-rh/calendar-rh.module';
 import { MailModule } from './mail/mail.module';
 
 @Module({
@@ -38,6 +39,7 @@ import { MailModule } from './mail/mail.module';
     LeaveCampaignModule,
     InternalEventsModule,
     CalendarModule,
+    CalendarRhModule,
     MailModule,
     EmployeesModule,
     LeaveModule,
