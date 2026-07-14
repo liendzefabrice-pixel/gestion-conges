@@ -6,43 +6,49 @@ import {
   MinLength,
   MaxLength,
   IsDateString,
+  Matches,
 } from 'class-validator';
 
+const namePattern = /^[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF\-' ]+$/;
+const nameMessage = 'Le nom ne peut contenir que des lettres, espaces, apostrophes et traits d\'union.';
+
 export class CreateEmployeeDto {
-  @IsString()
-  @MinLength(2)
-  @MaxLength(20)
+  @IsString({ message: 'Le matricule est obligatoire' })
+  @MinLength(2, { message: 'Le matricule doit contenir au moins 2 caractères' })
+  @MaxLength(20, { message: 'Le matricule ne peut pas dépasser 20 caractères' })
   matricule: string;
 
-  @IsString()
-  @MinLength(2)
-  @MaxLength(50)
+  @IsString({ message: 'Le prénom est obligatoire' })
+  @MinLength(1, { message: 'Le prénom est obligatoire' })
+  @MaxLength(50, { message: 'Le prénom ne peut pas dépasser 50 caractères' })
+  @Matches(namePattern, { message: nameMessage })
   firstName: string;
 
-  @IsString()
-  @MinLength(2)
-  @MaxLength(50)
+  @IsString({ message: 'Le nom est obligatoire' })
+  @MinLength(1, { message: 'Le nom est obligatoire' })
+  @MaxLength(50, { message: 'Le nom ne peut pas dépasser 50 caractères' })
+  @Matches(namePattern, { message: nameMessage })
   lastName: string;
 
-  @IsDateString()
+  @IsDateString({}, { message: 'La date d\'embauche est invalide' })
   hireDate: string;
 
   @IsOptional()
-  @IsString()
-  @MaxLength(100)
+  @IsString({ message: 'Le poste doit être une chaîne de caractères' })
+  @MaxLength(100, { message: 'Le poste ne peut pas dépasser 100 caractères' })
   position?: string;
 
   @IsOptional()
-  @IsInt()
+  @IsInt({ message: 'Le poste sélectionné est invalide' })
   positionId?: number;
 
-  @IsEmail()
+  @IsEmail({}, { message: 'Adresse email invalide' })
   email: string;
 
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: 'Le mot de passe est obligatoire' })
+  @MinLength(6, { message: 'Le mot de passe doit contenir au moins 6 caractères' })
   password: string;
 
-  @IsInt()
+  @IsInt({ message: 'Veuillez sélectionner un département' })
   departmentId: number;
 }

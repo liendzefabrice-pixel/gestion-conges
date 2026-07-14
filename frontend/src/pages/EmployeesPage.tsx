@@ -17,10 +17,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { Label } from '../components/ui/label';
 import { Badge } from '../components/ui/badge';
-import { X, Search } from 'lucide-react';
+import { X, Search, ArrowUpDown, ArrowUp, ArrowDown, Loader2, AlertTriangle, History } from 'lucide-react';
 
 function computeSeniority(hireDate: string): string {
   const now = new Date();
@@ -30,11 +30,20 @@ function computeSeniority(hireDate: string): string {
   return `${years} an${years > 1 ? 's' : ''}`;
 }
 
+function computeSeniorityYears(hireDate: string): number {
+  const now = new Date();
+  const hire = new Date(hireDate);
+  const diff = now.getTime() - hire.getTime();
+  return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000));
+}
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('fr-FR');
 }
 
 type ModalMode = 'create' | 'edit' | null;
+type SortKey = 'lastName' | 'department' | 'position' | 'hireDate' | 'seniority' | 'status';
+type SortDir = 'asc' | 'desc';
 
 export default function EmployeesPage() {
   const { user } = useAuth();
@@ -51,15 +60,29 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState('');
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingEmployee, setEditingEmployee] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [showDetail, setShowDetail] = useState(false);
   const [detailEmployee, setDetailEmployee] = useState<any>(null);
+  const [detailTab, setDetailTab] = useState<'info' | 'history'>('info');
+  const [historyLog, setHistoryLog] = useState<any[]>([]);
   const [allSkills, setAllSkills] = useState<{ id: number; name: string }[]>([]);
   const [editSkillsMode, setEditSkillsMode] = useState(false);
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
   const [editReplMode, setEditReplMode] = useState(false);
   const [selectedReplIds, setSelectedReplIds] = useState<number[]>([]);
   const [eligibleReplacements, setEligibleReplacements] = useState<Employee[]>([]);
+
+  const [sortKey, setSortKey] = useState<SortKey>('lastName');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const [filterDept, setFilterDept] = useState('');
+  const [filterPosition, setFilterPosition] = useState('');
+  const [filterGender, setFilterGender] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+
+  const [confirmAction, setConfirmAction] = useState<{ emp: any; action: 'activate' | 'deactivate' | 'delete' } | null>(null);
 
   const initForm = () => ({
     matricule: '', firstName: '', lastName: '', email: '', password: '',
@@ -71,16 +94,23 @@ export default function EmployeesPage() {
   });
 
   const load = () => {
-    api.get('/employees').then((res) => {
-      const list = res.data.map((e: Employee) => ({ ...e, seniority: computeSeniority(e.hireDate) }));
+    setLoading(true);
+    Promise.all([
+      api.get('/employees'),
+      api.get('/departments'),
+      api.get('/positions/active'),
+      api.get('/users/roles'),
+      api.get('/leave-balances').catch(() => ({ data: [] })),
+      api.get('/skills').catch(() => ({ data: [] })),
+    ]).then(([empRes, deptRes, posRes, rolesRes, balRes, skillRes]) => {
+      const list = empRes.data.map((e: Employee) => ({ ...e, seniority: computeSeniority(e.hireDate) }));
       setEmployees(list);
-    });
-    api.get('/departments').then((res) => setDepartments(res.data));
-    api.get('/positions/active').then((res) => setPositions(res.data));
-    api.get('/users/roles').then((res) => setRoles(res.data));
-    api.get('/leave-balances').then((res) => {
+      setDepartments(deptRes.data);
+      setPositions(posRes.data);
+      setRoles(rolesRes.data);
+      setAllSkills(skillRes.data);
       const map: Record<number, number> = {};
-      for (const item of res.data) {
+      for (const item of balRes.data) {
         const annual = item.balances.find((b: LeaveBalance & { leaveType: { name: string } }) =>
           b.leaveType?.name?.toLowerCase().includes('annuel') ||
           b.leaveType?.name?.toLowerCase().includes('annual')
@@ -88,8 +118,7 @@ export default function EmployeesPage() {
         if (annual) map[item.employee.id] = annual.remaining;
       }
       setBalances(map);
-    }).catch(() => {});
-    api.get('/skills').then((res) => setAllSkills(res.data)).catch(() => {});
+    }).catch(() => {}).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
@@ -101,6 +130,7 @@ export default function EmployeesPage() {
   const createEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSubmitting(true);
     try {
       await api.post('/employees', {
         matricule: form.matricule,
@@ -115,9 +145,12 @@ export default function EmployeesPage() {
       });
       setForm(initForm());
       setShowCreate(false);
+      setSuccess('Employé créé avec succès');
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur lors de la création');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -150,6 +183,7 @@ export default function EmployeesPage() {
     setError('');
     setSuccess('');
     if (!editingEmployee) return;
+    setSubmitting(true);
 
     try {
       const patchBody: Record<string, any> = {
@@ -169,25 +203,52 @@ export default function EmployeesPage() {
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur lors de la modification');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const toggleActive = async (emp: any) => {
     try {
       await api.patch(`/users/${emp.user.id}`, { isActive: !emp.user.isActive });
+      setSuccess(emp.user.isActive ? 'Employé désactivé' : 'Employé activé');
+      setConfirmAction(null);
       load();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur');
+      setConfirmAction(null);
+    }
+  };
+
+  const confirmDelete = (emp: any) => {
+    setConfirmAction({ emp, action: 'delete' });
+  };
+
+  const handleDelete = async (emp: any) => {
+    try {
+      await api.delete(`/employees/${emp.id}`);
+      setSuccess('Employé supprimé');
+      setConfirmAction(null);
+      load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erreur lors de la suppression');
+      setConfirmAction(null);
     }
   };
 
   const openDetail = async (emp: any) => {
     setDetailEmployee(emp);
+    setDetailTab('info');
     setEditSkillsMode(false);
     setEditReplMode(false);
+    setHistoryLog([]);
     try {
-      const replRes = await api.get(`/employees/${emp.id}/replacements`);
+      const [replRes, histRes] = await Promise.all([
+        api.get(`/employees/${emp.id}/replacements`).catch(() => ({ data: { asEmployee: [] } })),
+        api.get(`/employees/${emp.id}/history`).catch(() => ({ data: [] })),
+      ]);
       setDetailEmployee((prev: any) => ({ ...prev, replacements: replRes.data.asEmployee || [] }));
+      setHistoryLog(histRes.data || []);
     } catch {
       setDetailEmployee((prev: any) => ({ ...prev, replacements: [] }));
     }
@@ -203,8 +264,10 @@ export default function EmployeesPage() {
   const closeDetail = () => {
     setShowDetail(false);
     setDetailEmployee(null);
+    setDetailTab('info');
     setEditSkillsMode(false);
     setEditReplMode(false);
+    setHistoryLog([]);
   };
 
   const handleSaveSkills = async () => {
@@ -235,18 +298,85 @@ export default function EmployeesPage() {
   const colCount = isAdmin ? 11 : 10;
 
   const filteredEmployees = useMemo(() => {
-    const q = search.toLowerCase();
-    if (!q) return employees;
-    return employees.filter(
-      (e) =>
-        e.firstName.toLowerCase().includes(q) ||
-        e.lastName.toLowerCase().includes(q) ||
-        e.matricule.toLowerCase().includes(q) ||
-        (e.positionRef?.name || e.position || '').toLowerCase().includes(q) ||
-        e.department?.name.toLowerCase().includes(q) ||
-        e.user?.email.toLowerCase().includes(q),
-    );
-  }, [employees, search]);
+    let result = [...employees];
+
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (e) =>
+          e.firstName.toLowerCase().includes(q) ||
+          e.lastName.toLowerCase().includes(q) ||
+          e.matricule.toLowerCase().includes(q) ||
+          (e.positionRef?.name || e.position || '').toLowerCase().includes(q) ||
+          e.department?.name.toLowerCase().includes(q) ||
+          e.user?.email.toLowerCase().includes(q),
+      );
+    }
+
+    if (filterDept) {
+      result = result.filter((e) => e.department?.id === Number(filterDept));
+    }
+    if (filterPosition) {
+      result = result.filter((e) => (e.positionRef?.id || e.positionId) === Number(filterPosition));
+    }
+    if (filterGender) {
+      result = result.filter((e) => (e.user as any)?.gender === filterGender);
+    }
+    if (filterStatus === 'active') {
+      result = result.filter((e) => e.user?.isActive);
+    } else if (filterStatus === 'inactive') {
+      result = result.filter((e) => !e.user?.isActive);
+    }
+
+    result.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case 'lastName':
+          cmp = (a.lastName || '').localeCompare(b.lastName || '');
+          break;
+        case 'department':
+          cmp = (a.department?.name || '').localeCompare(b.department?.name || '');
+          break;
+        case 'position':
+          cmp = ((a.positionRef?.name || a.position) || '').localeCompare((b.positionRef?.name || b.position) || '');
+          break;
+        case 'hireDate':
+          cmp = new Date(a.hireDate).getTime() - new Date(b.hireDate).getTime();
+          break;
+        case 'seniority':
+          cmp = computeSeniorityYears(a.hireDate) - computeSeniorityYears(b.hireDate);
+          break;
+        case 'status':
+          cmp = (a.user?.isActive ? 1 : 0) - (b.user?.isActive ? 1 : 0);
+          break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return result;
+  }, [employees, search, filterDept, filterPosition, filterGender, filterStatus, sortKey, sortDir]);
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  };
+
+  const SortIcon = ({ columnKey }: { columnKey: SortKey }) => {
+    if (sortKey !== columnKey) return <ArrowUpDown className="size-3 ml-1 opacity-30" />;
+    return sortDir === 'asc' ? <ArrowUp className="size-3 ml-1" /> : <ArrowDown className="size-3 ml-1" />;
+  };
+
+  const handleDeptChangeEdit = (deptId: string) => {
+    setEditForm((prev) => ({ ...prev, departmentId: deptId, positionId: '', position: '' }));
+  };
+
+  const handleDeptChangeCreate = (deptId: string) => {
+    setForm((prev) => ({ ...prev, departmentId: deptId, positionId: '', position: '' }));
+  };
 
   return (
     <div>
@@ -254,7 +384,8 @@ export default function EmployeesPage() {
         title="Employés"
         description="Gérez les employés de l'entreprise"
         actions={
-          <Button onClick={() => setShowCreate(!showCreate)}>
+          <Button onClick={() => setShowCreate(!showCreate)} disabled={submitting}>
+            {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
             Nouvel employé
           </Button>
         }
@@ -264,6 +395,14 @@ export default function EmployeesPage() {
         <Card className="mb-6">
           <CardContent className="p-4">
             <div className="p-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200">{success}</div>
+          </CardContent>
+        </Card>
+      )}
+
+      {error && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">{error}</div>
           </CardContent>
         </Card>
       )}
@@ -279,7 +418,6 @@ export default function EmployeesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4 border border-red-200">{error}</div>}
             <form onSubmit={createEmployee} className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Matricule</Label>
@@ -287,11 +425,11 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Prénom</Label>
-                <Input value={form.firstName} onChange={(e) => handleChange('firstName', e.target.value)} placeholder="Prénom" required />
+                <Input value={form.firstName} onChange={(e) => handleChange('firstName', e.target.value)} placeholder="Prénom" required maxLength={50} />
               </div>
               <div className="space-y-2">
                 <Label>Nom</Label>
-                <Input value={form.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Nom" required />
+                <Input value={form.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Nom" required maxLength={50} />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -321,11 +459,11 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Date d'embauche</Label>
-                <Input value={form.hireDate} onChange={(e) => handleChange('hireDate', e.target.value)} required type="date" />
+                <Input value={form.hireDate} onChange={(e) => handleChange('hireDate', e.target.value)} required type="date" max={new Date().toISOString().split('T')[0]} />
               </div>
               <div className="space-y-2">
                 <Label>Département</Label>
-                <Select value={form.departmentId || null} onValueChange={(v) => handleChange('departmentId', v || '')}>
+                <Select value={form.departmentId || null} onValueChange={(v) => handleDeptChangeCreate(v || '')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">
                       {form.departmentId
@@ -342,7 +480,7 @@ export default function EmployeesPage() {
                 </Select>
               </div>
               <div className="col-span-2 pt-2">
-                <Button type="submit">Créer l'employé</Button>
+                <Button type="submit" loading={submitting}>Créer l'employé</Button>
               </div>
             </form>
           </CardContent>
@@ -356,7 +494,6 @@ export default function EmployeesPage() {
             <DialogDescription>Modifiez les informations de l'employé</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditSubmit}>
-            {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4 border border-red-200">{error}</div>}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Matricule</Label>
@@ -364,11 +501,11 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Prénom</Label>
-                <Input value={editForm.firstName} onChange={(e) => setEditForm(p => ({ ...p, firstName: e.target.value }))} required />
+                <Input value={editForm.firstName} onChange={(e) => setEditForm(p => ({ ...p, firstName: e.target.value }))} required maxLength={50} />
               </div>
               <div className="space-y-2">
                 <Label>Nom</Label>
-                <Input value={editForm.lastName} onChange={(e) => setEditForm(p => ({ ...p, lastName: e.target.value }))} required />
+                <Input value={editForm.lastName} onChange={(e) => setEditForm(p => ({ ...p, lastName: e.target.value }))} required maxLength={50} />
               </div>
               <div className="space-y-2">
                 <Label>Poste</Label>
@@ -390,11 +527,11 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Date d'embauche</Label>
-                <Input value={editForm.hireDate} onChange={(e) => setEditForm(p => ({ ...p, hireDate: e.target.value }))} required type="date" />
+                <Input value={editForm.hireDate} onChange={(e) => setEditForm(p => ({ ...p, hireDate: e.target.value }))} required type="date" max={new Date().toISOString().split('T')[0]} />
               </div>
               <div className="space-y-2">
                 <Label>Département</Label>
-                <Select value={editForm.departmentId || null} onValueChange={(v) => setEditForm(p => ({ ...p, departmentId: v || '' }))}>
+                <Select value={editForm.departmentId || null} onValueChange={(v) => handleDeptChangeEdit(v || '')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">
                       {editForm.departmentId
@@ -430,7 +567,7 @@ export default function EmployeesPage() {
               </div>
             </div>
             <DialogFooter showCloseButton className="mt-6">
-              <Button type="submit">Enregistrer</Button>
+              <Button type="submit" loading={submitting}>Enregistrer</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -444,270 +581,413 @@ export default function EmployeesPage() {
             </DialogTitle>
             <DialogDescription>
               {detailEmployee?.matricule} &mdash; {detailEmployee?.user?.email}
+              {detailEmployee?.user?.isActive === false && (
+                <Badge variant="danger" className="ml-2">Désactivé</Badge>
+              )}
             </DialogDescription>
           </DialogHeader>
 
-          {/* Compétences */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold">Compétences</h4>
-              {!editSkillsMode && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const existing = (detailEmployee?.skills || []).map((s: any) =>
-                      s.skill ? s.skill.id : s.id
-                    );
-                    setSelectedSkillIds(existing);
-                    setEditSkillsMode(true);
-                  }}
-                >
-                  Modifier
-                </Button>
-              )}
-            </div>
-            {editSkillsMode ? (
-              <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
-                {allSkills.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Aucune compétence disponible</p>
-                )}
-                {allSkills.map((skill) => (
-                  <label key={skill.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedSkillIds.includes(skill.id)}
-                      onChange={(e) => {
-                        setSelectedSkillIds((prev) =>
-                          e.target.checked
-                            ? [...prev, skill.id]
-                            : prev.filter((id) => id !== skill.id)
-                        );
-                      }}
-                      className="rounded border-gray-300"
-                    />
-                    {skill.name}
-                  </label>
-                ))}
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" onClick={handleSaveSkills}>Enregistrer</Button>
-                  <Button variant="outline" size="sm" onClick={() => setEditSkillsMode(false)}>Annuler</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {(!detailEmployee?.skills || detailEmployee.skills.length === 0) ? (
-                  <span className="text-sm text-muted-foreground">Aucune compétence</span>
-                ) : (
-                  detailEmployee.skills.map((s: any) => (
-                    <Badge key={s.id} variant="info">
-                      {s.skill?.name || s.name}
-                    </Badge>
-                  ))
-                )}
-              </div>
-            )}
+          <div className="flex gap-2 mb-3">
+            <Button variant={detailTab === 'info' ? 'primary' : 'outline'} size="sm" onClick={() => setDetailTab('info')}>Infos</Button>
+            <Button variant={detailTab === 'history' ? 'primary' : 'outline'} size="sm" onClick={() => setDetailTab('history')}>
+              <History className="size-3.5 mr-1" /> Historique
+            </Button>
           </div>
 
-          {/* Remplaçants possibles */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold">Remplaçants possibles</h4>
-              {!editReplMode && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const existing = (detailEmployee?.replacements || []).map((r: any) =>
-                      r.replacement?.id || r.replacementId || r.id
-                    );
-                    setSelectedReplIds(existing);
-                    setEditReplMode(true);
-                  }}
-                >
-                  Gérer
-                </Button>
+          {detailTab === 'info' && (
+            <>
+              {/* Compétences */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold">Compétences</h4>
+                  {!editSkillsMode && (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const existing = (detailEmployee?.skills || []).map((s: any) =>
+                        s.skill ? s.skill.id : s.id
+                      );
+                      setSelectedSkillIds(existing);
+                      setEditSkillsMode(true);
+                    }}>
+                      Modifier
+                    </Button>
+                  )}
+                </div>
+                {editSkillsMode ? (
+                  <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
+                    {allSkills.length === 0 && (
+                      <p className="text-sm text-muted-foreground">Aucune compétence disponible</p>
+                    )}
+                    {allSkills.map((skill) => (
+                      <label key={skill.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedSkillIds.includes(skill.id)}
+                          onChange={(e) => {
+                            setSelectedSkillIds((prev) =>
+                              e.target.checked ? [...prev, skill.id] : prev.filter((id) => id !== skill.id)
+                            );
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        {skill.name}
+                      </label>
+                    ))}
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" onClick={handleSaveSkills}>Enregistrer</Button>
+                      <Button variant="outline" size="sm" onClick={() => setEditSkillsMode(false)}>Annuler</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {(!detailEmployee?.skills || detailEmployee.skills.length === 0) ? (
+                      <span className="text-sm text-muted-foreground">Aucune compétence</span>
+                    ) : (
+                      detailEmployee.skills.map((s: any) => (
+                        <Badge key={s.id} variant="info">{s.skill?.name || s.name}</Badge>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Remplaçants possibles */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-semibold">Remplaçants possibles</h4>
+                  {!editReplMode && (
+                    <Button variant="outline" size="sm" onClick={() => {
+                      const existing = (detailEmployee?.replacements || []).map((r: any) =>
+                        r.replacement?.id || r.replacementId || r.id
+                      );
+                      setSelectedReplIds(existing);
+                      setEditReplMode(true);
+                    }}>
+                      Gérer
+                    </Button>
+                  )}
+                </div>
+                {editReplMode ? (
+                  <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
+                    {eligibleReplacements.length === 0 && (
+                      <p className="text-sm text-muted-foreground">Aucun employé éligible</p>
+                    )}
+                    {eligibleReplacements.map((emp) => (
+                      <label key={emp.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedReplIds.includes(emp.id)}
+                          onChange={(e) => {
+                            setSelectedReplIds((prev) =>
+                              e.target.checked ? [...prev, emp.id] : prev.filter((id) => id !== emp.id)
+                            );
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        {emp.lastName} {emp.firstName} — {emp.positionRef?.name || emp.position || '—'}
+                      </label>
+                    ))}
+                    <div className="flex gap-2 pt-2">
+                      <Button size="sm" onClick={handleSaveReplacements}>Enregistrer</Button>
+                      <Button variant="outline" size="sm" onClick={() => setEditReplMode(false)}>Annuler</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {(!detailEmployee?.replacements || detailEmployee.replacements.length === 0) ? (
+                      <span className="text-sm text-muted-foreground">Aucun remplaçant défini</span>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nom</TableHead>
+                            <TableHead>Prénom</TableHead>
+                            <TableHead>Poste</TableHead>
+                            <TableHead>Département</TableHead>
+                            <TableHead>Confiance</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {detailEmployee.replacements.map((r: any) => {
+                            const repl = r.replacement || r;
+                            const conf = r.confidence || 'MOYEN';
+                            const confLabel: Record<string, string> = { EXCELLENT: 'Excellent', BON: 'Bon', MOYEN: 'Moyen', FAIBLE: 'Faible' };
+                            const confVariant: Record<string, string> = { EXCELLENT: 'success', BON: 'warning', MOYEN: 'default', FAIBLE: 'danger' };
+                            return (
+                              <TableRow key={r.id}>
+                                <TableCell>{repl.lastName}</TableCell>
+                                <TableCell>{repl.firstName}</TableCell>
+                                <TableCell className="text-muted-foreground">{repl.positionRef?.name || repl.position || '—'}</TableCell>
+                                <TableCell className="text-muted-foreground">{repl.department?.name}</TableCell>
+                                <TableCell>
+                                  <Badge variant={(confVariant[conf] || 'default') as any}>
+                                    {confLabel[conf] || conf}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {detailTab === 'history' && (
+            <div className="max-h-80 overflow-y-auto">
+              {historyLog.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Aucun historique</p>
+              ) : (
+                <div className="space-y-3">
+                  {historyLog.map((entry: any) => (
+                    <div key={entry.id} className="border rounded-lg p-3 text-sm">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-medium">{entry.action}</span>
+                        <span className="text-xs text-muted-foreground">{new Date(entry.createdAt).toLocaleString('fr-FR')}</span>
+                      </div>
+                      {entry.user && (
+                        <p className="text-xs text-muted-foreground mb-1">Par {entry.user.firstName} {entry.user.lastName} ({entry.user.email})</p>
+                      )}
+                      {entry.oldValue && entry.newValue && (
+                        <div className="text-xs space-y-0.5 text-muted-foreground">
+                          {entry.oldValue.departmentName && entry.newValue.departmentName && (
+                            <p>Département : {entry.oldValue.departmentName} → {entry.newValue.departmentName}</p>
+                          )}
+                          {entry.oldValue.positionName && entry.newValue.positionName && (
+                            <p>Poste : {entry.oldValue.positionName} → {entry.newValue.positionName}</p>
+                          )}
+                          {entry.newValue.changedFields && (
+                            <p>Modifié : {entry.newValue.changedFields.join(', ')}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-            {editReplMode ? (
-              <div className="border rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
-                {eligibleReplacements.length === 0 && (
-                  <p className="text-sm text-muted-foreground">Aucun employé éligible</p>
-                )}
-                {eligibleReplacements.map((emp) => (
-                  <label key={emp.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedReplIds.includes(emp.id)}
-                      onChange={(e) => {
-                        setSelectedReplIds((prev) =>
-                          e.target.checked
-                            ? [...prev, emp.id]
-                            : prev.filter((id) => id !== emp.id)
-                        );
-                      }}
-                      className="rounded border-gray-300"
-                    />
-                    {emp.lastName} {emp.firstName} — {emp.positionRef?.name || emp.position || '—'}
-                  </label>
-                ))}
-                <div className="flex gap-2 pt-2">
-                  <Button size="sm" onClick={handleSaveReplacements}>Enregistrer</Button>
-                  <Button variant="outline" size="sm" onClick={() => setEditReplMode(false)}>Annuler</Button>
-                </div>
-              </div>
-            ) : (
-              <div>
-                {(!detailEmployee?.replacements || detailEmployee.replacements.length === 0) ? (
-                  <span className="text-sm text-muted-foreground">Aucun remplaçant défini</span>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nom</TableHead>
-                        <TableHead>Prénom</TableHead>
-                        <TableHead>Poste</TableHead>
-                        <TableHead>Département</TableHead>
-                        <TableHead>Confiance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {detailEmployee.replacements.map((r: any) => {
-                        const repl = r.replacement || r;
-                        const conf = r.confidence || 'MOYEN';
-                        const confLabel: Record<string, string> = {
-                          EXCELLENT: '🟢 Excellent',
-                          BON: '🟡 Bon',
-                          MOYEN: '🟠 Moyen',
-                          FAIBLE: '🔴 Faible',
-                        };
-                        const confVariant: Record<string, string> = {
-                          EXCELLENT: 'success',
-                          BON: 'warning',
-                          MOYEN: 'default',
-                          FAIBLE: 'danger',
-                        };
-                        return (
-                          <TableRow key={r.id}>
-                            <TableCell>{repl.lastName}</TableCell>
-                            <TableCell>{repl.firstName}</TableCell>
-                            <TableCell className="text-muted-foreground">{repl.positionRef?.name || repl.position || '—'}</TableCell>
-                            <TableCell className="text-muted-foreground">{repl.department?.name}</TableCell>
-                            <TableCell>
-                              <Badge variant={(confVariant[conf] || 'default') as any}>
-                                {confLabel[conf] || conf}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
-            )}
-          </div>
+          )}
 
           <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>
 
-      {/* Search */}
-      <div className="relative max-w-sm mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher un employé..."
-          className="pl-9"
-        />
+      {/* Confirmation dialog */}
+      <Dialog open={confirmAction !== null} onOpenChange={() => setConfirmAction(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-5 text-destructive" />
+              Confirmation
+            </DialogTitle>
+            <DialogDescription>
+              {confirmAction && (
+                confirmAction.action === 'delete'
+                  ? `Êtes-vous sûr de vouloir supprimer l'employé ${confirmAction.emp.firstName} ${confirmAction.emp.lastName} ?`
+                  : confirmAction.action === 'activate'
+                    ? `Voulez-vous activer l'employé ${confirmAction.emp.firstName} ${confirmAction.emp.lastName} ?`
+                    : `Voulez-vous désactiver l'employé ${confirmAction.emp.firstName} ${confirmAction.emp.lastName} ?`
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter showCloseButton>
+            <Button variant="outline" onClick={() => setConfirmAction(null)}>Annuler</Button>
+            <Button
+              variant={confirmAction?.action === 'delete' ? 'danger' : 'primary'}
+              onClick={() => {
+                if (!confirmAction) return;
+                if (confirmAction.action === 'delete') handleDelete(confirmAction.emp);
+                else toggleActive(confirmAction.emp);
+              }}
+              loading={submitting}
+            >
+              {confirmAction?.action === 'delete' ? 'Supprimer' : confirmAction?.action === 'activate' ? 'Activer' : 'Désactiver'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Filters + Search */}
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        <div className="relative max-w-sm flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher un employé..."
+            className="pl-9"
+          />
+        </div>
+        <div className="w-44">
+          <Select value={filterDept || null} onValueChange={(v) => setFilterDept(v === '__all__' ? '' : v || '')}>
+            <SelectTrigger>
+              <span className="flex flex-1 text-left">
+                {filterDept ? departments.find(d => d.id === Number(filterDept))?.name || '' : <span className="text-muted-foreground">Département</span>}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous les départements</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-44">
+          <Select value={filterPosition || null} onValueChange={(v) => setFilterPosition(v === '__all__' ? '' : v || '')}>
+            <SelectTrigger>
+              <span className="flex flex-1 text-left">
+                {filterPosition ? positions.find(p => p.id === Number(filterPosition))?.name || '' : <span className="text-muted-foreground">Poste</span>}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous les postes</SelectItem>
+              {positions.map((p) => (
+                <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-40">
+          <Select value={filterGender || null} onValueChange={(v) => setFilterGender(v === '__all__' ? '' : v || '')}>
+            <SelectTrigger>
+              <span className="flex flex-1 text-left">
+                {filterGender === 'Homme' ? 'Homme' : filterGender === 'Femme' ? 'Femme' : <span className="text-muted-foreground">Sexe</span>}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous</SelectItem>
+              <SelectItem value="Homme">Homme</SelectItem>
+              <SelectItem value="Femme">Femme</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="w-40">
+          <Select value={filterStatus || null} onValueChange={(v) => setFilterStatus(v === '__all__' ? '' : v || '')}>
+            <SelectTrigger>
+              <span className="flex flex-1 text-left">
+                {filterStatus === 'active' ? 'Actifs' : filterStatus === 'inactive' ? 'Désactivés' : <span className="text-muted-foreground">Statut</span>}
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Tous</SelectItem>
+              <SelectItem value="active">Actifs</SelectItem>
+              <SelectItem value="inactive">Désactivés</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Matricule</TableHead>
-            <TableHead>Nom</TableHead>
-            <TableHead>Prénom</TableHead>
-            <TableHead>Poste</TableHead>
-            <TableHead>Département</TableHead>
-            <TableHead>Rôle</TableHead>
-            <TableHead>Compétences</TableHead>
-            <TableHead>Date d'embauche</TableHead>
-            <TableHead>Ancienneté</TableHead>
-            <TableHead>Solde annuel</TableHead>
-            {isAdmin && <TableHead className="text-right">ACTIONS</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredEmployees.map((e) => (
-            <TableRow key={e.id}>
-              <TableCell className="font-mono text-sm">{e.matricule}</TableCell>
-              <TableCell className="font-medium">{e.lastName}</TableCell>
-              <TableCell>{e.firstName}</TableCell>
-              <TableCell className="text-muted-foreground">{e.positionRef?.name || e.position || '—'}</TableCell>
-              <TableCell className="text-muted-foreground">{e.department?.name}</TableCell>
-              <TableCell>{translateRole(e.user?.role?.name || '')}</TableCell>
-              <TableCell>
-                <div className="flex flex-wrap gap-1 max-w-[160px]">
-                  {(!(e as any).skills || (e as any).skills.length === 0) ? (
-                    <span className="text-muted-foreground text-xs">—</span>
-                  ) : (
-                    (e as any).skills.slice(0, 3).map((s: any) => (
-                      <Badge key={s.id} variant="info" className="text-[10px]">
-                        {s.skill?.name || s.name}
-                      </Badge>
-                    ))
-                  )}
-                  {(e as any).skills?.length > 3 && (
-                    <Badge variant="outline" className="text-[10px]">+{(e as any).skills.length - 3}</Badge>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground">{formatDate(e.hireDate)}</TableCell>
-              <TableCell className="text-muted-foreground">{e.seniority}</TableCell>
-              <TableCell className="font-medium text-primary">{balances[e.id] !== undefined ? `${balances[e.id]} jours` : '—'}</TableCell>
+      {loading ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          </CardContent>
+        </Card>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Matricule</TableHead>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('lastName')}>
+                <span className="inline-flex items-center">Nom <SortIcon columnKey="lastName" /></span>
+              </TableHead>
+              <TableHead>Prénom</TableHead>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('position')}>
+                <span className="inline-flex items-center">Poste <SortIcon columnKey="position" /></span>
+              </TableHead>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('department')}>
+                <span className="inline-flex items-center">Département <SortIcon columnKey="department" /></span>
+              </TableHead>
+              <TableHead>Rôle</TableHead>
+              <TableHead>Compétences</TableHead>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('hireDate')}>
+                <span className="inline-flex items-center">Date d'embauche <SortIcon columnKey="hireDate" /></span>
+              </TableHead>
+              <TableHead className="cursor-pointer select-none" onClick={() => toggleSort('seniority')}>
+                <span className="inline-flex items-center">Ancienneté <SortIcon columnKey="seniority" /></span>
+              </TableHead>
+              <TableHead>Solde annuel</TableHead>
               {isAdmin && (
-                <TableCell className="text-right">
-                  <div className="flex flex-col items-end gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto py-1"
-                      onClick={() => openEdit(e)}
-                    >
-                      Modifier
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto py-1"
-                      onClick={() => openDetail(e)}
-                    >
-                      Détails
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-auto py-1 ${e.user?.isActive ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
-                      onClick={() => toggleActive(e)}
-                    >
-                      {e.user?.isActive ? 'Désactiver' : 'Activer'}
-                    </Button>
-                  </div>
-                </TableCell>
+                <TableHead className="cursor-pointer select-none text-right" onClick={() => toggleSort('status')}>
+                  <span className="inline-flex items-center justify-end">Statut <SortIcon columnKey="status" /></span>
+                </TableHead>
               )}
             </TableRow>
-          ))}
-          {filteredEmployees.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={colCount} className="text-center text-muted-foreground">
-                {search ? 'Aucun employé ne correspond à votre recherche' : 'Aucun employé'}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredEmployees.map((e) => (
+              <TableRow key={e.id}>
+                <TableCell className="font-mono text-sm">{e.matricule}</TableCell>
+                <TableCell className="font-medium">{e.lastName}</TableCell>
+                <TableCell>{e.firstName}</TableCell>
+                <TableCell className="text-muted-foreground">{e.positionRef?.name || e.position || '—'}</TableCell>
+                <TableCell className="text-muted-foreground">{e.department?.name}</TableCell>
+                <TableCell>{translateRole(e.user?.role?.name || '')}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1 max-w-[160px]">
+                    {(!(e as any).skills || (e as any).skills.length === 0) ? (
+                      <span className="text-muted-foreground text-xs">—</span>
+                    ) : (
+                      (e as any).skills.slice(0, 3).map((s: any) => (
+                        <Badge key={s.id} variant="info" className="text-[10px]">
+                          {s.skill?.name || s.name}
+                        </Badge>
+                      ))
+                    )}
+                    {(e as any).skills?.length > 3 && (
+                      <Badge variant="outline" className="text-[10px]">+{(e as any).skills.length - 3}</Badge>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{formatDate(e.hireDate)}</TableCell>
+                <TableCell className="text-muted-foreground">{e.seniority}</TableCell>
+                <TableCell className="font-medium text-primary">{balances[e.id] !== undefined ? `${balances[e.id]} jours` : '—'}</TableCell>
+                {isAdmin && (
+                  <TableCell className="text-right">
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={e.user?.isActive ? 'success' : 'danger'} className="mb-1">
+                        {e.user?.isActive ? 'Actif' : 'Désactivé'}
+                      </Badge>
+                      <Button variant="ghost" size="sm" className="h-auto py-1" onClick={() => openEdit(e)}>
+                        Modifier
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-auto py-1" onClick={() => openDetail(e)}>
+                        Détails
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-auto py-1 ${e.user?.isActive ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
+                        onClick={() => setConfirmAction({ emp: e, action: e.user?.isActive ? 'deactivate' : 'activate' })}
+                      >
+                        {e.user?.isActive ? 'Désactiver' : 'Activer'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto py-1 text-destructive hover:text-destructive"
+                        onClick={() => confirmDelete(e)}
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+            {filteredEmployees.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={colCount} className="text-center text-muted-foreground py-8">
+                  {search ? 'Aucun employé ne correspond à votre recherche' : 'Aucun employé'}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      )}
     </div>
   );
 }

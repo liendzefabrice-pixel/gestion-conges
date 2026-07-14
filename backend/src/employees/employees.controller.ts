@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
@@ -24,14 +25,17 @@ export class EmployeesController {
 
   @Post()
   @Roles('ADMIN', 'HR')
-  create(@Body() createEmployeeDto: CreateEmployeeDto) {
-    return this.employeesService.create(createEmployeeDto);
+  create(
+    @Body() createEmployeeDto: CreateEmployeeDto,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.employeesService.create(createEmployeeDto, user.id);
   }
 
   @Get()
   @Roles('ADMIN', 'HR', 'DIRECTOR')
-  findAll() {
-    return this.employeesService.findAll();
+  findAll(@CurrentUser() user: { id: number; role?: { name: string } }) {
+    return this.employeesService.findAll(user.role?.name);
   }
 
   @Get('me')
@@ -46,19 +50,29 @@ export class EmployeesController {
     return this.employeesService.findOne(id);
   }
 
+  @Get(':id/history')
+  @Roles('ADMIN', 'HR')
+  getHistory(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.getHistory(id);
+  }
+
   @Patch(':id')
   @Roles('ADMIN', 'HR')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
+    @CurrentUser() user: { id: number },
   ) {
-    return this.employeesService.update(id, updateEmployeeDto);
+    return this.employeesService.update(id, updateEmployeeDto, user.id);
   }
 
   @Delete(':id')
   @Roles('ADMIN')
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.employeesService.remove(id);
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.employeesService.remove(id, user.id);
   }
 
   @Post(':id/skills')

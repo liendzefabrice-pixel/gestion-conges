@@ -220,28 +220,42 @@ export class UsersService {
     if (data.firstName !== undefined) data.firstName = data.firstName.trim();
     if (data.lastName !== undefined) data.lastName = data.lastName.trim();
 
-    const updated = await this.prisma.user.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        gender: true,
-        isActive: true,
-        role: { select: { id: true, name: true, description: true } },
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            position: true,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id },
+        data,
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          gender: true,
+          isActive: true,
+          role: { select: { id: true, name: true, description: true } },
+          employee: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              position: true,
+            },
           },
+          createdAt: true,
+          updatedAt: true,
         },
-        createdAt: true,
-        updatedAt: true,
-      },
+      });
+
+      const employee = await tx.employee.findUnique({ where: { userId: id }, select: { id: true } });
+      if (employee) {
+        const syncData: any = {};
+        if (updateUserDto.firstName !== undefined) syncData.firstName = updateUserDto.firstName.trim();
+        if (updateUserDto.lastName !== undefined) syncData.lastName = updateUserDto.lastName.trim();
+        if (Object.keys(syncData).length > 0) {
+          await tx.employee.update({ where: { id: employee.id }, data: syncData });
+        }
+      }
+
+      return updatedUser;
     });
 
     const changedFields: string[] = [];

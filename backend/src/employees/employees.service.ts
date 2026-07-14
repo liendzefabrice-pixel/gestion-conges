@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,11 +19,31 @@ export class EmployeesService {
     private leaveBalanceEngine: LeaveBalanceEngineService,
   ) {}
 
-  async create(createEmployeeDto: CreateEmployeeDto) {
+  private validateHireDate(hireDate: string | Date): Date {
+    const date = new Date(hireDate);
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException('La date d\'embauche est invalide');
+    }
+    if (date > new Date()) {
+      throw new BadRequestException('La date d\'embauche ne peut pas être dans le futur');
+    }
+    if (date < new Date('1900-01-01')) {
+      throw new BadRequestException('La date d\'embauche est trop ancienne');
+    }
+    return date;
+  }
+
+  private trimNames(dto: { firstName?: string; lastName?: string }): void {
+    if (dto.firstName !== undefined) dto.firstName = dto.firstName.trim();
+    if (dto.lastName !== undefined) dto.lastName = dto.lastName.trim();
+  }
+
+  async create(createEmployeeDto: CreateEmployeeDto, currentUserId: number) {
+    this.trimNames(createEmployeeDto);
+
     const existingUser = await this.prisma.user.findUnique({
       where: { email: createEmployeeDto.email },
     });
-
     if (existingUser) {
       throw new ConflictException('Un utilisateur avec cet email existe déjà');
     }
@@ -30,7 +51,6 @@ export class EmployeesService {
     const existingMatricule = await this.prisma.employee.findUnique({
       where: { matricule: createEmployeeDto.matricule },
     });
-
     if (existingMatricule) {
       throw new ConflictException('Ce matricule est déjà attribué');
     }
@@ -38,11 +58,23 @@ export class EmployeesService {
     const department = await this.prisma.department.findUnique({
       where: { id: createEmployeeDto.departmentId },
     });
-
     if (!department) {
       throw new NotFoundException('Département introuvable');
     }
 
+    if (createEmployeeDto.positionId) {
+      const pos = await this.prisma.position.findUnique({
+        where: { id: createEmployeeDto.positionId },
+      });
+      if (!pos) {
+        throw new NotFoundException('Poste introuvable');
+      }
+      if (pos.departmentId !== createEmployeeDto.departmentId) {
+        throw new BadRequestException('Le poste sélectionné n\'appartient pas au département choisi');
+      }
+    }
+
+    const hireDate = this.validateHireDate(createEmployeeDto.hireDate);
     const hashedPassword = await bcrypt.hash(createEmployeeDto.password, 10);
 
     const employeeRole = await this.prisma.role.findUnique({
@@ -52,10 +84,12 @@ export class EmployeesService {
     const employee = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          email: createEmployeeDto.email,
+          email: createEmployeeDto.email.trim().toLowerCase(),
           password: hashedPassword,
           roleId: employeeRole!.id,
           mustChangePassword: true,
+          firstName: createEmployeeDto.firstName,
+          lastName: createEmployeeDto.lastName,
         },
       });
 
@@ -64,15 +98,33 @@ export class EmployeesService {
       const emp = await tx.employee.create({
         data: {
           ...empData,
+          firstName: createEmployeeDto.firstName,
+          lastName: createEmployeeDto.lastName,
           position: position || null,
           positionId: positionId || null,
-          hireDate: new Date(createEmployeeDto.hireDate),
+          hireDate,
           userId: user.id,
         },
         include: {
           user: { include: { role: true } },
           department: true,
           positionRef: true,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMPLOYEE_CREATED',
+          entityType: 'EMPLOYEE',
+          entityId: emp.id,
+          newValue: {
+            matricule: emp.matricule,
+            firstName: emp.firstName,
+            lastName: emp.lastName,
+            departmentId: emp.departmentId,
+            positionId: emp.positionId,
+          } as any,
+          userId: currentUserId,
         },
       });
 
@@ -83,17 +135,22 @@ export class EmployeesService {
     });
 
     await this.leaveBalanceEngine.syncEmployeeBalances(employee.id);
-
     return employee;
   }
 
-  async findAll() {
+  async findAll(userRole?: string) {
+    const where: any = {};
+
+    if (!userRole || userRole !== 'ADMIN') {
+      where.user = { isActive: true, role: { name: { not: 'ADMIN' } } };
+    } else {
+      where.user = { role: { name: { not: 'ADMIN' } } };
+    }
+
     return this.prisma.employee.findMany({
-      where: {
-        user: { role: { name: { not: 'ADMIN' } } },
-      },
+      where,
       include: {
-        user: { select: { id: true, email: true, isActive: true, role: true } },
+        user: { select: { id: true, email: true, isActive: true, gender: true, role: true } },
         department: true,
         positionRef: true,
         skills: { include: { skill: true } },
@@ -140,8 +197,9 @@ export class EmployeesService {
     return employee;
   }
 
-  async update(id: number, updateEmployeeDto: UpdateEmployeeDto) {
-    await this.findOne(id);
+  async update(id: number, updateEmployeeDto: UpdateEmployeeDto, currentUserId: number) {
+    const employee = await this.findOne(id);
+    this.trimNames(updateEmployeeDto);
 
     if (updateEmployeeDto.matricule) {
       const existingMatricule = await this.prisma.employee.findUnique({
@@ -152,32 +210,79 @@ export class EmployeesService {
       }
     }
 
+    let newDepartmentId = updateEmployeeDto.departmentId ?? employee.departmentId;
+
+    if (updateEmployeeDto.departmentId && updateEmployeeDto.departmentId !== employee.departmentId) {
+      const department = await this.prisma.department.findUnique({
+        where: { id: updateEmployeeDto.departmentId },
+      });
+      if (!department) {
+        throw new NotFoundException('Département introuvable');
+      }
+    }
+
+    let effectivePositionId = updateEmployeeDto.positionId !== undefined ? updateEmployeeDto.positionId : employee.positionId;
+
+    if (updateEmployeeDto.departmentId && updateEmployeeDto.departmentId !== employee.departmentId) {
+      if (effectivePositionId) {
+        const pos = await this.prisma.position.findUnique({
+          where: { id: effectivePositionId },
+        });
+        if (!pos || pos.departmentId !== updateEmployeeDto.departmentId) {
+          effectivePositionId = null;
+        }
+      }
+    }
+
+    if (effectivePositionId) {
+      const pos = await this.prisma.position.findUnique({
+        where: { id: effectivePositionId },
+      });
+      if (pos && pos.departmentId !== newDepartmentId) {
+        throw new BadRequestException('Le poste sélectionné n\'appartient pas au département choisi');
+      }
+    }
+
+    let hireDate: Date | undefined;
+    if (updateEmployeeDto.hireDate) {
+      hireDate = this.validateHireDate(updateEmployeeDto.hireDate);
+    }
+
     const { position, positionId, roleId, ...rest } = updateEmployeeDto;
 
-    const employee = await this.prisma.$transaction(async (tx) => {
+    const updated = await this.prisma.$transaction(async (tx) => {
       if (roleId !== undefined) {
         const role = await tx.role.findUnique({ where: { id: roleId } });
         if (!role) {
           throw new NotFoundException('Rôle introuvable');
         }
-        const emp = await tx.employee.findUnique({ where: { id }, select: { userId: true } });
-        if (emp) {
-          await tx.user.update({
-            where: { id: emp.userId },
-            data: { roleId },
-          });
-        }
+        await tx.user.update({
+          where: { id: employee.userId },
+          data: { roleId },
+        });
+      }
+
+      const firstNameChanged = updateEmployeeDto.firstName !== undefined && updateEmployeeDto.firstName !== employee.firstName;
+      const lastNameChanged = updateEmployeeDto.lastName !== undefined && updateEmployeeDto.lastName !== employee.lastName;
+      if (firstNameChanged || lastNameChanged) {
+        const userUpdateData: any = {};
+        if (firstNameChanged) userUpdateData.firstName = updateEmployeeDto.firstName;
+        if (lastNameChanged) userUpdateData.lastName = updateEmployeeDto.lastName;
+        await tx.user.update({
+          where: { id: employee.userId },
+          data: userUpdateData,
+        });
       }
 
       return tx.employee.update({
         where: { id },
         data: {
           ...rest,
+          firstName: updateEmployeeDto.firstName ?? undefined,
+          lastName: updateEmployeeDto.lastName ?? undefined,
           position: position ?? undefined,
-          positionId: positionId ?? undefined,
-          hireDate: updateEmployeeDto.hireDate
-            ? new Date(updateEmployeeDto.hireDate)
-            : undefined,
+          positionId: effectivePositionId ?? undefined,
+          hireDate: hireDate ?? undefined,
         },
         include: {
           user: { select: { id: true, email: true, isActive: true, role: true } },
@@ -188,14 +293,73 @@ export class EmployeesService {
       });
     });
 
-    const employeeName = `${employee.firstName} ${employee.lastName}`;
+    const changedFields: string[] = [];
+    if (updateEmployeeDto.firstName !== undefined && updateEmployeeDto.firstName !== employee.firstName) changedFields.push('firstName');
+    if (updateEmployeeDto.lastName !== undefined && updateEmployeeDto.lastName !== employee.lastName) changedFields.push('lastName');
+    if (updateEmployeeDto.departmentId !== undefined && updateEmployeeDto.departmentId !== employee.departmentId) changedFields.push('departmentId');
+    if (effectivePositionId !== employee.positionId) changedFields.push('positionId');
+    if (updateEmployeeDto.hireDate !== undefined) changedFields.push('hireDate');
+
+    if (changedFields.length > 0) {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'EMPLOYEE_MODIFIED',
+          entityType: 'EMPLOYEE',
+          entityId: id,
+          oldValue: {
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+            departmentId: employee.departmentId,
+            positionId: employee.positionId,
+          } as any,
+          newValue: {
+            firstName: updated.firstName,
+            lastName: updated.lastName,
+            departmentId: updated.departmentId,
+            positionId: updated.positionId,
+            changedFields,
+          } as any,
+          userId: currentUserId,
+        },
+      });
+    }
+
+    if (updateEmployeeDto.departmentId !== undefined && updateEmployeeDto.departmentId !== employee.departmentId) {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'EMPLOYEE_DEPT_CHANGED',
+          entityType: 'EMPLOYEE',
+          entityId: id,
+          oldValue: { departmentId: employee.departmentId, departmentName: employee.department?.name } as any,
+          newValue: { departmentId: updated.departmentId, departmentName: updated.department?.name } as any,
+          userId: currentUserId,
+        },
+      });
+    }
+
+    if (effectivePositionId !== employee.positionId) {
+      const oldPosName = employee.positionRef?.name || employee.position;
+      const newPosName = updated.positionRef?.name || updated.position;
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'EMPLOYEE_POSITION_CHANGED',
+          entityType: 'EMPLOYEE',
+          entityId: id,
+          oldValue: { positionId: employee.positionId, positionName: oldPosName } as any,
+          newValue: { positionId: effectivePositionId, positionName: newPosName } as any,
+          userId: currentUserId,
+        },
+      });
+    }
+
+    const employeeName = `${updated.firstName} ${updated.lastName}`;
     this.notificationsService.employeeModified(id, employeeName);
 
     if (updateEmployeeDto.hireDate) {
       await this.leaveBalanceEngine.syncEmployeeBalances(id);
     }
 
-    return employee;
+    return updated;
   }
 
   async updateSkills(id: number, skillIds: number[]) {
@@ -289,10 +453,39 @@ export class EmployeesService {
     );
   }
 
-  async remove(id: number) {
+  async getHistory(id: number) {
+    await this.findOne(id);
+
+    return this.prisma.auditLog.findMany({
+      where: {
+        entityType: 'EMPLOYEE',
+        entityId: id,
+      },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, email: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async remove(id: number, currentUserId: number) {
     const employee = await this.findOne(id);
 
     await this.prisma.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          action: 'EMPLOYEE_DELETED',
+          entityType: 'EMPLOYEE',
+          entityId: id,
+          oldValue: {
+            matricule: employee.matricule,
+            firstName: employee.firstName,
+            lastName: employee.lastName,
+          } as any,
+          userId: currentUserId,
+        },
+      });
+
       await tx.employee.delete({ where: { id } });
       await tx.user.delete({ where: { id: employee.userId } });
     });
