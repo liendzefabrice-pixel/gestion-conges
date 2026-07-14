@@ -31,8 +31,9 @@ export default function LoginPage() {
     try {
       await login(data.email, data.password)
       navigate('/dashboard')
-    } catch {
-      setError('root', { message: 'Email ou mot de passe incorrect' })
+    } catch (err: any) {
+      const message = err.response?.data?.message || 'Adresse email ou mot de passe incorrect'
+      setError('root', { message })
     }
   }
 

@@ -28,7 +28,13 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Identifiants invalides');
+      throw new UnauthorizedException('Adresse email ou mot de passe incorrect');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'Votre compte a été désactivé. Veuillez contacter l\'administrateur.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -37,11 +43,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Identifiants invalides');
-    }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('Compte désactivé');
+      throw new UnauthorizedException('Adresse email ou mot de passe incorrect');
     }
 
     if (!user.welcomeSent) {
@@ -87,6 +89,19 @@ export class AuthService {
       throw new BadRequestException('Mot de passe actuel incorrect');
     }
 
+    const isSameAsOld = await bcrypt.compare(
+      changePasswordDto.newPassword,
+      user.password,
+    );
+
+    if (isSameAsOld) {
+      throw new BadRequestException(
+        'Le nouveau mot de passe doit être différent de l\'ancien.',
+      );
+    }
+
+    this.validatePasswordStrength(changePasswordDto.newPassword);
+
     const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
 
     await this.prisma.user.update({
@@ -105,10 +120,10 @@ export class AuthService {
       where: { email: forgotPasswordDto.email },
     });
 
-    const alwaysOk = { message: 'Si cet email existe, un code de vérification a été envoyé.' };
-
     if (!user) {
-      return alwaysOk;
+      throw new NotFoundException(
+        'Aucun compte n\'est associé à cette adresse email.',
+      );
     }
 
     const otpExpiration = this.configService.get<number>('OTP_EXPIRATION_MINUTES') || 10;
@@ -154,7 +169,7 @@ export class AuthService {
 
     await this.mailService.sendForgotPasswordOTP(user.email, firstName, otp, otpExpiration);
 
-    return alwaysOk;
+    return { message: 'Un code de vérification a été envoyé par email.' };
   }
 
   async verifyOtp(verifyOtpDto: VerifyOtpDto) {
@@ -184,7 +199,7 @@ export class AuthService {
           userId: user.id,
         },
       });
-      throw new BadRequestException('Code de vérification invalide.');
+      throw new BadRequestException('Code de vérification incorrect.');
     }
 
     if (otpRecord.expiresAt < new Date()) {
@@ -196,7 +211,7 @@ export class AuthService {
           userId: user.id,
         },
       });
-      throw new BadRequestException('Le code de vérification a expiré. Veuillez en demander un nouveau.');
+      throw new BadRequestException('Le code de vérification a expiré. Veuillez demander un nouveau code.');
     }
 
     await this.prisma.passwordResetOtp.update({
@@ -213,7 +228,7 @@ export class AuthService {
       },
     });
 
-    return { message: 'Code vérifié avec succès.' };
+    return { message: 'Code vérifié avec succès' };
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
@@ -242,6 +257,19 @@ export class AuthService {
       throw new BadRequestException('Le code de vérification a expiré. Veuillez recommencer.');
     }
 
+    this.validatePasswordStrength(resetPasswordDto.newPassword);
+
+    const isSameAsOld = await bcrypt.compare(
+      resetPasswordDto.newPassword,
+      user.password,
+    );
+
+    if (isSameAsOld) {
+      throw new BadRequestException(
+        'Le nouveau mot de passe doit être différent de l\'ancien.',
+      );
+    }
+
     const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
 
     await this.prisma.$transaction(async (tx) => {
@@ -266,5 +294,31 @@ export class AuthService {
     });
 
     return { message: 'Mot de passe réinitialisé avec succès.' };
+  }
+
+  private validatePasswordStrength(password: string): void {
+    if (password.length < 8) {
+      throw new BadRequestException(
+        'Le mot de passe doit contenir au minimum 8 caractères.',
+      );
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      throw new BadRequestException(
+        'Le mot de passe doit contenir au moins une lettre majuscule.',
+      );
+    }
+
+    if (!/[a-z]/.test(password)) {
+      throw new BadRequestException(
+        'Le mot de passe doit contenir au moins une lettre minuscule.',
+      );
+    }
+
+    if (!/[0-9]/.test(password)) {
+      throw new BadRequestException(
+        'Le mot de passe doit contenir au moins un chiffre.',
+      );
+    }
   }
 }

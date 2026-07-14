@@ -58,7 +58,7 @@ export default function OtpVerificationPage() {
       await api.post('/auth/verify-otp', { email, otp })
       navigate(`/reset-password?email=${encodeURIComponent(email)}&otp=${otp}`)
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Code invalide')
+      setError(err.response?.data?.message || 'Code de vérification invalide')
     } finally {
       setLoading(false)
     }

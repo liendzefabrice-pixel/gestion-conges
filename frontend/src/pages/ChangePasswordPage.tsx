@@ -6,7 +6,7 @@ import { PasswordInput } from '../components/ui/password-input';
 import { Button } from '../components/ui/button';
 import { Label } from '../components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Lock } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
 
 export default function ChangePasswordPage() {
   const { logout } = useAuth();
@@ -16,6 +16,15 @@ export default function ChangePasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const validatePassword = (password: string): string | null => {
+    if (password.length < 8) return 'Le mot de passe doit contenir au minimum 8 caractères';
+    if (!/[A-Z]/.test(password)) return 'Le mot de passe doit contenir au moins une lettre majuscule';
+    if (!/[a-z]/.test(password)) return 'Le mot de passe doit contenir au moins une lettre minuscule';
+    if (!/[0-9]/.test(password)) return 'Le mot de passe doit contenir au moins un chiffre';
+    return null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,11 +35,13 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError('Le mot de passe doit faire au moins 6 caractères');
+    const pwdError = validatePassword(newPassword);
+    if (pwdError) {
+      setError(pwdError);
       return;
     }
 
+    setSubmitting(true);
     try {
       await api.post('/auth/change-password', { currentPassword, newPassword });
       setSuccess(true);
@@ -40,6 +51,8 @@ export default function ChangePasswordPage() {
       }, 2000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erreur lors du changement de mot de passe');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -84,8 +97,10 @@ export default function ChangePasswordPage() {
               <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
               <PasswordInput id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
             </div>
-            <Button type="submit" className="w-full">
-              Changer le mot de passe
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? (
+                <><Loader2 className="size-4 mr-2 animate-spin" />Changement en cours...</>
+              ) : 'Changer le mot de passe'}
             </Button>
           </form>
         </CardContent>

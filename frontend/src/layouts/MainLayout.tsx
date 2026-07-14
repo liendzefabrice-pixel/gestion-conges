@@ -3,6 +3,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import NotificationsBadge from '../components/NotificationsBadge'
 import Topbar from '../components/Topbar'
+import { ToastContainer } from '../components/Toast'
 import { translateRole } from '../lib/utils'
 import {
   LayoutDashboard,
@@ -93,6 +94,7 @@ export default function MainLayout() {
 
   return (
     <div className="flex h-screen bg-background">
+      <ToastContainer />
       <aside
         className={cn(
           'flex flex-col h-full bg-white border-r border-gray-200 shrink-0 z-30 transition-all duration-200',

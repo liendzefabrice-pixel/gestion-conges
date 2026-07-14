@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
@@ -16,13 +17,19 @@ import {
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate()
+  const [error, setError] = useState('')
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
   })
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
-    await api.post('/auth/forgot-password', data)
-    navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`)
+    setError('')
+    try {
+      await api.post('/auth/forgot-password', data)
+      navigate(`/verify-otp?email=${encodeURIComponent(data.email)}`)
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Une erreur est survenue')
+    }
   }
 
   return (
@@ -35,6 +42,9 @@ export default function ForgotPasswordPage() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {error && (
+            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200">{error}</div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" placeholder="email@exemple.com" {...register('email')} />

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const loginSchema = z.object({
-  email: z.string().email('Email invalide'),
+  email: z.string().email('Adresse email invalide'),
   password: z.string().min(1, 'Mot de passe requis'),
 })
 
@@ -15,10 +15,16 @@ export const leaveRequestSchema = z.object({
   path: ['endDate'],
 })
 
+export const passwordSchema = z.string()
+  .min(8, 'Le mot de passe doit contenir au minimum 8 caractères')
+  .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins une lettre majuscule')
+  .regex(/[a-z]/, 'Le mot de passe doit contenir au moins une lettre minuscule')
+  .regex(/[0-9]/, 'Le mot de passe doit contenir au moins un chiffre')
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
-  newPassword: z.string().min(6, 'Le mot de passe doit faire au moins 6 caractères'),
-  confirmPassword: z.string().min(6),
+  newPassword: passwordSchema,
+  confirmPassword: z.string().min(1, 'Confirmation requise'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword'],
@@ -31,14 +37,14 @@ export const permissionRequestSchema = z.object({
 })
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Email invalide'),
+  email: z.string().email('Adresse email invalide'),
 })
 
 export const resetPasswordSchema = z.object({
   email: z.string().email('Email invalide'),
   otp: z.string().length(6, 'Le code doit contenir 6 chiffres'),
-  newPassword: z.string().min(6, 'Le mot de passe doit faire au moins 6 caractères'),
-  confirmPassword: z.string().min(6),
+  newPassword: passwordSchema,
+  confirmPassword: z.string().min(1, 'Confirmation requise'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword'],

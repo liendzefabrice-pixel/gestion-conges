@@ -1,9 +1,11 @@
 import { Outlet } from 'react-router-dom'
 import { branding } from '../config/branding'
+import { ToastContainer } from '../components/Toast'
 
 export default function AuthLayout() {
   return (
     <div className="min-h-screen flex">
+      <ToastContainer />
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#0B6B3A] via-[#0A5F35] to-[#064B2A] relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 25px 25px, white 1px, transparent 0)', backgroundSize: '50px 50px' }} />
         <div className="relative flex flex-col justify-center px-16">
