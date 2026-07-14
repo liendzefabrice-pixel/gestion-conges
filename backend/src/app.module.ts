@@ -20,6 +20,7 @@ import { LeaveCampaignModule } from './leave-campaign/leave-campaign.module';
 import { InternalEventsModule } from './internal-events/internal-events.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { CalendarRhModule } from './calendar-rh/calendar-rh.module';
+import { DecisionEngineModule } from './decision-engine/decision-engine.module';
 import { MailModule } from './mail/mail.module';
 
 @Module({
@@ -40,6 +41,7 @@ import { MailModule } from './mail/mail.module';
     InternalEventsModule,
     CalendarModule,
     CalendarRhModule,
+    DecisionEngineModule,
     MailModule,
     EmployeesModule,
     LeaveModule,

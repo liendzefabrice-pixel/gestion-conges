@@ -26,6 +26,7 @@ import CampaignsPage from '../pages/CampaignsPage';
 import MyCampaignPage from '../pages/MyCampaignPage';
 import EventsPage from '../pages/EventsPage';
 import CalendarPage from '../pages/CalendarPage';
+import DecisionEnginePage from '../pages/DecisionEnginePage';
 import CalendarRhPage from '../pages/CalendarRhPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -82,6 +83,7 @@ function AppRoutes() {
         <Route path="internal-events" element={<EventsPage />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="calendar-rh" element={<CalendarRhPage />} />
+        <Route path="decision-engine" element={<DecisionEnginePage />} />
         <Route path="permissions" element={<PermissionsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="notifications" element={<NotificationsPage />} />

@@ -117,6 +117,8 @@ model User {
   notifications Notification[]
   auditLogs     AuditLog[]
   balanceAdjustments BalanceAdjustment[]
+  decisionAnalysesCreated DecisionAnalysis[] @relation("DecisionCreator")
+  decisionAnalysesDecided DecisionAnalysis[] @relation("DecisionDecider")
   leaveRequestHistories LeaveRequestHistory[]
   passwordResetOtps PasswordResetOtp[]
 
@@ -409,6 +411,32 @@ model Holiday {
   updatedAt   DateTime @updatedAt
 
   @@unique([name, date])
+}
+
+model DecisionAnalysis {
+  id                Int      @id @default(autoincrement())
+  entityType        String   // 'LEAVE_REQUEST' | 'LEAVE_PROPOSAL'
+  entityId          Int
+  score             Int
+  maxScore          Int      @default(100)
+  rules             Json     // RuleEvaluation[]
+  summary           String?
+  suggestedStartDate DateTime?
+  suggestedEndDate   DateTime?
+  suggestionNote    String?
+  decision          String?  // 'ACCEPT' | 'REJECT' | 'MODIFY'
+  decisionComment   String?
+  decidedAt         DateTime?
+
+  createdById       Int
+  createdBy         User     @relation("DecisionCreator", fields: [createdById], references: [id])
+  decidedById       Int?
+  decidedBy         User?    @relation("DecisionDecider", fields: [decidedById], references: [id])
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([entityType, entityId])
 }
 
 model Setting {

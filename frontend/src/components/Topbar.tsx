@@ -31,6 +31,7 @@ const pageTitles: Record<string, string> = {
   '/internal-events': 'Événements internes',
   '/calendar': 'Calendrier',
   '/calendar-rh': 'Calendrier RH',
+  '/decision-engine': 'Moteur de décision RH',
   '/leave-planning': 'Planification',
   '/permissions': 'Permissions',
   '/users': 'Utilisateurs',

@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   Wallet,
   CalendarX,
+  Gauge,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -60,6 +61,7 @@ const navSections: NavSection[] = [
       { label: 'Événements', path: '/internal-events', icon: CalendarX, roles: ['HR', 'ADMIN'] },
       { label: 'Calendrier', path: '/calendar', icon: CalendarDays, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
       { label: 'Calendrier RH', path: '/calendar-rh', icon: CalendarDays, roles: ['ADMIN', 'HR'] },
+      { label: 'Décision RH', path: '/decision-engine', icon: Gauge, roles: ['ADMIN', 'HR'] },
       { label: 'Permissions', path: '/permissions', icon: FileText, roles: ['EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN'] },
     ],
   },
