@@ -60,4 +60,34 @@ export class EmployeesController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.employeesService.remove(id);
   }
+
+  @Post(':id/skills')
+  @Roles('ADMIN', 'HR')
+  updateSkills(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('skillIds') skillIds: number[],
+  ) {
+    return this.employeesService.updateSkills(id, skillIds);
+  }
+
+  @Get(':id/replacements')
+  @Roles('ADMIN', 'HR')
+  getReplacements(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.getReplacements(id);
+  }
+
+  @Post(':id/replacements')
+  @Roles('ADMIN', 'HR')
+  setReplacements(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('replacementIds') replacementIds: number[],
+  ) {
+    return this.employeesService.setReplacements(id, replacementIds);
+  }
+
+  @Get(':id/eligible-replacements')
+  @Roles('ADMIN', 'HR')
+  getEligibleReplacements(@Param('id', ParseIntPipe) id: number) {
+    return this.employeesService.getEligibleReplacements(id);
+  }
 }

@@ -72,6 +72,7 @@ const navSections: NavSection[] = [
       { label: 'Postes', path: '/positions', icon: Briefcase, roles: ['ADMIN'] },
       { label: 'Types de congés', path: '/leave-types', icon: List, roles: ['ADMIN'] },
       { label: 'Jours fériés', path: '/holidays', icon: CalendarX, roles: ['ADMIN'] },
+      { label: 'Compétences', path: '/skills', icon: List, roles: ['ADMIN'] },
       { label: 'Notifications', path: '/notifications', icon: Bell, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'], badge: true },
     ],
   },

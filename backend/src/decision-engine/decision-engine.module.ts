@@ -7,6 +7,7 @@ import { InternalEventConflictRule } from './rules/internal-event-conflict.rule'
 import { BalanceSufficiencyRule } from './rules/balance-sufficiency.rule';
 import { CampaignValidationRule } from './rules/campaign-validation.rule';
 import { OperationalRiskRule } from './rules/operational-risk.rule';
+import { ReplacementAvailabilityRule } from './rules/replacement-availability.rule';
 
 @Module({
   imports: [PrismaModule],
@@ -18,6 +19,7 @@ import { OperationalRiskRule } from './rules/operational-risk.rule';
     BalanceSufficiencyRule,
     CampaignValidationRule,
     OperationalRiskRule,
+    ReplacementAvailabilityRule,
   ],
   exports: [DecisionEngineService],
 })

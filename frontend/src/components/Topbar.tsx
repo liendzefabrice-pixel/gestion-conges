@@ -37,6 +37,7 @@ const pageTitles: Record<string, string> = {
   '/users': 'Utilisateurs',
   '/account': 'Mon compte',
   '/account/security': 'Sécurité',
+  '/skills': 'Compétences',
   '/notifications': 'Notifications',
   '/change-password': 'Changement de mot de passe',
 }

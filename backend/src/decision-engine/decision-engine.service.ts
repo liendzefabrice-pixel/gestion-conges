@@ -6,6 +6,7 @@ import { InternalEventConflictRule } from './rules/internal-event-conflict.rule'
 import { BalanceSufficiencyRule } from './rules/balance-sufficiency.rule';
 import { CampaignValidationRule } from './rules/campaign-validation.rule';
 import { OperationalRiskRule } from './rules/operational-risk.rule';
+import { ReplacementAvailabilityRule } from './rules/replacement-availability.rule';
 
 @Injectable()
 export class DecisionEngineService {
@@ -19,8 +20,9 @@ export class DecisionEngineService {
     private balanceRule: BalanceSufficiencyRule,
     private campaignRule: CampaignValidationRule,
     private operationalRiskRule: OperationalRiskRule,
+    private replacementRule: ReplacementAvailabilityRule,
   ) {
-    this.rules = [this.deptConflictRule, this.eventConflictRule, this.balanceRule, this.campaignRule, this.operationalRiskRule];
+    this.rules = [this.deptConflictRule, this.eventConflictRule, this.balanceRule, this.campaignRule, this.operationalRiskRule, this.replacementRule];
   }
 
   registerRule(rule: DecisionRule) {

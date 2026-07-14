@@ -28,6 +28,7 @@ import EventsPage from '../pages/EventsPage';
 import CalendarPage from '../pages/CalendarPage';
 import DecisionEnginePage from '../pages/DecisionEnginePage';
 import CalendarRhPage from '../pages/CalendarRhPage';
+import SkillsPage from '../pages/SkillsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, mustChangePassword } = useAuth();
@@ -86,6 +87,7 @@ function AppRoutes() {
         <Route path="decision-engine" element={<DecisionEnginePage />} />
         <Route path="permissions" element={<PermissionsPage />} />
         <Route path="users" element={<UsersPage />} />
+        <Route path="skills" element={<SkillsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
       </Route>
 

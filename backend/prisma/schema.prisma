@@ -197,9 +197,46 @@ model Employee {
   leaveBalances          LeaveBalance[]
   annualLeavePlannings   AnnualLeavePlanning[]
   leaveProposals         LeaveProposal[]
+  skills                 EmployeeSkill[]
+  replacementsAsEmployee  EmployeeReplacement[] @relation("EmployeeReplaced")
+  replacementsAsReplacement EmployeeReplacement[] @relation("ReplacementEmployee")
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model Skill {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+
+  employees   EmployeeSkill[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EmployeeSkill {
+  employeeId  Int
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  skillId     Int
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([employeeId, skillId])
+}
+
+model EmployeeReplacement {
+  id             Int      @id @default(autoincrement())
+  employeeId     Int
+  employee       Employee @relation("EmployeeReplaced", fields: [employeeId], references: [id], onDelete: Cascade)
+  replacementId  Int
+  replacement    Employee @relation("ReplacementEmployee", fields: [replacementId], references: [id], onDelete: Cascade)
+  confidence     String   @default("MOYEN")
+
+  createdAt      DateTime @default(now())
+
+  @@unique([employeeId, replacementId])
+  @@index([replacementId])
 }
 
 model LeaveType {

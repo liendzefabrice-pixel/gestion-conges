@@ -52,6 +52,7 @@ export interface Employee {
   department: Department;
   user: { id: number; email: string; isActive: boolean; role: { name: string } };
   leaveBalances?: LeaveBalance[];
+  skills?: { id: number; skill: { id: number; name: string } }[];
 }
 
 export interface LeaveType {

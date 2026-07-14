@@ -21,6 +21,7 @@ import { InternalEventsModule } from './internal-events/internal-events.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { CalendarRhModule } from './calendar-rh/calendar-rh.module';
 import { DecisionEngineModule } from './decision-engine/decision-engine.module';
+import { SkillsModule } from './skills/skills.module';
 import { MailModule } from './mail/mail.module';
 
 @Module({
@@ -42,6 +43,7 @@ import { MailModule } from './mail/mail.module';
     CalendarModule,
     CalendarRhModule,
     DecisionEngineModule,
+    SkillsModule,
     MailModule,
     EmployeesModule,
     LeaveModule,

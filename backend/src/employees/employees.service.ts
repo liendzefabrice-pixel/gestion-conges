@@ -96,6 +96,7 @@ export class EmployeesService {
         user: { select: { id: true, email: true, isActive: true, role: true } },
         department: true,
         positionRef: true,
+        skills: { include: { skill: true } },
       },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
@@ -109,6 +110,7 @@ export class EmployeesService {
         department: true,
         positionRef: true,
         leaveBalances: { include: { leaveType: true } },
+        skills: { include: { skill: true } },
       },
     });
 
@@ -127,6 +129,7 @@ export class EmployeesService {
         department: true,
         positionRef: true,
         leaveBalances: { include: { leaveType: true } },
+        skills: { include: { skill: true } },
       },
     });
 
@@ -180,6 +183,7 @@ export class EmployeesService {
           user: { select: { id: true, email: true, isActive: true, role: true } },
           department: true,
           positionRef: true,
+          skills: { include: { skill: true } },
         },
       });
     });
@@ -192,6 +196,97 @@ export class EmployeesService {
     }
 
     return employee;
+  }
+
+  async updateSkills(id: number, skillIds: number[]) {
+    await this.findOne(id);
+
+    await this.prisma.employeeSkill.deleteMany({ where: { employeeId: id } });
+
+    if (skillIds.length > 0) {
+      await this.prisma.employeeSkill.createMany({
+        data: skillIds.map((skillId) => ({ employeeId: id, skillId })),
+      });
+    }
+
+    return this.findOne(id);
+  }
+
+  async getReplacements(id: number) {
+    await this.findOne(id);
+
+    const [asEmployee, asReplacement] = await Promise.all([
+      this.prisma.employeeReplacement.findMany({
+        where: { employeeId: id },
+        include: {
+          replacement: {
+            include: {
+              positionRef: true,
+              department: { select: { id: true, name: true } },
+              skills: { include: { skill: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.employeeReplacement.findMany({
+        where: { replacementId: id },
+        include: {
+          employee: {
+            include: {
+              positionRef: true,
+              department: { select: { id: true, name: true } },
+            },
+          },
+        },
+      }),
+    ]);
+
+    return { asEmployee, asReplacement };
+  }
+
+  async setReplacements(id: number, replacementIds: number[]) {
+    await this.findOne(id);
+
+    await this.prisma.employeeReplacement.deleteMany({ where: { employeeId: id } });
+
+    if (replacementIds.length > 0) {
+      for (const replacementId of replacementIds) {
+        if (replacementId === id) continue;
+        await this.prisma.employeeReplacement.create({
+          data: { employeeId: id, replacementId },
+        });
+      }
+    }
+
+    return this.getReplacements(id);
+  }
+
+  async getEligibleReplacements(employeeId: number) {
+    const employee = await this.findOne(employeeId);
+
+    if (!employee.positionId) {
+      return [];
+    }
+
+    const position = await this.prisma.position.findUnique({
+      where: { id: employee.positionId },
+      include: {
+        employees: {
+          where: { id: { not: employeeId } },
+          include: {
+            user: { select: { id: true, email: true, isActive: true } },
+            department: { select: { id: true, name: true } },
+            skills: { include: { skill: true } },
+          },
+        },
+      },
+    });
+
+    if (!position) return [];
+
+    return (position.employees || []).filter(
+      (e) => e.user?.isActive,
+    );
   }
 
   async remove(id: number) {

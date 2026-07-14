@@ -110,8 +110,9 @@ export default function DecisionPanel({ entityType, entityId }: DecisionPanelPro
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Règles évaluées</p>
               {latest.rules?.map((rule: any, i: number) => {
                 const operational = rule.name === 'operational_risk'
+                const replacement = rule.name === 'replacement_availability'
                 return (
-                  <div key={i} className={cn('flex items-start gap-3 p-3 rounded-xl border', operational ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-100')}>
+                  <div key={i} className={cn('flex items-start gap-3 p-3 rounded-xl border', replacement ? 'bg-teal-50 border-teal-200' : operational ? 'bg-indigo-50 border-indigo-200' : 'bg-gray-50 border-gray-100')}>
                     {statusIcon(rule.status)}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -130,6 +131,79 @@ export default function DecisionPanel({ entityType, entityId }: DecisionPanelPro
                 )
               })}
             </div>
+
+            {/* Replacement analysis section */}
+            {latest.rules?.find((r: any) => r.name === 'replacement_availability') && (
+              <div className="rounded-xl border border-teal-200 bg-teal-50 overflow-hidden">
+                <div className="px-3 py-2 bg-teal-100 border-b border-teal-200">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-teal-800">Analyse des remplacements</p>
+                </div>
+                <div className="p-3 space-y-2 text-sm">
+                  {(() => {
+                    const rule = latest.rules.find((r: any) => r.name === 'replacement_availability')
+                    const lines = (rule?.details || '').split('\n').filter(Boolean)
+                    const replLine = lines.find((l: string) => l.includes('✅') || l.includes('🔴') || l.includes('⚠'))
+                    const confLine = lines.find((l: string) => l.includes('Niveau de confiance'))
+                    const scoreLine = lines.find((l: string) => l.includes('Score de correspondance'))
+                    const posteLine = lines.find((l: string) => l.includes('Poste'))
+                    const deptLine = lines.find((l: string) => l.includes('Département'))
+                    const skillLine = lines.find((l: string) => l.includes('Compétences communes'))
+
+                    if (!replLine || replLine.includes('🔴')) {
+                      return (
+                        <div className="flex items-center gap-2 text-red-700">
+                          <XCircle className="size-4 shrink-0" />
+                          <span>Aucun remplaçant disponible sur la période</span>
+                        </div>
+                      )
+                    }
+
+                    const replName = replLine.replace('✅', '').replace('disponible', '').trim()
+                    return (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 text-teal-800 font-medium">
+                          <CheckCircle2 className="size-4 shrink-0" />
+                          <span>Employé remplacé</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs ml-6">
+                          <span className="text-muted-foreground">Remplaçant proposé</span>
+                          <span className="font-medium">{replName}</span>
+                          {posteLine && (
+                            <>
+                              <span className="text-muted-foreground">Poste</span>
+                              <span>{posteLine.replace('Poste :', '').trim()}</span>
+                            </>
+                          )}
+                          {deptLine && (
+                            <>
+                              <span className="text-muted-foreground">Département</span>
+                              <span>{deptLine.replace('Département :', '').trim()}</span>
+                            </>
+                          )}
+                          <span className="text-muted-foreground">Disponibilité</span>
+                          <span className="text-green-600 font-medium">✅ Disponible</span>
+                          {scoreLine && (
+                            <>
+                              <span className="text-muted-foreground">Score de correspondance</span>
+                              <span>{scoreLine.replace('Score de correspondance :', '').trim()}</span>
+                            </>
+                          )}
+                          {confLine && (
+                            <>
+                              <span className="text-muted-foreground">Niveau de confiance</span>
+                              <span className="font-semibold">{confLine.replace('Niveau de confiance :', '').trim()}</span>
+                            </>
+                          )}
+                        </div>
+                        {skillLine && (
+                          <p className="text-xs text-muted-foreground mt-2 ml-6">{skillLine.trim()}</p>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
 
             {/* Suggestion */}
             {latest.suggestion?.note && (
