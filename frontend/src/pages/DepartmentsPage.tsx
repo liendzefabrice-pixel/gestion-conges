@@ -16,9 +16,9 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Search } from 'lucide-react';
+import { Search, Loader2, AlertTriangle } from 'lucide-react';
 
 type ModalMode = 'create' | 'edit' | null;
 
@@ -40,6 +40,10 @@ export default function DepartmentsPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const [confirmAction, setConfirmAction] = useState<{ dept: any; action: 'activate' | 'deactivate' | 'delete' } | null>(null);
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editingDept, setEditingDept] = useState<any>(null);
@@ -50,8 +54,14 @@ export default function DepartmentsPage() {
   const [formIsActive, setFormIsActive] = useState('true');
 
   const load = () => {
-    api.get('/departments').then((res) => setDepartments(res.data));
-    api.get('/employees').then((res) => setEmployees(res.data));
+    setLoading(true);
+    Promise.all([
+      api.get('/departments'),
+      api.get('/employees'),
+    ]).then(([deptRes, empRes]) => {
+      setDepartments(deptRes.data);
+      setEmployees(empRes.data);
+    }).catch(() => {}).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
@@ -117,9 +127,23 @@ export default function DepartmentsPage() {
     setError('');
     setSuccess('');
 
+    if (!formName.trim()) {
+      setError('Le nom du département est obligatoire');
+      return;
+    }
+    if (formName.trim().length > 100) {
+      setError('Le nom ne peut pas dépasser 100 caractères');
+      return;
+    }
+    if (formMinEmployees && (isNaN(Number(formMinEmployees)) || Number(formMinEmployees) < 0)) {
+      setError("L'effectif minimum doit être un nombre positif");
+      return;
+    }
+
+    setSubmitting(true);
     const body: Record<string, any> = {
-      name: formName,
-      description: formDesc || undefined,
+      name: formName.trim(),
+      description: formDesc.trim() || undefined,
       minEmployees: Number(formMinEmployees) || 0,
     };
     if (formHeadId) body.headId = Number(formHeadId);
@@ -137,16 +161,36 @@ export default function DepartmentsPage() {
       setEditingDept(null);
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const toggleActive = async (d: any) => {
+  const handleToggleActive = async (d: any) => {
     try {
       await api.patch(`/departments/${d.id}`, { isActive: !(d.isActive !== false) });
+      setSuccess(d.isActive !== false ? 'Département désactivé' : 'Département activé');
+      setConfirmAction(null);
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur');
+      setConfirmAction(null);
+    }
+  };
+
+  const handleDelete = async (d: any) => {
+    try {
+      await api.delete(`/departments/${d.id}`);
+      setSuccess('Département supprimé');
+      setConfirmAction(null);
+      load();
+    } catch (err: any) {
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur');
+      setConfirmAction(null);
     }
   };
 
@@ -159,7 +203,8 @@ export default function DepartmentsPage() {
         description="Gérez les départements de l'entreprise"
         actions={
           isAdmin ? (
-            <Button onClick={openCreate}>
+            <Button onClick={openCreate} disabled={submitting}>
+              {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
               Nouveau département
             </Button>
           ) : undefined
@@ -174,7 +219,14 @@ export default function DepartmentsPage() {
         </Card>
       )}
 
-      {/* Search + Sort */}
+      {error && (
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">{error}</div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -209,80 +261,128 @@ export default function DepartmentsPage() {
         </div>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nom du département</TableHead>
-            <TableHead>Responsable</TableHead>
-            <TableHead>Nombre d'employés</TableHead>
-            <TableHead>Min. requis</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead>Date de création</TableHead>
-            <TableHead>Statut</TableHead>
-            {isAdmin && <TableHead className="text-right">Actions</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {paged.map((d) => (
-            <TableRow key={d.id}>
-              <TableCell className="font-medium">{d.name}</TableCell>
-              <TableCell className="text-muted-foreground">
-                {d.head ? `${d.head.firstName} ${d.head.lastName}` : '—'}
-              </TableCell>
-              <TableCell>{d._count?.employees || 0}</TableCell>
-              <TableCell>{d.minEmployees ?? 0}</TableCell>
-              <TableCell className="text-muted-foreground max-w-[200px] truncate">{d.description || '—'}</TableCell>
-              <TableCell className="text-muted-foreground">{d.createdAt ? formatDate(d.createdAt) : '—'}</TableCell>
-              <TableCell>
-                <Badge variant={d.isActive !== false ? 'success' : 'danger'}>
-                  {d.isActive !== false ? 'Actif' : 'Inactif'}
-                </Badge>
-              </TableCell>
-              {isAdmin && (
-                <TableCell className="text-right">
-                  <div className="flex flex-col items-end gap-1">
-                    <Button variant="ghost" size="sm" className="h-auto py-1" onClick={() => openEdit(d)}>
-                      Modifier
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-auto py-1 ${d.isActive !== false ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
-                      onClick={() => toggleActive(d)}
-                    >
-                      {d.isActive !== false ? 'Désactiver' : 'Activer'}
-                    </Button>
-                  </div>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-          {paged.length === 0 && (
+      {loading ? (
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+          </CardContent>
+        </Card>
+      ) : (
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground">
-                Aucun département
-              </TableCell>
+              <TableHead>Nom du département</TableHead>
+              <TableHead>Responsable</TableHead>
+              <TableHead className="text-right">Effectif</TableHead>
+              <TableHead className="text-right">Min. requis</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Date de création</TableHead>
+              <TableHead>Statut</TableHead>
+              {isAdmin && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {paged.map((d) => (
+              <TableRow key={d.id}>
+                <TableCell className="font-medium">{d.name}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {d.head ? `${d.head.firstName} ${d.head.lastName}` : '—'}
+                </TableCell>
+                <TableCell className="text-right font-medium tabular-nums">{d._count?.employees || 0}</TableCell>
+                <TableCell className="text-right tabular-nums">{d.minEmployees ?? 0}</TableCell>
+                <TableCell className="text-muted-foreground max-w-[200px] truncate">{d.description || '—'}</TableCell>
+                <TableCell className="text-muted-foreground">{d.createdAt ? formatDate(d.createdAt) : '—'}</TableCell>
+                <TableCell>
+                  <Badge variant={d.isActive !== false ? 'success' : 'danger'}>
+                    {d.isActive !== false ? 'Actif' : 'Inactif'}
+                  </Badge>
+                </TableCell>
+                {isAdmin && (
+                  <TableCell className="text-right">
+                    <div className="flex flex-col items-end gap-1">
+                      <Button variant="ghost" size="sm" className="h-auto py-1" onClick={() => openEdit(d)}>
+                        Modifier
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-auto py-1 ${d.isActive !== false ? 'text-destructive hover:text-destructive' : 'text-success hover:text-success'}`}
+                        onClick={() => setConfirmAction({ dept: d, action: d.isActive !== false ? 'deactivate' : 'activate' })}
+                      >
+                        {d.isActive !== false ? 'Désactiver' : 'Activer'}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto py-1 text-destructive hover:text-destructive"
+                        onClick={() => setConfirmAction({ dept: d, action: 'delete' })}
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+            {paged.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
+                  {search ? 'Aucun département ne correspond à votre recherche' : 'Aucun département'}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <Button variant="ghost" size="sm" disabled={page === 0} onClick={() => setPage(Math.max(0, page - 1))}>
+        <div className="flex items-center justify-between gap-2 mt-4">
+          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(Math.max(0, page - 1))}>
             Précédent
           </Button>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground tabular-nums">
             Page {page + 1} / {totalPages}
           </span>
-          <Button variant="ghost" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(Math.min(totalPages - 1, page + 1))}>
+          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(Math.min(totalPages - 1, page + 1))}>
             Suivant
           </Button>
         </div>
       )}
 
-      {/* Create / Edit Modal */}
+      <Dialog open={confirmAction !== null} onOpenChange={() => setConfirmAction(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-5 text-destructive" />
+              Confirmation
+            </DialogTitle>
+            <DialogDescription>
+              {confirmAction && (
+                confirmAction.action === 'delete'
+                  ? `Êtes-vous sûr de vouloir supprimer le département « ${confirmAction.dept.name} » ?`
+                  : confirmAction.action === 'activate'
+                    ? `Voulez-vous activer le département « ${confirmAction.dept.name} » ?`
+                    : `Voulez-vous désactiver le département « ${confirmAction.dept.name} » ?`
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter showCloseButton>
+            <Button variant="outline" onClick={() => setConfirmAction(null)}>Annuler</Button>
+            <Button
+              variant={confirmAction?.action === 'delete' ? 'danger' : 'primary'}
+              onClick={() => {
+                if (!confirmAction) return;
+                if (confirmAction.action === 'delete') handleDelete(confirmAction.dept);
+                else handleToggleActive(confirmAction.dept);
+              }}
+              loading={submitting}
+            >
+              {confirmAction?.action === 'delete' ? 'Supprimer' : confirmAction?.action === 'activate' ? 'Activer' : 'Désactiver'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={modalMode !== null} onOpenChange={(open) => { if (!open) closeModal(); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
@@ -296,11 +396,11 @@ export default function DepartmentsPage() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Nom</Label>
-                <Input value={formName} onChange={(e) => setFormName(e.target.value)} required />
+                <Input value={formName} onChange={(e) => setFormName(e.target.value)} required maxLength={100} />
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
-                <Input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Optionnelle" />
+                <Input value={formDesc} onChange={(e) => setFormDesc(e.target.value)} placeholder="Optionnelle" maxLength={255} />
               </div>
               <div className="space-y-2">
                 <Label>Effectif minimum requis</Label>
@@ -327,23 +427,25 @@ export default function DepartmentsPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Statut</Label>
-                <Select value={formIsActive} onValueChange={setFormIsActive}>
-                  <SelectTrigger>
-                    <span className="flex flex-1 text-left">
-                      {formIsActive === 'true' ? 'Actif' : formIsActive === 'false' ? 'Inactif' : <span className="text-muted-foreground">Sélectionner</span>}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Actif</SelectItem>
-                    <SelectItem value="false">Inactif</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {modalMode === 'edit' && (
+                <div className="space-y-2">
+                  <Label>Statut</Label>
+                  <Select value={formIsActive} onValueChange={setFormIsActive}>
+                    <SelectTrigger>
+                      <span className="flex flex-1 text-left">
+                        {formIsActive === 'true' ? 'Actif' : formIsActive === 'false' ? 'Inactif' : <span className="text-muted-foreground">Sélectionner</span>}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Actif</SelectItem>
+                      <SelectItem value="false">Inactif</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <DialogFooter showCloseButton className="mt-6">
-              <Button type="submit">
+              <Button type="submit" loading={submitting}>
                 {modalMode === 'create' ? 'Créer le département' : 'Enregistrer'}
               </Button>
             </DialogFooter>
