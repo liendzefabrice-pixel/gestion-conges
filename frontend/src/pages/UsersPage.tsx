@@ -25,14 +25,15 @@ import { toast } from '../components/Toast';
 
 type ModalMode = 'create' | 'edit' | null;
 
-const namePattern = /^[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF\-' ]+$/;
+const namePattern = /^(?=.*[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF])[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF\-' ]+$/;
 const nameMessage = 'Le nom ne peut contenir que des lettres, espaces, apostrophes et traits d\'union.';
 
 function validateName(value: string, field: string): string | null {
   const trimmed = value.trim();
   if (!trimmed) return `Ce champ est obligatoire`;
-  if (trimmed.length > 100) return `Le ${field} ne peut pas dépasser 100 caractères`;
-  if (!namePattern.test(trimmed)) return nameMessage;
+  if (trimmed.length > 10) return `Le ${field} ne peut pas dépasser 10 caractères`;
+  if (!/^[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF\-' ]+$/.test(trimmed)) return nameMessage;
+  if (!namePattern.test(trimmed)) return 'Le champ doit contenir au moins une lettre';
   return null;
 }
 
@@ -166,7 +167,8 @@ export default function UsersPage() {
         loadUsers();
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Une erreur est survenue');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Une erreur est survenue');
     } finally {
       setSubmitting(false);
     }
@@ -214,7 +216,8 @@ export default function UsersPage() {
       }
       loadUsers();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Une erreur est survenue');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Une erreur est survenue');
     } finally {
       setSubmitting(false);
     }
@@ -327,7 +330,7 @@ export default function UsersPage() {
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="Jean"
                     required
-                    maxLength={100}
+                    maxLength={10}
                   />
                 </div>
                 <div className="space-y-2">
@@ -337,7 +340,7 @@ export default function UsersPage() {
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Douala"
                     required
-                    maxLength={100}
+                    maxLength={10}
                   />
                 </div>
               </div>

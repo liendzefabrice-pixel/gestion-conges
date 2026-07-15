@@ -148,7 +148,8 @@ export default function EmployeesPage() {
       setSuccess('Employé créé avec succès');
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la création');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur lors de la création');
     } finally {
       setSubmitting(false);
     }
@@ -202,7 +203,8 @@ export default function EmployeesPage() {
       setEditingEmployee(null);
       load();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erreur lors de la modification');
+      const msg = err.response?.data?.message;
+      setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur lors de la modification');
     } finally {
       setSubmitting(false);
     }
@@ -425,11 +427,11 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Prénom</Label>
-                <Input value={form.firstName} onChange={(e) => handleChange('firstName', e.target.value)} placeholder="Prénom" required maxLength={50} />
+                <Input value={form.firstName} onChange={(e) => handleChange('firstName', e.target.value)} placeholder="Prénom" required maxLength={10} />
               </div>
               <div className="space-y-2">
                 <Label>Nom</Label>
-                <Input value={form.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Nom" required maxLength={50} />
+                <Input value={form.lastName} onChange={(e) => handleChange('lastName', e.target.value)} placeholder="Nom" required maxLength={10} />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -494,6 +496,7 @@ export default function EmployeesPage() {
             <DialogDescription>Modifiez les informations de l'employé</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditSubmit}>
+            {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg mb-4 border border-red-200">{error}</div>}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Matricule</Label>
@@ -501,11 +504,11 @@ export default function EmployeesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Prénom</Label>
-                <Input value={editForm.firstName} onChange={(e) => setEditForm(p => ({ ...p, firstName: e.target.value }))} required maxLength={50} />
+                <Input value={editForm.firstName} onChange={(e) => setEditForm(p => ({ ...p, firstName: e.target.value }))} required maxLength={10} />
               </div>
               <div className="space-y-2">
                 <Label>Nom</Label>
-                <Input value={editForm.lastName} onChange={(e) => setEditForm(p => ({ ...p, lastName: e.target.value }))} required maxLength={50} />
+                <Input value={editForm.lastName} onChange={(e) => setEditForm(p => ({ ...p, lastName: e.target.value }))} required maxLength={10} />
               </div>
               <div className="space-y-2">
                 <Label>Poste</Label>

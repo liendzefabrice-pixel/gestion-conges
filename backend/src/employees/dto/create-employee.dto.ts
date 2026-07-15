@@ -9,7 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 
-const namePattern = /^[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF\-' ]+$/;
+const namePattern = /^(?=.*[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF])[a-zA-ZÀ-ÿ\u00C0-\u024F\u1E00-\u1EFF\-' ]+$/;
 const nameMessage = 'Le nom ne peut contenir que des lettres, espaces, apostrophes et traits d\'union.';
 
 export class CreateEmployeeDto {
@@ -20,13 +20,13 @@ export class CreateEmployeeDto {
 
   @IsString({ message: 'Le prénom est obligatoire' })
   @MinLength(1, { message: 'Le prénom est obligatoire' })
-  @MaxLength(50, { message: 'Le prénom ne peut pas dépasser 50 caractères' })
+  @MaxLength(10, { message: 'Le prénom ne peut pas dépasser 10 caractères' })
   @Matches(namePattern, { message: nameMessage })
   firstName: string;
 
   @IsString({ message: 'Le nom est obligatoire' })
   @MinLength(1, { message: 'Le nom est obligatoire' })
-  @MaxLength(50, { message: 'Le nom ne peut pas dépasser 50 caractères' })
+  @MaxLength(10, { message: 'Le nom ne peut pas dépasser 10 caractères' })
   @Matches(namePattern, { message: nameMessage })
   lastName: string;
 
