@@ -14,9 +14,12 @@ export class DashboardService {
         this.prisma.leaveType.count({ where: { isActive: true } }),
       ]);
 
-    const [pendingLeaves, pendingPermissions] = await Promise.all([
+    const [pendingLeaves, pendingPermissions, openCampaign, campaignProposals, eligibleEmployees] = await Promise.all([
       this.prisma.leaveRequest.count({ where: { status: 'EN_ATTENTE_RH' } }),
       this.prisma.permissionRequest.count({ where: { status: 'EN_ATTENTE_RH' } }),
+      this.prisma.leaveCampaign.findFirst({ where: { status: 'OUVERTE' }, select: { id: true, label: true, year: true } }),
+      this.getCampaignProposalCounts(),
+      this.countEligibleEmployees(),
     ]);
 
     return {
@@ -29,7 +32,38 @@ export class DashboardService {
         permission: pendingPermissions,
         total: pendingLeaves + pendingPermissions,
       },
+      campaign: openCampaign ? {
+        id: openCampaign.id,
+        label: openCampaign.label,
+        year: openCampaign.year,
+        eligibleEmployees: eligibleEmployees,
+        proposalsReceived: campaignProposals,
+        participationRate: eligibleEmployees > 0 ? Math.round((campaignProposals / eligibleEmployees) * 100) : 0,
+      } : null,
     };
+  }
+
+  private async getCampaignProposalCounts(): Promise<number> {
+    const openCampaign = await this.prisma.leaveCampaign.findFirst({
+      where: { status: 'OUVERTE' },
+    });
+    if (!openCampaign) return 0;
+    return this.prisma.leaveProposal.count({
+      where: { campaignId: openCampaign.id },
+    });
+  }
+
+  private async countEligibleEmployees(): Promise<number> {
+    const employees = await this.prisma.employee.findMany({
+      where: { user: { isActive: true, role: { name: { not: 'ADMIN' } } } },
+    });
+    let count = 0;
+    const now = new Date();
+    for (const emp of employees) {
+      const diffMonths = (now.getFullYear() - emp.hireDate.getFullYear()) * 12 + now.getMonth() - emp.hireDate.getMonth();
+      if (diffMonths >= 12) count++;
+    }
+    return count;
   }
 
   async getHrStats() {
@@ -49,6 +83,24 @@ export class DashboardService {
       where: { year: currentYear },
     });
 
+    const openCampaign = await this.prisma.leaveCampaign.findFirst({
+      where: { status: 'OUVERTE' },
+      include: { _count: { select: { proposals: true } } },
+    });
+
+    let campaign: any = null;
+    if (openCampaign) {
+      const eligibleCount = await this.countEligibleEmployees();
+      campaign = {
+        id: openCampaign.id,
+        label: openCampaign.label,
+        year: openCampaign.year,
+        eligibleEmployees: eligibleCount,
+        proposalsReceived: openCampaign._count.proposals,
+        participationRate: eligibleCount > 0 ? Math.round((openCampaign._count.proposals / eligibleCount) * 100) : 0,
+      };
+    }
+
     return {
       toReview: {
         leave: pendingLeaves,
@@ -64,6 +116,7 @@ export class DashboardService {
         withPlanning: planningsCount,
         withoutPlanning: totalEmployees - planningsCount,
       },
+      campaign,
     };
   }
 

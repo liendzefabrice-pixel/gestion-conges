@@ -73,6 +73,7 @@ import {
   WalletCards,
   BellRing,
   PlusCircle,
+  Megaphone,
 } from 'lucide-react'
 
 type DashboardData = DashboardAdmin | DashboardHr | DashboardDirector | DashboardEmployee
@@ -352,7 +353,41 @@ function AdminDashboard({
         />
       </div>
 
-      {/* 3. Charts Section */}
+      {/* 3. Campaign Section */}
+      {data.campaign ? (
+        <div className="rounded-2xl border bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-200/50 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-rose-500/10">
+              <Megaphone className="size-5 text-rose-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">{data.campaign.label}</p>
+              <p className="text-xs text-muted-foreground">Campagne {data.campaign.year}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white/60 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Employés éligibles</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{data.campaign.eligibleEmployees}</p>
+              <p className="text-xs text-muted-foreground mt-1">Ayant au moins 1 an d'ancienneté</p>
+            </div>
+            <div className="bg-white/60 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Propositions reçues</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{data.campaign.proposalsReceived}</p>
+              <p className="text-xs text-muted-foreground mt-1">Sur {data.campaign.eligibleEmployees} éligibles</p>
+            </div>
+            <div className="bg-white/60 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Taux de participation</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{data.campaign.participationRate}%</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {data.campaign.participationRate >= 80 ? 'Excellent' : data.campaign.participationRate >= 50 ? 'Correct' : 'Faible'}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* 4. Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <DashboardChartCard title="Répartition des utilisateurs" subtitle="Par rôle">
           {hasUserData ? (
@@ -605,6 +640,40 @@ function HrDashboard({ data }: { data: DashboardHr }) {
           evolution="+0%"
         />
       </div>
+
+      {/* 2.5 Campaign Section */}
+      {data.campaign ? (
+        <div className="rounded-2xl border bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-200/50 p-5">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-rose-500/10">
+              <Megaphone className="size-5 text-rose-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">{data.campaign.label}</p>
+              <p className="text-xs text-muted-foreground">Campagne {data.campaign.year}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white/60 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Employés éligibles</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{data.campaign.eligibleEmployees}</p>
+              <p className="text-xs text-muted-foreground mt-1">Ayant au moins 1 an d'ancienneté</p>
+            </div>
+            <div className="bg-white/60 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Propositions reçues</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{data.campaign.proposalsReceived}</p>
+              <p className="text-xs text-muted-foreground mt-1">Sur {data.campaign.eligibleEmployees} éligibles</p>
+            </div>
+            <div className="bg-white/60 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Taux de participation</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{data.campaign.participationRate}%</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {data.campaign.participationRate >= 80 ? 'Excellent' : data.campaign.participationRate >= 50 ? 'Correct' : 'Faible'}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* 3. Statistics Zone */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '../components/ui/select'
 import { cn } from '../lib/utils'
-import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X, Loader2 } from 'lucide-react'
+import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X, Loader2, Archive, Settings, Calendar, FileText } from 'lucide-react'
 import { toast } from '../components/Toast'
 
 const proposalStatusLabels: Record<string, string> = {
@@ -54,7 +54,9 @@ function formatDate(d: string) {
 export default function CampaignsPage() {
   const queryClient = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
-  const [formData, setFormData] = useState({ year: String(new Date().getFullYear()), label: '' })
+  const [formData, setFormData] = useState({ year: String(new Date().getFullYear()), label: '', description: '', startDate: '', endDate: '' })
+  const [editingCampaign, setEditingCampaign] = useState<any>(null)
+  const [editForm, setEditForm] = useState({ label: '', description: '', startDate: '', endDate: '' })
   const [error, setError] = useState('')
   const [expandedCampaign, setExpandedCampaign] = useState<number | null>(null)
   const [selectedProposal, setSelectedProposal] = useState<any>(null)
@@ -93,6 +95,28 @@ export default function CampaignsPage() {
     mutationFn: (id: number) => api.patch(`/leave-campaigns/${id}/close`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-campaigns'] })
+      toast('Campagne clôturée avec succès', 'success')
+    },
+  })
+
+  const archiveMutation = useMutation({
+    mutationFn: (id: number) => api.patch(`/leave-campaigns/${id}/archive`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leave-campaigns'] })
+      toast('Campagne archivée avec succès', 'success')
+    },
+  })
+
+  const updateCampaignMutation = useMutation({
+    mutationFn: ({ id, ...data }: { id: number; label?: string; description?: string; startDate?: string; endDate?: string }) =>
+      api.patch(`/leave-campaigns/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leave-campaigns'] })
+      setEditingCampaign(null)
+      toast('Campagne modifiée avec succès', 'success')
+    },
+    onError: (err: any) => {
+      toast(err?.response?.data?.message || 'Erreur lors de la modification', 'error')
     },
   })
 
@@ -121,6 +145,9 @@ export default function CampaignsPage() {
     createMutation.mutate({
       year: Number(formData.year),
       label: formData.label,
+      description: formData.description || undefined,
+      startDate: formData.startDate || undefined,
+      endDate: formData.endDate || undefined,
     })
   }
 
@@ -184,8 +211,9 @@ export default function CampaignsPage() {
                           c.status === 'BROUILLON' && 'bg-gray-100 text-gray-600',
                           c.status === 'OUVERTE' && 'bg-green-100 text-green-700',
                           c.status === 'CLOTUREE' && 'bg-blue-100 text-blue-700',
+                          c.status === 'ARCHIVEE' && 'bg-purple-100 text-purple-700',
                         )}>
-                          {c.status === 'BROUILLON' ? 'Brouillon' : c.status === 'OUVERTE' ? 'Ouverte' : 'Clôturée'}
+                          {c.status === 'BROUILLON' ? 'Brouillon' : c.status === 'OUVERTE' ? 'Ouverte' : c.status === 'CLOTUREE' ? 'Clôturée' : 'Archivée'}
                         </span>
                       </td>
                       <td className="p-4 px-5 text-muted-foreground">{c._count?.proposals ?? 0}</td>
@@ -201,6 +229,17 @@ export default function CampaignsPage() {
                             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); closeMutation.mutate(c.id) }}>
                               <XCircle className="size-3.5 mr-1.5" />
                               Clôturer
+                            </Button>
+                          )}
+                          {c.status === 'CLOTUREE' && (
+                            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); archiveMutation.mutate(c.id) }}>
+                              <Archive className="size-3.5 mr-1.5" />
+                              Archiver
+                            </Button>
+                          )}
+                          {c.status !== 'ARCHIVEE' && (
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingCampaign(c); setEditForm({ label: c.label, description: c.description || '', startDate: c.startDate ? c.startDate.slice(0,10) : '', endDate: c.endDate ? c.endDate.slice(0,10) : '' }) }}>
+                              <Settings className="size-3.5" />
                             </Button>
                           )}
                           {expandedCampaign === c.id ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
@@ -532,6 +571,33 @@ export default function CampaignsPage() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <textarea
+                className={cn('flex min-h-[60px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 resize-none')}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Description facultative"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date de début</Label>
+                <Input
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Date de fin</Label>
+                <Input
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                />
+              </div>
+            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>
                 Annuler
@@ -541,6 +607,68 @@ export default function CampaignsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit campaign dialog */}
+      <Dialog open={!!editingCampaign} onOpenChange={(o) => { if (!o) setEditingCampaign(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier la campagne</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Libellé</Label>
+              <Input
+                value={editForm.label}
+                onChange={(e) => setEditForm({ ...editForm, label: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <textarea
+                className={cn('flex min-h-[60px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 resize-none')}
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Date de début</Label>
+                <Input
+                  type="date"
+                  value={editForm.startDate}
+                  onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Date de fin</Label>
+                <Input
+                  type="date"
+                  value={editForm.endDate}
+                  onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditingCampaign(null)}>
+                Annuler
+              </Button>
+              <Button
+                onClick={() => updateCampaignMutation.mutate({
+                  id: editingCampaign.id,
+                  label: editForm.label,
+                  description: editForm.description || undefined,
+                  startDate: editForm.startDate || undefined,
+                  endDate: editForm.endDate || undefined,
+                })}
+                disabled={updateCampaignMutation.isPending}
+              >
+                Enregistrer
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

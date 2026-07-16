@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { LeaveCampaignService } from './leave-campaign.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
+import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { SubmitProposalDto } from './dto/submit-proposal.dto';
 import { UpdateProposalStatusDto } from './dto/update-proposal-status.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -29,7 +30,7 @@ export class LeaveCampaignController {
   }
 
   @Get()
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   findAll() {
     return this.campaignService.findAll();
   }
@@ -40,9 +41,18 @@ export class LeaveCampaignController {
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.campaignService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Roles('ADMIN', 'HR')
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCampaignDto,
+  ) {
+    return this.campaignService.update(id, dto);
   }
 
   @Patch(':id/open')
@@ -55,6 +65,12 @@ export class LeaveCampaignController {
   @Roles('ADMIN', 'HR')
   closeCampaign(@Param('id', ParseIntPipe) id: number) {
     return this.campaignService.closeCampaign(id);
+  }
+
+  @Patch(':id/archive')
+  @Roles('ADMIN', 'HR')
+  archiveCampaign(@Param('id', ParseIntPipe) id: number) {
+    return this.campaignService.archiveCampaign(id);
   }
 
   @Get('my/proposal')
@@ -70,14 +86,22 @@ export class LeaveCampaignController {
     return this.campaignService.submitProposal(user.id, dto);
   }
 
+  @Patch('my/proposal')
+  updateMyProposal(
+    @CurrentUser() user: { id: number },
+    @Body() dto: SubmitProposalDto,
+  ) {
+    return this.campaignService.updateMyProposal(user.id, dto);
+  }
+
   @Get(':id/proposals')
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   getProposals(@Param('id', ParseIntPipe) id: number) {
     return this.campaignService.getProposals(id);
   }
 
   @Get(':id/eligible-count')
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   getEligibleCount(@Param('id', ParseIntPipe) id: number) {
     return this.campaignService.getEligibleCount(id);
   }

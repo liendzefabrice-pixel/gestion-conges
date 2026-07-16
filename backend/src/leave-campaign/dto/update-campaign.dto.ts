@@ -1,13 +1,10 @@
-import { IsString, IsInt, MinLength, Min, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsOptional, MinLength, IsDateString } from 'class-validator';
 
-export class CreateCampaignDto {
-  @IsInt()
-  @Min(2020)
-  year: number;
-
+export class UpdateCampaignDto {
+  @IsOptional()
   @IsString()
   @MinLength(1)
-  label: string;
+  label?: string;
 
   @IsOptional()
   @IsString()

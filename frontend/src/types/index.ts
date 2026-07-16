@@ -156,6 +156,14 @@ export interface DashboardAdmin {
   departments: number;
   leaveTypes: number;
   pendingRequests: { leave: number; permission: number; total: number };
+  campaign?: {
+    id: number;
+    label: string;
+    year: number;
+    eligibleEmployees: number;
+    proposalsReceived: number;
+    participationRate: number;
+  } | null;
 }
 
 export interface AnnualLeavePlanning {
@@ -186,6 +194,14 @@ export interface DashboardHr {
     withPlanning: number;
     withoutPlanning: number;
   };
+  campaign?: {
+    id: number;
+    label: string;
+    year: number;
+    eligibleEmployees: number;
+    proposalsReceived: number;
+    participationRate: number;
+  } | null;
 }
 
 export interface DashboardDirector {

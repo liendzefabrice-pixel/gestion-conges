@@ -359,6 +359,10 @@ export class NotificationsService {
     });
   }
 
+  async createNotification(userIds: number[], title: string, message: string, type: string, link?: string, entityType?: string, entityId?: number) {
+    await this.send({ userIds, title, message, type: type as any, link, entityType, entityId });
+  }
+
   async notifyCampaignOpened(userIds: number[], campaignLabel: string) {
     await this.send({
       userIds,
