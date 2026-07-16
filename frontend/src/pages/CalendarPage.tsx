@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
 import { Button } from '../components/ui/button'
 import { cn } from '../lib/utils'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, CalendarDays, Flag, AlertTriangle, CheckCircle2 } from 'lucide-react'
 
 const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
@@ -34,10 +34,33 @@ const leaveStatusColors: Record<string, string> = {
   EN_ATTENTE_DIRECTION: 'bg-orange-100 border-orange-300 text-orange-800',
 }
 
+interface DetailItem {
+  type: 'leave' | 'event' | 'holiday'
+  data: any
+}
+
+const leaveStatusLabels: Record<string, string> = {
+  APPROUVE: 'Approuvé',
+  EN_ATTENTE_RH: 'Attente RH',
+  EN_ATTENTE_DIRECTION: 'Attente Direction',
+}
+
+const eventTypeLabels: Record<string, string> = {
+  SEMINAIRE: 'Séminaire',
+  AUDIT: 'Audit',
+  INVENTAIRE: 'Inventaire',
+  FORMATION: 'Formation',
+  REUNION_STRATEGIQUE: 'Réunion stratégique',
+  FERMETURE_ANNUELLE: 'Fermeture annuelle',
+  MAINTENANCE: 'Maintenance',
+  AUTRE: 'Autre',
+}
+
 export default function CalendarPage() {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
+  const [detail, setDetail] = useState<DetailItem | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['calendar', month, year],
@@ -56,13 +79,17 @@ export default function CalendarPage() {
 
     const dayEvents = (data?.internalEvents || []).filter((e: any) => {
       const s = new Date(e.startDate)
+      s.setHours(0, 0, 0, 0)
       const en = new Date(e.endDate)
+      en.setHours(0, 0, 0, 0)
       return dateObj >= s && dateObj <= en
     })
 
     const dayLeaves = (data?.leaveRequests || []).filter((l: any) => {
       const s = new Date(l.startDate)
+      s.setHours(0, 0, 0, 0)
       const en = new Date(l.endDate)
+      en.setHours(0, 0, 0, 0)
       return dateObj >= s && dateObj <= en
     })
 
@@ -149,38 +176,44 @@ export default function CalendarPage() {
 
                       {/* Holidays */}
                       {dayData.holidays.map((h: any, i: number) => (
-                        <div key={`hol-${i}`} className="text-[10px] px-1 py-0.5 rounded bg-red-100 text-red-700 mb-0.5 truncate">
+                        <button
+                          key={`hol-${i}`}
+                          onClick={() => setDetail({ type: 'holiday', data: h })}
+                          className="w-full text-[10px] px-1 py-0.5 rounded bg-red-100 text-red-700 mb-0.5 truncate text-left hover:bg-red-200 transition-colors cursor-pointer"
+                        >
                           🎉 {h.name}
-                        </div>
+                        </button>
                       ))}
 
                       {/* Events */}
                       {dayData.events.map((e: any, i: number) => (
-                        <div
+                        <button
                           key={`evt-${i}`}
+                          onClick={() => setDetail({ type: 'event', data: e })}
                           className={cn(
-                            'text-[10px] px-1 py-0.5 rounded mb-0.5 truncate cursor-default',
+                            'w-full text-[10px] px-1 py-0.5 rounded mb-0.5 truncate text-left transition-colors cursor-pointer hover:opacity-80',
                             eventTypeColors[e.type] || 'border-l-4 border-l-green-500',
                             priorityColors[e.priority] || 'bg-gray-100',
                           )}
                           title={`${e.title} (${e.type})`}
                         >
                           {e.title}
-                        </div>
+                        </button>
                       ))}
 
                       {/* Leaves */}
                       {dayData.leaves.slice(0, 2).map((l: any, i: number) => (
-                        <div
+                        <button
                           key={`leave-${i}`}
+                          onClick={() => setDetail({ type: 'leave', data: l })}
                           className={cn(
-                            'text-[10px] px-1 py-0.5 rounded mb-0.5 truncate border',
+                            'w-full text-[10px] px-1 py-0.5 rounded mb-0.5 truncate text-left border transition-colors cursor-pointer hover:opacity-80',
                             leaveStatusColors[l.status] || 'bg-gray-100',
                           )}
                           title={`${l.employee?.firstName} ${l.employee?.lastName} - ${l.leaveType?.name}`}
                         >
                           {l.employee?.firstName} {l.employee?.lastName?.[0]}.
-                        </div>
+                        </button>
                       ))}
                       {dayData.leaves.length > 2 && (
                         <div className="text-[10px] text-muted-foreground px-1">
@@ -215,6 +248,87 @@ export default function CalendarPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Detail panel */}
+      {detail && (
+        <>
+          <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setDetail(null)} />
+          <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl border-l border-gray-200 z-50 flex flex-col animate-in slide-in-from-right">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+              <h2 className="font-semibold text-lg">
+                {detail.type === 'leave' ? 'Congé' : detail.type === 'event' ? 'Événement' : 'Jour férié'}
+              </h2>
+              <Button variant="ghost" size="sm" onClick={() => setDetail(null)}><X className="size-4" /></Button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {detail.type === 'holiday' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-lg">
+                      <CalendarDays className="size-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-base">{detail.data.name}</p>
+                      <p className="text-xs text-muted-foreground">Jour férié</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><p className="text-xs text-muted-foreground">Date</p><p>{new Date(detail.data.date).toLocaleDateString('fr-FR')}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Récurrent</p><p>{detail.data.isRecurring ? 'Oui' : 'Non'}</p></div>
+                  </div>
+                  {detail.data.description && <div><p className="text-xs text-muted-foreground">Description</p><p className="text-sm">{detail.data.description}</p></div>}
+                </div>
+              )}
+              {detail.type === 'event' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                      <Flag className="size-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-base">{detail.data.title}</p>
+                      <p className="text-xs text-muted-foreground">{eventTypeLabels[detail.data.type] || detail.data.type}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><p className="text-xs text-muted-foreground">Date début</p><p>{new Date(detail.data.startDate).toLocaleDateString('fr-FR')}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Date fin</p><p>{new Date(detail.data.endDate).toLocaleDateString('fr-FR')}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Priorité</p><p>{detail.data.priority}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Portée</p><p>{detail.data.allCompany ? 'Toute l\'entreprise' : detail.data.department?.name || '-'}</p></div>
+                  </div>
+                  {detail.data.description && <div><p className="text-xs text-muted-foreground">Description</p><p className="text-sm">{detail.data.description}</p></div>}
+                </div>
+              )}
+              {detail.type === 'leave' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                      <CheckCircle2 className="size-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-base">{detail.data.employee?.firstName} {detail.data.employee?.lastName}</p>
+                      <p className="text-xs text-muted-foreground">{detail.data.employee?.department?.name}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><p className="text-xs text-muted-foreground">Type de congé</p><p>{detail.data.leaveType?.name}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Date début</p><p>{new Date(detail.data.startDate).toLocaleDateString('fr-FR')}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Date fin</p><p>{new Date(detail.data.endDate).toLocaleDateString('fr-FR')}</p></div>
+                    <div><p className="text-xs text-muted-foreground">Nombre de jours</p><p>{detail.data.duration}</p></div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Statut</p>
+                      <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-0.5', leaveStatusColors[detail.data.status])}>
+                        {leaveStatusLabels[detail.data.status] || detail.data.status}
+                      </span>
+                    </div>
+                  </div>
+                  {detail.data.reason && <div><p className="text-xs text-muted-foreground">Motif</p><p className="text-sm">{detail.data.reason}</p></div>}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
