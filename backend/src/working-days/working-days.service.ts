@@ -30,7 +30,7 @@ export class WorkingDaysService {
 
       if (dayOfWeek === 0) {
         sundays++;
-      } else if (this.isHoliday(current, holidays)) {
+      } else if (this.checkIsHoliday(current, holidays)) {
         holidaysExcluded++;
       }
 
@@ -49,7 +49,12 @@ export class WorkingDaysService {
     };
   }
 
-  private isHoliday(date: Date, holidays: { date: Date; isRecurring: boolean }[]): boolean {
+  async isHoliday(date: Date): Promise<boolean> {
+    const holidays = await this.prisma.holiday.findMany();
+    return this.checkIsHoliday(date, holidays);
+  }
+
+  private checkIsHoliday(date: Date, holidays: { date: Date; isRecurring: boolean }[]): boolean {
     for (const holiday of holidays) {
       if (holiday.isRecurring) {
         if (

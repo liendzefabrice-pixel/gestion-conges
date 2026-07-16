@@ -8,3 +8,13 @@ export function calculateWorkingDays(startDate: Date, endDate: Date): number {
   }
   return count;
 }
+
+export function addWorkingDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  let remaining = days;
+  while (remaining > 0) {
+    result.setDate(result.getDate() + 1);
+    if (result.getDay() !== 0) remaining--;
+  }
+  return result;
+}

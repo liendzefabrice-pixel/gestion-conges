@@ -7,6 +7,7 @@ import { BalanceSufficiencyRule } from './rules/balance-sufficiency.rule';
 import { CampaignValidationRule } from './rules/campaign-validation.rule';
 import { OperationalRiskRule } from './rules/operational-risk.rule';
 import { ReplacementAvailabilityRule } from './rules/replacement-availability.rule';
+import { addWorkingDays } from '../common/working-days';
 
 @Injectable()
 export class DecisionEngineService {
@@ -144,8 +145,7 @@ export class DecisionEngineService {
     });
     if (!proposal) throw new Error('Proposition introuvable');
 
-    const endDate = new Date(proposal.desiredStartDate);
-    endDate.setDate(endDate.getDate() + (proposal.duration || 1) - 1);
+    const endDate = addWorkingDays(new Date(proposal.desiredStartDate), (proposal.duration || 1) - 1);
 
     return {
       entityType,

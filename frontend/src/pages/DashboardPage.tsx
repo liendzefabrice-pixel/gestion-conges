@@ -128,7 +128,10 @@ export default function DashboardPage() {
 
   const { data: leaveRequests = [] } = useQuery<LeaveRequest[]>({
     queryKey: ['leave-requests', role],
-    queryFn: () => api.get('/leave/requests').then((r) => r.data),
+    queryFn: () => api.get('/leave/requests').then((r) => {
+      const res = r.data;
+      return Array.isArray(res) ? res : (res.data || []);
+    }),
     enabled: role === 'ADMIN',
   })
 

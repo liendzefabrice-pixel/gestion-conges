@@ -40,6 +40,12 @@ export class LeaveController {
     );
   }
 
+  @Get('stats')
+  @Roles('HR', 'DIRECTOR', 'ADMIN')
+  async getStats() {
+    return this.leaveService.getCalendarStats();
+  }
+
   @Post('types')
   @Roles('ADMIN')
   createLeaveType(@Body() createLeaveTypeDto: CreateLeaveTypeDto) {
@@ -102,8 +108,11 @@ export class LeaveController {
 
   @Get('requests')
   @Roles('HR', 'DIRECTOR', 'ADMIN')
-  findAllRequests() {
-    return this.leaveService.findAllRequests();
+  findAllRequests(
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
+  ) {
+    return this.leaveService.findAllRequests(page || 1, pageSize || 50);
   }
 
   @Get('requests/pending')
@@ -138,6 +147,15 @@ export class LeaveController {
     @Body() hrReviewDto: HrReviewDto,
   ) {
     return this.leaveService.hrReview(id, user.id, hrReviewDto);
+  }
+
+  @Patch('requests/:id/transmit')
+  @Roles('HR', 'ADMIN')
+  transmitToDirector(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.leaveService.transmitToDirector(id, user.id);
   }
 
   @Patch('requests/:id/decide')

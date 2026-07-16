@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import type { LeaveBalance, BalanceAdjustment, EmployeeBalance } from '../types'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
@@ -262,23 +263,30 @@ export default function SoldesPage() {
     queryClient.invalidateQueries({ queryKey: ['balances'] })
   }
 
+  const { data: permBalance } = useQuery({
+    queryKey: ['permission-balance', 'my'],
+    queryFn: () => api.get('/permissions/balance').then((r) => r.data),
+    enabled: role === 'EMPLOYEE',
+  })
+
   if (role === 'EMPLOYEE') {
     const currentYear = new Date().getFullYear()
     const activeBalances = myBalances.filter((b) => b.year === currentYear)
     const totalRemaining = activeBalances.reduce((sum, b) => sum + b.remaining, 0)
+    const perm = permBalance?.[0]
 
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Mes soldes de congés"
-          description="Consultez l'état de vos compteurs de congés"
+          title="Mes soldes"
+          description="Consultez l'état de vos compteurs de congés et permissions"
         />
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-primary">{totalRemaining}</p>
-              <p className="text-xs text-muted-foreground mt-1">Total jours restants</p>
+              <p className="text-xs text-muted-foreground mt-1">Jours de congé restants</p>
             </CardContent>
           </Card>
           <Card>
@@ -297,6 +305,14 @@ export default function SoldesPage() {
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
+              <p className="text-2xl font-bold text-purple-600">
+                {perm ? perm.totalDays + perm.adjustedDays - perm.usedDays - perm.pendingDays : 0}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Permissions restantes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-blue-600">{currentYear}</p>
               <p className="text-xs text-muted-foreground mt-1">Année en cours</p>
             </CardContent>
@@ -308,6 +324,30 @@ export default function SoldesPage() {
             <BalanceCard key={b.id} balance={b} role={role} />
           ))}
         </div>
+
+        {perm && (
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">Solde des permissions {perm.year}</h3>
+            <div className="grid grid-cols-4 gap-3 text-center">
+              <div className="p-4 rounded-xl bg-gray-50 border">
+                <p className="text-lg font-bold">{perm.totalDays}</p>
+                <p className="text-xs text-muted-foreground">Acquis</p>
+              </div>
+              <div className="p-4 rounded-xl bg-gray-50 border">
+                <p className="text-lg font-bold text-red-600">{perm.usedDays}</p>
+                <p className="text-xs text-muted-foreground">Utilisés</p>
+              </div>
+              <div className="p-4 rounded-xl bg-gray-50 border">
+                <p className="text-lg font-bold text-amber-600">{perm.pendingDays}</p>
+                <p className="text-xs text-muted-foreground">En attente</p>
+              </div>
+              <div className="p-4 rounded-xl bg-green-50 border border-green-200">
+                <p className="text-lg font-bold text-green-700">{perm.totalDays + perm.adjustedDays - perm.usedDays - perm.pendingDays}</p>
+                <p className="text-xs text-green-600">Disponibles</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {myBalances.some((b) => b.year !== currentYear) && (
           <div>

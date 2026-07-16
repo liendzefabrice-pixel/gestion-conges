@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PlanningRule, RuleContext, RuleResult } from '../interfaces/planning-rule.interface';
+import { addWorkingDays } from '../../common/working-days';
 
 @Injectable()
 export class DeptConflictRule implements PlanningRule {
@@ -18,8 +19,7 @@ export class DeptConflictRule implements PlanningRule {
       };
     }
 
-    const desiredEnd = new Date(proposal.desiredStartDate);
-    desiredEnd.setDate(desiredEnd.getDate() + proposal.duration - 1);
+    const desiredEnd = addWorkingDays(new Date(proposal.desiredStartDate), proposal.duration - 1);
 
     const sameDeptProposals = allProposals.filter(
       (p) =>
@@ -38,8 +38,7 @@ export class DeptConflictRule implements PlanningRule {
 
     for (const other of sameDeptProposals) {
       const otherStart = new Date(other.desiredStartDate);
-      const otherEnd = new Date(other.desiredStartDate);
-      otherEnd.setDate(otherEnd.getDate() + other.duration - 1);
+      const otherEnd = addWorkingDays(new Date(other.desiredStartDate), other.duration - 1);
 
       const overlaps =
         proposal.desiredStartDate <= otherEnd && desiredEnd >= otherStart;
@@ -80,9 +79,9 @@ export class DeptConflictRule implements PlanningRule {
 
     const newStart = new Date(earlierConflict.theirEnd);
     newStart.setDate(newStart.getDate() + 1);
+    while (newStart.getDay() === 0) newStart.setDate(newStart.getDate() + 1);
 
-    const newEnd = new Date(newStart);
-    newEnd.setDate(newEnd.getDate() + proposal.duration - 1);
+    const newEnd = addWorkingDays(newStart, proposal.duration - 1);
 
     return {
       ruleName: this.name,

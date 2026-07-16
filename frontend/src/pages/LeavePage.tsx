@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -21,7 +21,7 @@ import {
 } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
 import RequestDetailModal from '../components/RequestDetailModal'
-import { Calendar, Filter } from 'lucide-react'
+import { Calendar, Filter, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -29,7 +29,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
   EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning', color: 'text-amber-700 bg-amber-100' },
   EN_ATTENTE_DIRECTION: { label: 'En attente Direction', variant: 'info', color: 'text-blue-700 bg-blue-100' },
-  AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info', color: 'text-blue-700 bg-blue-100' },
+  AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info', color: 'text-indigo-700 bg-indigo-100' },
   APPROUVE: { label: 'Approuvé', variant: 'success', color: 'text-green-700 bg-green-100' },
   REFUSE: { label: 'Refusé', variant: 'danger', color: 'text-red-700 bg-red-100' },
   ANNULE: { label: 'Annulé', variant: 'outline', color: 'text-gray-500 bg-gray-100' },
@@ -118,18 +118,18 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
   }
 
   return (
-    <Card className="mb-6">
+    <Card className="mb-6 border-primary/20">
       <CardHeader>
         <CardTitle>Nouvelle demande de congé</CardTitle>
       </CardHeader>
       <CardContent>
         {eligibility && (
-          <div className="mb-4 p-4 rounded-xl bg-blue-50 border border-blue-200 text-sm">
-            <p className="font-medium text-blue-800">
-              Éligibilité : {eligibility.eligible ? '✅ Éligible' : '❌ Non éligible (ancienneté < 1 an)'}
+          <div className={`mb-4 p-4 rounded-xl border text-sm ${eligibility.eligible ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+            <p className={`font-medium ${eligibility.eligible ? 'text-green-800' : 'text-amber-800'}`}>
+              {eligibility.eligible ? '✅ Vous êtes éligible aux congés' : '❌ Vous n\'êtes pas encore éligible (ancienneté < 1 an)'}
             </p>
             {eligibility.planning && (
-              <p className="text-blue-700 mt-1">
+              <p className="text-amber-700 mt-1">
                 Mois planifié : {months[eligibility.planning.month]} {eligibility.planning.year}
               </p>
             )}
@@ -137,7 +137,10 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
         )}
         <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
           {error && (
-            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200">{error}</div>
+            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200 flex items-start gap-2">
+              <AlertCircle className="size-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
           )}
           <div className="space-y-2">
             <Label>Type de congé</Label>
@@ -172,19 +175,20 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
               <p className="text-green-700">
                 Période : {formatDate(calcResult.startDate)} → {formatDate(calcResult.endDate)}
               </p>
-              <div className="flex gap-6 text-green-700">
+              <div className="flex gap-6 text-green-700 flex-wrap">
                 <span>Jours calendaires : <strong>{calcResult.calendarDays}</strong></span>
                 <span>Dimanches exclus : <strong>{calcResult.sundays}</strong></span>
                 <span>Jours fériés exclus : <strong>{calcResult.holidaysExcluded}</strong></span>
               </div>
               <div className="pt-2 mt-2 border-t border-green-200">
-                <span className="text-green-800 font-medium">Jours ouvrables déduits : <strong>{calcResult.workingDays}</strong></span>
+                <span className="text-green-800 font-medium">Jours ouvrables : <strong>{calcResult.workingDays}</strong></span>
               </div>
             </div>
           )}
 
           {calcLoading && (
-            <div className="p-3 text-sm text-muted-foreground bg-muted/30 rounded-xl border border-border">
+            <div className="p-3 text-sm text-muted-foreground bg-muted/30 rounded-xl border border-border flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin" />
               Calcul en cours...
             </div>
           )}
@@ -195,7 +199,9 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
             {errors.reason && <p className="text-sm text-destructive">{errors.reason.message}</p>}
           </div>
           <Button type="submit" disabled={isSubmitting || calcLoading}>
-            {isSubmitting ? 'Soumission...' : 'Soumettre la demande'}
+            {isSubmitting ? (
+              <><Loader2 className="size-4 animate-spin mr-2" />Soumission...</>
+            ) : 'Soumettre la demande'}
           </Button>
         </form>
       </CardContent>
@@ -206,26 +212,43 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
 export default function LeavePage() {
   const { user } = useAuth()
   const role = user?.role?.name
+  const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>('')
+  const [page, setPage] = useState(1)
+  const [success, setSuccess] = useState('')
 
-  const { data: requests = [], isLoading } = useQuery<LeaveRequest[]>({
-    queryKey: ['leave-requests', role],
+  const { data: requestsData, isLoading } = useQuery({
+    queryKey: ['leave-requests', role, page],
     queryFn: () => {
-      const url = role === 'EMPLOYEE' ? '/leave/requests/my' : '/leave/requests'
-      return api.get(url).then((r) => r.data)
+      if (role === 'EMPLOYEE') {
+        return api.get('/leave/requests/my').then((r) => ({ data: r.data, total: r.data.length, page: 1, pageSize: r.data.length, totalPages: 1 }))
+      }
+      return api.get('/leave/requests', { params: { page, pageSize: 20 } }).then((r) => r.data)
     },
   })
 
-  const filtered = filterStatus ? requests.filter((r) => r.status === filterStatus) : requests
+  const requests = useMemo(() => {
+    const items = requestsData?.data || []
+    if (!filterStatus) return items
+    return items.filter((r: LeaveRequest) => r.status === filterStatus)
+  }, [requestsData, filterStatus])
 
   const statusOptions = Object.entries(statusConfig).filter(([key]) => {
     if (role === 'EMPLOYEE') return true
-    if (role === 'HR') return ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION', 'APPROUVE', 'REFUSE', 'ANNULE'].includes(key)
-    if (role === 'DIRECTOR' || role === 'ADMIN') return ['EN_ATTENTE_DIRECTION', 'APPROUVE', 'REFUSE', 'ANNULE', 'EN_ATTENTE_RH'].includes(key)
+    if (role === 'HR') return ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION', 'AVIS_RH_RENDU', 'APPROUVE', 'REFUSE', 'ANNULE'].includes(key)
+    if (role === 'DIRECTOR' || role === 'ADMIN') return ['EN_ATTENTE_DIRECTION', 'APPROUVE', 'REFUSE', 'ANNULE', 'EN_ATTENTE_RH', 'AVIS_RH_RENDU'].includes(key)
     return true
   })
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['leave-requests'] })
+    queryClient.invalidateQueries({ queryKey: ['balances'] })
+    setSelectedRequest(null)
+    setSuccess('Demande mise à jour avec succès')
+    setTimeout(() => setSuccess(''), 5000)
+  }
 
   return (
     <div>
@@ -235,33 +258,47 @@ export default function LeavePage() {
         actions={
           role === 'EMPLOYEE' && (
             <Button onClick={() => setShowForm(!showForm)}>
-              Nouvelle demande
+              {showForm ? 'Fermer le formulaire' : 'Nouvelle demande'}
             </Button>
           )
         }
       />
 
-      {showForm && <NewLeaveForm onSuccess={() => setShowForm(false)} />}
-
-      {role !== 'EMPLOYEE' && (
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="size-4 text-muted-foreground shrink-0" />
-          <Select value={filterStatus || null} onValueChange={(v) => setFilterStatus(v || '')}>
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder="Tous les statuts" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Tous les statuts</SelectItem>
-              {statusOptions.map(([key, cfg]) => (
-                <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {success && (
+        <Card className="mb-6 border-green-200 bg-green-50">
+          <CardContent className="p-4 flex items-center gap-2 text-green-800">
+            <CheckCircle2 className="size-5" />
+            <span className="text-sm font-medium">{success}</span>
+          </CardContent>
+        </Card>
       )}
 
+      {showForm && role === 'EMPLOYEE' && <NewLeaveForm onSuccess={() => { setShowForm(false); handleRefresh() }} />}
+
+      <div className="flex items-center gap-2 mb-4">
+        <Filter className="size-4 text-muted-foreground shrink-0" />
+        <Select value={filterStatus || null} onValueChange={(v) => setFilterStatus(v || '')}>
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="Tous les statuts" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Tous les statuts</SelectItem>
+            {statusOptions.map(([key, cfg]) => (
+              <SelectItem key={key} value={key}>{cfg.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {requestsData && (
+          <span className="text-sm text-muted-foreground ml-auto">
+            {requestsData.total || 0} demande(s)
+          </span>
+        )}
+      </div>
+
       {isLoading ? (
-        <p className="text-muted-foreground">Chargement...</p>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
       ) : (
         <Card>
           <CardContent className="p-0">
@@ -272,11 +309,12 @@ export default function LeavePage() {
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Type</th>
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Période</th>
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Jours</th>
+                  <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Retour</th>
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Statut</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r) => (
+                {requests.map((r: LeaveRequest) => (
                   <tr
                     key={r.id}
                     className="border-b border-border/30 transition-colors duration-150 hover:bg-muted/40 cursor-pointer"
@@ -285,9 +323,12 @@ export default function LeavePage() {
                     <td className="p-4 px-5">{r.employee?.user?.email || 'N/A'}</td>
                     <td className="p-4 px-5">{r.leaveType?.name}</td>
                     <td className="p-4 px-5 text-sm">
-                      {new Date(r.startDate).toLocaleDateString()} - {new Date(r.endDate).toLocaleDateString()}
+                      {new Date(r.startDate).toLocaleDateString('fr-FR')} - {new Date(r.endDate).toLocaleDateString('fr-FR')}
                     </td>
                     <td className="p-4 px-5">{r.duration}</td>
+                    <td className="p-4 px-5 text-sm">
+                      {r.returnDate ? new Date(r.returnDate).toLocaleDateString('fr-FR') : '—'}
+                    </td>
                     <td className="p-4 px-5">
                       <Badge variant={statusConfig[r.status]?.variant}>
                         {statusConfig[r.status]?.label}
@@ -295,9 +336,9 @@ export default function LeavePage() {
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && (
+                {requests.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="p-4 px-5 text-center text-muted-foreground">Aucune demande</td>
+                    <td colSpan={6} className="p-4 px-5 text-center text-muted-foreground">Aucune demande</td>
                   </tr>
                 )}
               </tbody>
@@ -306,13 +347,27 @@ export default function LeavePage() {
         </Card>
       )}
 
+      {requestsData && requestsData.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <Button variant="ghost" size="sm" disabled={page === 1} onClick={() => setPage(Math.max(1, page - 1))}>
+            Précédent
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {requestsData.page} / {requestsData.totalPages}
+          </span>
+          <Button variant="ghost" size="sm" disabled={page >= requestsData.totalPages} onClick={() => setPage(Math.min(requestsData.totalPages, page + 1))}>
+            Suivant
+          </Button>
+        </div>
+      )}
+
       {selectedRequest && (
         <RequestDetailModal
           request={selectedRequest}
           type="leave"
           role={role || ''}
           onClose={() => setSelectedRequest(null)}
-          onRefresh={() => {}}
+          onRefresh={handleRefresh}
         />
       )}
     </div>

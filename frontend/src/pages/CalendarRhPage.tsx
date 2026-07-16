@@ -141,7 +141,9 @@ export default function CalendarRhPage() {
 
       ;(data?.internalEvents || []).forEach((e: any) => {
         const s = new Date(e.startDate)
+        s.setHours(0, 0, 0, 0)
         const en = new Date(e.endDate)
+        en.setHours(0, 0, 0, 0)
         if (dateObj >= s && dateObj <= en) {
           items.push({ type: 'event', data: e })
           if (e.priority === 'CRITIQUE') hasConflict = true
@@ -150,7 +152,9 @@ export default function CalendarRhPage() {
 
       ;(data?.leaveRequests || []).forEach((l: any) => {
         const s = new Date(l.startDate)
+        s.setHours(0, 0, 0, 0)
         const en = new Date(l.endDate)
+        en.setHours(0, 0, 0, 0)
         if (dateObj >= s && dateObj <= en) {
           items.push({ type: 'leave', data: l })
         }
@@ -158,9 +162,14 @@ export default function CalendarRhPage() {
 
       ;(data?.proposals || []).forEach((p: any) => {
         const ps = new Date(p.desiredStartDate)
+        ps.setHours(0, 0, 0, 0)
+        let remaining = (p.duration || 1) - 1
         const pe = new Date(ps)
-        pe.setDate(pe.getDate() + (p.duration || 1) - 1)
-        if (dateObj >= ps && dateObj <= pe) {
+        while (remaining > 0) {
+          pe.setDate(pe.getDate() + 1)
+          if (pe.getDay() !== 0) remaining--
+        }
+        if (dateObj >= ps && dateObj <= pe && dateObj.getDay() !== 0) {
           items.push({ type: 'proposal', data: p })
         }
       })

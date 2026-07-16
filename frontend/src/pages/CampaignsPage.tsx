@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from '../components/ui/select'
 import { cn } from '../lib/utils'
-import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X } from 'lucide-react'
+import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X, Loader2 } from 'lucide-react'
+import { toast } from '../components/Toast'
 
 const proposalStatusLabels: Record<string, string> = {
   RECUE: 'Reçue',
@@ -57,6 +58,7 @@ export default function CampaignsPage() {
   const [error, setError] = useState('')
   const [expandedCampaign, setExpandedCampaign] = useState<number | null>(null)
   const [selectedProposal, setSelectedProposal] = useState<any>(null)
+  const [dropdownStatus, setDropdownStatus] = useState('')
   const [manualEdit, setManualEdit] = useState(false)
   const [manualStart, setManualStart] = useState('')
   const [manualEnd, setManualEnd] = useState('')
@@ -101,12 +103,15 @@ export default function CampaignsPage() {
   })
 
   const updateProposalStatusMutation = useMutation({
-    mutationFn: (payload: { proposalId: number; status: string; newStartDate?: string; newEndDate?: string }) =>
-      api.patch(`/leave-campaigns/proposals/${payload.proposalId}/status`, payload),
+    mutationFn: ({ proposalId, ...body }: { proposalId: number; status: string; newStartDate?: string; newEndDate?: string }) =>
+      api.patch(`/leave-campaigns/proposals/${proposalId}/status`, body),
     onSuccess: () => {
       refetchProposals()
       setSelectedProposal(null)
       setManualEdit(false)
+    },
+    onError: (err: any) => {
+      toast(err?.response?.data?.message || 'Erreur lors de la mise à jour du statut', 'error')
     },
   })
 
@@ -233,7 +238,7 @@ export default function CampaignsPage() {
                                       <tr
                                         key={p.id}
                                         className="bg-white border-b last:border-0 hover:bg-gray-50/50 cursor-pointer"
-                                        onClick={() => { setSelectedProposal(p); setManualEdit(false) }}
+                                        onClick={() => { setSelectedProposal(p); setManualEdit(false); setDropdownStatus(p.status) }}
                                       >
                                         <td className="p-3 px-4 font-medium">
                                           {p.employee?.user?.firstName} {p.employee?.user?.lastName}
@@ -359,6 +364,7 @@ export default function CampaignsPage() {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       size="sm"
+                      disabled={updateProposalStatusMutation.isPending}
                       onClick={() => updateProposalStatusMutation.mutate({
                         proposalId: selectedProposal.id,
                         status: 'ACCEPTEE',
@@ -366,12 +372,13 @@ export default function CampaignsPage() {
                         newEndDate: String(selectedProposal.suggestedEndDate),
                       })}
                     >
-                      <ThumbsUp className="size-4 mr-1.5" />
+                      {updateProposalStatusMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <ThumbsUp className="size-4 mr-1.5" />}
                       Valider la proposition du moteur
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
+                      disabled={updateProposalStatusMutation.isPending}
                       onClick={() => {
                         setManualEdit(true)
                         setManualStart(String(selectedProposal.suggestedStartDate).slice(0, 10))
@@ -384,10 +391,11 @@ export default function CampaignsPage() {
                     <Button
                       size="sm"
                       variant="outline"
+                      disabled={updateProposalStatusMutation.isPending}
                       className="text-destructive border-destructive/30 hover:bg-red-50"
                       onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'REFUSEE' })}
                     >
-                      <X className="size-4 mr-1.5" />
+                      {updateProposalStatusMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <X className="size-4 mr-1.5" />}
                       Refuser
                     </Button>
                   </div>
@@ -410,6 +418,7 @@ export default function CampaignsPage() {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
+                      disabled={updateProposalStatusMutation.isPending}
                       onClick={() => updateProposalStatusMutation.mutate({
                         proposalId: selectedProposal.id,
                         status: 'ACCEPTEE',
@@ -417,9 +426,10 @@ export default function CampaignsPage() {
                         newEndDate: manualEnd,
                       })}
                     >
+                      {updateProposalStatusMutation.isPending && <Loader2 className="size-4 mr-1.5 animate-spin" />}
                       Valider
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => setManualEdit(false)}>
+                    <Button size="sm" variant="outline" disabled={updateProposalStatusMutation.isPending} onClick={() => setManualEdit(false)}>
                       Annuler
                     </Button>
                   </div>
@@ -430,18 +440,20 @@ export default function CampaignsPage() {
                 <div className="flex gap-2">
                   <Button
                     size="sm"
+                    disabled={updateProposalStatusMutation.isPending}
                     onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'ACCEPTEE' })}
                   >
-                    <ThumbsUp className="size-4 mr-1.5" />
+                    {updateProposalStatusMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <ThumbsUp className="size-4 mr-1.5" />}
                     Accepter
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
+                    disabled={updateProposalStatusMutation.isPending}
                     className="text-destructive border-destructive/30 hover:bg-red-50"
                     onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'REFUSEE' })}
                   >
-                    <X className="size-4 mr-1.5" />
+                    {updateProposalStatusMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <X className="size-4 mr-1.5" />}
                     Refuser
                   </Button>
                 </div>
@@ -472,11 +484,14 @@ export default function CampaignsPage() {
               <div className="flex items-center gap-3 pt-3 border-t border-border/50">
                 <p className="text-xs text-muted-foreground">Modifier le statut :</p>
                 <Select
-                  value={selectedProposal.status}
-                  onValueChange={(v) => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: v })}
+                  value={dropdownStatus}
+                  onValueChange={(v) => {
+                    setDropdownStatus(v)
+                    updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: v })
+                  }}
                 >
                   <SelectTrigger className="h-8 text-xs w-[150px]">
-                    <SelectValue />
+                    <SelectValue>{proposalStatusLabels[dropdownStatus] || dropdownStatus}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(proposalStatusLabels).map(([value, label]) => (

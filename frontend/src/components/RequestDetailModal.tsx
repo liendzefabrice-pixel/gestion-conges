@@ -5,7 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Textarea } from '../components/ui/textarea';
-import { CalendarDays, Clock, User, FileText, MessageSquare, Scale, History } from 'lucide-react';
+import { CalendarDays, Clock, User, FileText, MessageSquare, Scale, History, Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 
 type RequestType = LeaveRequest | PermissionRequest;
 
@@ -21,28 +21,35 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
   EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning', color: 'text-amber-700 bg-amber-100' },
   EN_ATTENTE_DIRECTION: { label: 'En attente Direction', variant: 'info', color: 'text-blue-700 bg-blue-100' },
-  AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info', color: 'text-blue-700 bg-blue-100' },
+  AVIS_RH_RENDU: { label: 'Avis RH rendu', variant: 'info', color: 'text-indigo-700 bg-indigo-100' },
   APPROUVE: { label: 'Approuvé', variant: 'success', color: 'text-green-700 bg-green-100' },
   REFUSE: { label: 'Refusé', variant: 'danger', color: 'text-red-700 bg-red-100' },
   ANNULE: { label: 'Annulé', variant: 'outline', color: 'text-gray-500 bg-gray-100' },
 };
 
+const permissionTypeLabels: Record<string, string> = {
+  PERMISSION: 'Permission',
+  MARIAGE: 'Mariage',
+  NAISSANCE: 'Naissance',
+  DECES: 'Décès',
+  FAMILIAL: 'Événement familial',
+};
+
 function Timeline({ request }: { request: any }) {
   const steps = [];
   steps.push({ label: 'Demande créée', date: request.createdAt, author: request.employee?.user?.email, done: !!request.createdAt });
-  if (request.status !== 'BROUILLON') {
-    steps.push({ label: 'Transmise au RH', date: request.createdAt, author: request.employee?.user?.email, done: true });
-  }
-  if (request.reviewedAt) {
-    steps.push({ label: 'Avis RH', date: request.reviewedAt, author: request.reviewedBy?.email, done: true, detail: request.hrOpinion === 'Favorable' ? 'Favorable' : 'Défavorable' });
-  }
-  if (request.decidedAt) {
-    steps.push({
-      label: 'Décision finale',
-      date: request.decidedAt,
-      author: request.decidedBy?.email,
-      done: true,
-      detail: request.status === 'APPROUVE' ? 'Approuvée' : 'Refusée',
+  if (request.histories) {
+    const sortedHistories = [...(request.histories || [])].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    sortedHistories.forEach((h: any) => {
+      const statusLabel = statusConfig[h.newStatus]?.label || h.newStatus;
+      steps.push({
+        label: statusLabel,
+        date: h.createdAt,
+        author: h.user?.email,
+        done: true,
+        detail: h.newStatus === 'APPROUVE' ? 'Approuvée' : h.newStatus === 'REFUSE' ? 'Refusée' : h.comment || undefined,
+        isCurrent: h.newStatus === request.status && request.status !== 'APPROUVE' && request.status !== 'REFUSE' && request.status !== 'ANNULE',
+      });
     });
   }
 
@@ -51,7 +58,7 @@ function Timeline({ request }: { request: any }) {
       {steps.map((step, i) => (
         <div key={i} className="flex items-start gap-3 py-2">
           <div className="flex flex-col items-center">
-            <div className={`w-3 h-3 rounded-full mt-1.5 ${step.done ? 'bg-primary ring-2 ring-primary/20' : 'bg-gray-200'}`} />
+            <div className={`w-3 h-3 rounded-full mt-1.5 ${step.done ? step.isCurrent ? 'bg-amber-500 ring-2 ring-amber-200 animate-pulse' : 'bg-primary ring-2 ring-primary/20' : 'bg-gray-200'}`} />
             {i < steps.length - 1 && <div className="w-px h-5 bg-gray-200" />}
           </div>
           <div className="flex-1 min-w-0">
@@ -102,6 +109,7 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
   const [hrComment, setHrComment] = useState('');
   const [directorComment, setDirectorComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [transmitting, setTransmitting] = useState(false);
   const r = request as any;
 
   const handleHrReview = async () => {
@@ -113,6 +121,18 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
       onClose();
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleTransmit = async () => {
+    setTransmitting(true);
+    try {
+      const endpoint = type === 'leave' ? `/leave/requests/${r.id}/transmit` : `/permissions/requests/${r.id}/transmit`;
+      await api.patch(endpoint);
+      onRefresh();
+      onClose();
+    } finally {
+      setTransmitting(false);
     }
   };
 
@@ -141,10 +161,12 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
   };
 
   const canReview = (role === 'HR' || role === 'ADMIN') && r.status === 'EN_ATTENTE_RH';
-  const canDecide = (role === 'DIRECTOR' || role === 'ADMIN') && (r.status === 'AVIS_RH_RENDU' || r.status === 'EN_ATTENTE_DIRECTION');
+  const canTransmit = (role === 'HR' || role === 'ADMIN') && r.status === 'AVIS_RH_RENDU';
+  const canDecide = (role === 'DIRECTOR' || role === 'ADMIN') && r.status === 'EN_ATTENTE_DIRECTION';
   const canCancel = role === 'EMPLOYEE' && (r.status === 'EN_ATTENTE_RH' || r.status === 'BROUILLON');
   const isLeave = type === 'leave';
   const status = statusConfig[r.status];
+  const leaveTypeName = r.leaveType?.name || permissionTypeLabels[r.permissionType] || 'Permission';
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
@@ -174,11 +196,16 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
             </SectionCard>
 
             <SectionCard icon={<CalendarDays className="size-4" />} title="Période">
-              <p className="font-medium">{r.leaveType?.name || 'Permission'}</p>
+              <p className="font-medium">{leaveTypeName}</p>
               <p className="text-sm text-muted-foreground">
                 {new Date(r.startDate).toLocaleDateString('fr-FR')} — {new Date(r.endDate).toLocaleDateString('fr-FR')}
               </p>
               <p className="text-sm text-muted-foreground">{r.duration} jour{r.duration > 1 ? 's' : ''}</p>
+              {r.returnDate && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Retour prévu : {new Date(r.returnDate).toLocaleDateString('fr-FR')}
+                </p>
+              )}
             </SectionCard>
           </div>
 
@@ -206,15 +233,19 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
           )}
 
           <SectionCard icon={<History className="size-4" />} title="Historique">
-            <Timeline request={r} />
+            {r.histories && r.histories.length > 0 ? (
+              <Timeline request={r} />
+            ) : (
+              <p className="text-sm text-muted-foreground">Aucun historique disponible</p>
+            )}
           </SectionCard>
 
           {canReview && (
-            <Card className="border-2 border-primary/10 bg-primary/5">
+            <Card className="border-2 border-amber-200 bg-amber-50/50">
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="size-4 text-primary" />
-                  <h3 className="font-semibold">Avis RH</h3>
+                  <MessageSquare className="size-4 text-amber-600" />
+                  <h3 className="font-semibold text-amber-800">Avis RH</h3>
                 </div>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -229,7 +260,26 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
                 <Textarea rows={3} placeholder="Commentaire (optionnel)" value={hrComment} onChange={(e) => setHrComment(e.target.value)} />
                 <div className="flex justify-end">
                   <Button onClick={handleHrReview} disabled={submitting}>
-                    {submitting ? 'Transmission...' : 'Transmettre à la Direction'}
+                    {submitting ? <><Loader2 className="size-4 animate-spin mr-2" />Traitement...</> : 'Enregistrer l\'avis'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {canTransmit && (
+            <Card className="border-2 border-indigo-200 bg-indigo-50/50">
+              <CardContent className="p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <ArrowRight className="size-4 text-indigo-600" />
+                  <h3 className="font-semibold text-indigo-800">Transmettre à la direction</h3>
+                </div>
+                <p className="text-sm text-indigo-700">
+                  L'avis RH a été enregistré. Vous pouvez maintenant transmettre cette demande à la direction pour décision finale.
+                </p>
+                <div className="flex justify-end">
+                  <Button onClick={handleTransmit} disabled={transmitting} className="bg-indigo-600 hover:bg-indigo-700">
+                    {transmitting ? <><Loader2 className="size-4 animate-spin mr-2" />Transmission...</> : 'Transmettre à la Direction'}
                   </Button>
                 </div>
               </CardContent>
@@ -237,11 +287,11 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
           )}
 
           {canDecide && (
-            <Card className="border-2 border-primary/10 bg-primary/5">
+            <Card className="border-2 border-blue-200 bg-blue-50/50">
               <CardContent className="p-5 space-y-4">
                 <div className="flex items-center gap-2">
-                  <Scale className="size-4 text-primary" />
-                  <h3 className="font-semibold">Décision de la direction</h3>
+                  <Scale className="size-4 text-blue-600" />
+                  <h3 className="font-semibold text-blue-800">Décision de la direction</h3>
                 </div>
                 <Textarea rows={3} placeholder="Commentaire (obligatoire)" value={directorComment} onChange={(e) => setDirectorComment(e.target.value)} />
                 <div className="flex gap-2 justify-end">
@@ -250,13 +300,13 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
                     disabled={submitting || !directorComment.trim()}
                     className="bg-destructive hover:bg-destructive/90"
                   >
-                    {submitting ? 'Traitement...' : 'Refuser'}
+                    {submitting ? <><Loader2 className="size-4 animate-spin mr-2" />Traitement...</> : 'Refuser'}
                   </Button>
                   <Button
                     onClick={() => handleDecision('APPROUVE')}
                     disabled={submitting || !directorComment.trim()}
                   >
-                    {submitting ? 'Traitement...' : 'Approuver'}
+                    {submitting ? <><Loader2 className="size-4 animate-spin mr-2" />Traitement...</> : 'Approuver'}
                   </Button>
                 </div>
               </CardContent>
@@ -265,8 +315,8 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
 
           {canCancel && (
             <div className="flex justify-end">
-              <Button onClick={handleCancel} disabled={cancelling} className="bg-destructive hover:bg-destructive/90">
-                {cancelling ? 'Annulation...' : 'Annuler la demande'}
+              <Button onClick={handleCancel} disabled={cancelling} variant="outline" className="border-destructive text-destructive hover:bg-destructive/10">
+                {cancelling ? <><Loader2 className="size-4 animate-spin mr-2" />Annulation...</> : 'Annuler la demande'}
               </Button>
             </div>
           )}

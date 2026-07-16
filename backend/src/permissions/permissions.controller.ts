@@ -73,6 +73,15 @@ export class PermissionsController {
     return this.permissionsService.hrReview(id, user.id, dto);
   }
 
+  @Patch('requests/:id/transmit')
+  @Roles('HR', 'ADMIN')
+  transmitToDirector(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.permissionsService.transmitToDirector(id, user.id);
+  }
+
   @Patch('requests/:id/decide')
   @Roles('DIRECTOR', 'ADMIN')
   directorDecision(
@@ -81,5 +90,12 @@ export class PermissionsController {
     @Body() dto: DirectorDecisionDto,
   ) {
     return this.permissionsService.directorDecision(id, user.id, dto);
+  }
+
+  @Get('balance')
+  @Roles('EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN')
+  async getMyBalances(@CurrentUser() user: { id: number }) {
+    const employee = await this.permissionsService.getEmployeeByUserId(user.id);
+    return this.permissionsService.getPermissionBalances(employee.id);
   }
 }

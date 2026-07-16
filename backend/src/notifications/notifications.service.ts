@@ -135,6 +135,19 @@ export class NotificationsService {
     });
   }
 
+  async leaveRiskAlert(leaveRequestId: number, employeeId: number, employeeName: string, score: number, summary: string) {
+    const [directorIds, adminIds, hrIds] = await Promise.all([this.getDirectorUserIds(), this.getAdminUserIds(), this.getHrUserIds()]);
+    await this.send({
+      userIds: [...new Set([...directorIds, ...adminIds, ...hrIds])],
+      title: 'Alerte risque — Congé',
+      message: `Risque détecté (score: ${score}/100) pour la demande de ${employeeName}. ${summary}`,
+      type: 'LEAVE_DECIDED',
+      link: '/leave',
+      entityType: 'LEAVE_REQUEST',
+      entityId: leaveRequestId,
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // PERMISSION events
   // ---------------------------------------------------------------------------
@@ -161,6 +174,20 @@ export class NotificationsService {
       title: 'Demande de permission examinée',
       message: `Votre demande de permission a été examinée par le RH (${rhName}). En attente de décision de la direction.`,
       type: 'PERMISSION_RH_REVIEWED',
+      link: '/permissions',
+      entityType: 'PERMISSION_REQUEST',
+      entityId: permissionRequestId,
+    });
+  }
+
+  async permissionTransmittedToDirector(permissionRequestId: number, employeeId: number) {
+    const userId = await this.getEmployeeUserId(employeeId);
+    const [directorIds, adminIds] = await Promise.all([this.getDirectorUserIds(), this.getAdminUserIds()]);
+    await this.send({
+      userIds: [...new Set([...(userId ? [userId] : []), ...directorIds, ...adminIds])],
+      title: 'Demande de permission transmise',
+      message: 'La demande de permission a été transmise à la direction pour décision.',
+      type: 'PERMISSION_TRANSMITTED',
       link: '/permissions',
       entityType: 'PERMISSION_REQUEST',
       entityId: permissionRequestId,

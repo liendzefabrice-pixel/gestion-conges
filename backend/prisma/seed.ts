@@ -168,6 +168,20 @@ async function main() {
     }
   }
 
+  const currentYear = new Date().getFullYear();
+  const allEmployees = await prisma.employee.findMany();
+  for (const emp of allEmployees) {
+    await prisma.permissionBalance.upsert({
+      where: { employeeId_year: { employeeId: emp.id, year: currentYear } },
+      update: {},
+      create: {
+        employeeId: emp.id,
+        year: currentYear,
+        totalDays: 10,
+      },
+    });
+  }
+
   console.log('Seed completed successfully');
 }
 

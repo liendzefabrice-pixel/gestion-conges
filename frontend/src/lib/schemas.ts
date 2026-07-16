@@ -6,13 +6,26 @@ export const loginSchema = z.object({
 })
 
 export const leaveRequestSchema = z.object({
-  leaveTypeId: z.string().min(1, 'Type de congé requis'),
-  startDate: z.string().min(1, 'Date de début requise'),
-  endDate: z.string().min(1, 'Date de fin requise'),
+  leaveTypeId: z.string().min(1, 'Veuillez sélectionner un type de congé'),
+  startDate: z.string().min(1, 'La date de début est obligatoire'),
+  endDate: z.string().min(1, 'La date de fin est obligatoire'),
   reason: z.string().min(3, 'Le motif doit contenir au moins 3 caractères'),
-}).refine((data) => !data.startDate || !data.endDate || new Date(data.endDate) >= new Date(data.startDate), {
+}).refine((data) => {
+  if (!data.startDate || !data.endDate) return true
+  return new Date(data.endDate) >= new Date(data.startDate)
+}, {
   message: 'La date de fin doit être après ou égale à la date de début',
   path: ['endDate'],
+}).refine((data) => {
+  if (!data.startDate) return true
+  const start = new Date(data.startDate)
+  start.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return start >= today
+}, {
+  message: 'La date de début ne peut pas être dans le passé',
+  path: ['startDate'],
 })
 
 export const passwordSchema = z.string()
@@ -24,16 +37,32 @@ export const passwordSchema = z.string()
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Mot de passe actuel requis'),
   newPassword: passwordSchema,
-  confirmPassword: z.string().min(1, 'Confirmation requise'),
+  confirmPassword: z.string().min(1, 'Veuillez confirmer le nouveau mot de passe'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword'],
 })
 
 export const permissionRequestSchema = z.object({
-  startDate: z.string().min(1, 'Date de début requise'),
-  endDate: z.string().min(1, 'Date de fin requise'),
+  startDate: z.string().min(1, 'La date de début est obligatoire'),
+  endDate: z.string().min(1, 'La date de fin est obligatoire'),
   reason: z.string().min(3, 'Le motif doit contenir au moins 3 caractères'),
+}).refine((data) => {
+  if (!data.startDate || !data.endDate) return true
+  return new Date(data.endDate) >= new Date(data.startDate)
+}, {
+  message: 'La date de fin doit être après ou égale à la date de début',
+  path: ['endDate'],
+}).refine((data) => {
+  if (!data.startDate) return true
+  const start = new Date(data.startDate)
+  start.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return start >= today
+}, {
+  message: 'La date de début ne peut pas être dans le passé',
+  path: ['startDate'],
 })
 
 export const forgotPasswordSchema = z.object({
@@ -44,7 +73,7 @@ export const resetPasswordSchema = z.object({
   email: z.string().email('Email invalide'),
   otp: z.string().length(6, 'Le code doit contenir 6 chiffres'),
   newPassword: passwordSchema,
-  confirmPassword: z.string().min(1, 'Confirmation requise'),
+  confirmPassword: z.string().min(1, 'Veuillez confirmer le nouveau mot de passe'),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'Les mots de passe ne correspondent pas',
   path: ['confirmPassword'],

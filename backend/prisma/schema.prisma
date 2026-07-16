@@ -31,15 +31,25 @@ enum ProposalStatus {
   REFUSEE
 }
 
+enum PermissionType {
+  PERMISSION
+  MARIAGE
+  NAISSANCE
+  DECES
+  FAMILIAL
+}
+
 enum NotificationType {
   LEAVE_CREATED
   LEAVE_RH_REVIEWED
-  LEAVE_DECIDED
   LEAVE_TRANSMITTED
+  LEAVE_DECIDED
   LEAVE_CANCELLED
   PERMISSION_CREATED
   PERMISSION_RH_REVIEWED
+  PERMISSION_TRANSMITTED
   PERMISSION_DECIDED
+  PERMISSION_CANCELLED
   USER_CREATED
   USER_ACTIVATED
   USER_DEACTIVATED
@@ -111,6 +121,7 @@ model User {
   directorDecidedLeaves   LeaveRequest[]       @relation("Director_Decision")
   hrReviewedPermissions   PermissionRequest[]  @relation("Permission_HR_Review")
   directorDecidedPermissions PermissionRequest[] @relation("Permission_Director_Decision")
+  permissionRequestHistories PermissionRequestHistory[]
 
   annualLeavePlannings  AnnualLeavePlanning[]
 
@@ -200,6 +211,7 @@ model Employee {
   skills                 EmployeeSkill[]
   replacementsAsEmployee  EmployeeReplacement[] @relation("EmployeeReplaced")
   replacementsAsReplacement EmployeeReplacement[] @relation("ReplacementEmployee")
+  permissionBalances PermissionBalance[]
 
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -286,6 +298,7 @@ model LeaveRequest {
   id             Int         @id @default(autoincrement())
   startDate      DateTime
   endDate        DateTime
+  returnDate     DateTime?
   duration       Int
   reason         String
   status         LeaveStatus @default(EN_ATTENTE_RH)
@@ -301,8 +314,8 @@ model LeaveRequest {
   leaveTypeId    Int
   leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id])
 
-  annualLeavePlanningId Int
-  annualLeavePlanning  AnnualLeavePlanning @relation(fields: [annualLeavePlanningId], references: [id])
+  annualLeavePlanningId Int?
+  annualLeavePlanning  AnnualLeavePlanning? @relation(fields: [annualLeavePlanningId], references: [id])
 
   reviewedById   Int?
   reviewedBy     User?    @relation("HR_Review", fields: [reviewedById], references: [id])
@@ -341,10 +354,12 @@ model PermissionRequest {
   duration       Int
   reason         String
   status         LeaveStatus @default(EN_ATTENTE_RH)
+  permissionType PermissionType @default(PERMISSION)
   hrComment      String?
   hrOpinion      String?
   directorComment String?
   reviewedAt     DateTime?
+  transmittedAt  DateTime?
   decidedAt      DateTime?
 
   employeeId     Int
@@ -359,8 +374,44 @@ model PermissionRequest {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  histories      PermissionRequestHistory[]
+
   @@index([employeeId])
   @@index([status])
+  @@index([permissionType])
+}
+
+model PermissionRequestHistory {
+  id             Int         @id @default(autoincrement())
+  previousStatus String?
+  newStatus      String
+  comment        String?
+  userId         Int
+  user           User        @relation(fields: [userId], references: [id])
+  permissionRequestId Int
+  permissionRequest PermissionRequest @relation(fields: [permissionRequestId], references: [id], onDelete: Cascade)
+  createdAt      DateTime    @default(now())
+
+  @@index([permissionRequestId])
+}
+
+model PermissionBalance {
+  id           Int   @id @default(autoincrement())
+  year         Int
+  totalDays    Int   @default(0)
+  adjustedDays Int   @default(0)
+  usedDays     Int   @default(0)
+  pendingDays  Int   @default(0)
+  status       String @default("ACTIF")
+
+  employeeId   Int
+  employee     Employee @relation(fields: [employeeId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([employeeId, year])
+  @@index([employeeId])
 }
 
 model LeaveBalance {
