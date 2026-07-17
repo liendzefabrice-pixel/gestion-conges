@@ -82,6 +82,12 @@ function fetchDashboard(): Promise<DashboardData> {
   return api.get('/dashboard').then((res) => res.data)
 }
 
+function getGreeting(user: { lastName?: string; gender?: string } | null): string {
+  if (!user) return 'Bonjour !'
+  const prefix = user.gender === 'Homme' ? 'Bonjour M.' : user.gender === 'Femme' ? 'Bonjour Mme' : 'Bonjour'
+  return user.lastName ? `${prefix} ${user.lastName} !` : `${prefix} !`
+}
+
 function formatDate(): string {
   return new Date().toLocaleDateString('fr-FR', {
     weekday: 'long',
@@ -153,11 +159,12 @@ export default function DashboardPage() {
           data={data as DashboardAdmin}
           leaveRequests={leaveRequests}
           users={users}
+          user={user}
         />
       )}
-      {role === 'HR' && <HrDashboard data={data as DashboardHr} />}
-      {role === 'DIRECTOR' && <DirectorDashboard data={data as DashboardDirector} />}
-      {role === 'EMPLOYEE' && <EmployeeDashboard data={data as DashboardEmployee} />}
+      {role === 'HR' && <HrDashboard data={data as DashboardHr} user={user} />}
+      {role === 'DIRECTOR' && <DirectorDashboard data={data as DashboardDirector} user={user} />}
+      {role === 'EMPLOYEE' && <EmployeeDashboard data={data as DashboardEmployee} user={user} />}
     </div>
   )
 }
@@ -167,10 +174,12 @@ function AdminDashboard({
   data,
   leaveRequests,
   users,
+  user,
 }: {
   data: DashboardAdmin
   leaveRequests: LeaveRequest[]
   users: (User & { createdAt: string; isActive: boolean })[]
+  user: User | null
 }) {
   const [now, setNow] = useState(new Date())
   const [unreadCount, setUnreadCount] = useState(0)
@@ -289,7 +298,7 @@ function AdminDashboard({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Bonjour, Administrateur 👋
+            {getGreeting(user)}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Bienvenue sur votre espace d'administration.
@@ -543,7 +552,7 @@ function AdminDashboard({
 }
 
 /* ───── HR Dashboard ───── */
-function HrDashboard({ data }: { data: DashboardHr }) {
+function HrDashboard({ data, user }: { data: DashboardHr; user: User | null }) {
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
@@ -569,7 +578,7 @@ function HrDashboard({ data }: { data: DashboardHr }) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Bonjour, Responsable RH 👋
+            {getGreeting(user)}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Voici un aperçu de l'activité des ressources humaines.
@@ -789,7 +798,7 @@ function HrDashboard({ data }: { data: DashboardHr }) {
 }
 
 /* ───── Director Dashboard ───── */
-function DirectorDashboard({ data }: { data: DashboardDirector }) {
+function DirectorDashboard({ data, user }: { data: DashboardDirector; user: User | null }) {
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
@@ -817,7 +826,7 @@ function DirectorDashboard({ data }: { data: DashboardDirector }) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Bonjour, Directeur 👋
+            {getGreeting(user)}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Voici un aperçu des validations et des indicateurs stratégiques.
@@ -1047,7 +1056,7 @@ function DirectorDashboard({ data }: { data: DashboardDirector }) {
 }
 
 /* ───── Employee Dashboard ───── */
-function EmployeeDashboard({ data }: { data: DashboardEmployee }) {
+function EmployeeDashboard({ data, user }: { data: DashboardEmployee; user: User | null }) {
   const [now, setNow] = useState(new Date())
   const navigate = useNavigate()
 
@@ -1127,10 +1136,10 @@ function EmployeeDashboard({ data }: { data: DashboardEmployee }) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
-            Bonjour 👋
+            {getGreeting(user)}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Retrouvez ici un aperçu de vos congés, permissions et de votre planning annuel.
+            Voici un aperçu de vos congés et permissions.
           </p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
