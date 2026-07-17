@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '../components/ui/select'
 import { cn } from '../lib/utils'
-import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X, Loader2, Archive, Settings, Calendar, FileText } from 'lucide-react'
+import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X, Loader2, Archive, Settings, Calendar, FileText, Trash2 } from 'lucide-react'
 import { toast } from '../components/Toast'
 
 const proposalStatusLabels: Record<string, string> = {
@@ -104,6 +104,20 @@ export default function CampaignsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-campaigns'] })
       toast('Campagne archivée avec succès', 'success')
+    },
+  })
+
+  const [campaignToDelete, setCampaignToDelete] = useState<any | null>(null)
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/leave-campaigns/${id}`),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['leave-campaigns'] })
+      setCampaignToDelete(null)
+      toast(res.data?.message || 'Campagne supprimée avec succès', 'success')
+    },
+    onError: (err: any) => {
+      toast(err?.response?.data?.message || 'Erreur lors de la suppression', 'error')
     },
   })
 
@@ -237,6 +251,9 @@ export default function CampaignsPage() {
                               Archiver
                             </Button>
                           )}
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setCampaignToDelete(c) }}>
+                            <Trash2 className="size-3.5" />
+                          </Button>
                           {c.status !== 'ARCHIVEE' && (
                             <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingCampaign(c); setEditForm({ label: c.label, description: c.description || '', startDate: c.startDate ? c.startDate.slice(0,10) : '', endDate: c.endDate ? c.endDate.slice(0,10) : '' }) }}>
                               <Settings className="size-3.5" />
@@ -607,6 +624,32 @@ export default function CampaignsPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!campaignToDelete} onOpenChange={(o) => { if (!o) setCampaignToDelete(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Êtes-vous sûr de vouloir supprimer la campagne <strong>{campaignToDelete?.label}</strong> ({campaignToDelete?.year}) ?
+            Cette action supprimera également toutes les propositions associées et est irréversible.
+          </p>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setCampaignToDelete(null)}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate(campaignToDelete.id)}
+            >
+              {deleteMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <Trash2 className="size-4 mr-1.5" />}
+              Supprimer
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -20,8 +20,15 @@ import {
   SelectValue,
 } from '../components/ui/select'
 import { Textarea } from '../components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../components/ui/dialog'
 import RequestDetailModal from '../components/RequestDetailModal'
-import { Calendar, Filter, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Calendar, Filter, Loader2, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 
 const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
@@ -242,6 +249,21 @@ export default function LeavePage() {
     return true
   })
 
+  const [requestToDelete, setRequestToDelete] = useState<LeaveRequest | null>(null)
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/leave/requests/${id}`),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['leave-requests'] })
+      setRequestToDelete(null)
+      setSelectedRequest(null)
+      toast(res.data?.message || 'Demande supprimée avec succès', 'success')
+    },
+    onError: (err: any) => {
+      toast(err?.response?.data?.message || 'Erreur lors de la suppression', 'error')
+    },
+  })
+
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['leave-requests'] })
     queryClient.invalidateQueries({ queryKey: ['balances'] })
@@ -311,6 +333,9 @@ export default function LeavePage() {
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Jours</th>
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Retour</th>
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Statut</th>
+                  {(role === 'HR' || role === 'ADMIN') && (
+                    <th className="h-11 px-5 text-right font-semibold text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -334,11 +359,23 @@ export default function LeavePage() {
                         {statusConfig[r.status]?.label}
                       </Badge>
                     </td>
+                    {(role === 'HR' || role === 'ADMIN') && (
+                      <td className="p-4 px-5 text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={(e) => { e.stopPropagation(); setRequestToDelete(r) }}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {requests.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-4 px-5 text-center text-muted-foreground">Aucune demande</td>
+                    <td colSpan={role === 'HR' || role === 'ADMIN' ? 7 : 6} className="p-4 px-5 text-center text-muted-foreground">Aucune demande</td>
                   </tr>
                 )}
               </tbody>
@@ -360,6 +397,32 @@ export default function LeavePage() {
           </Button>
         </div>
       )}
+
+      {/* Delete confirmation */}
+      <Dialog open={!!requestToDelete} onOpenChange={(o) => { if (!o) setRequestToDelete(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Êtes-vous sûr de vouloir supprimer la demande de congé de <strong>{requestToDelete?.employee?.user?.firstName} {requestToDelete?.employee?.user?.lastName}</strong> ?
+            Cette action est irréversible.
+          </p>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setRequestToDelete(null)}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate(requestToDelete!.id)}
+            >
+              {deleteMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <Trash2 className="size-4 mr-1.5" />}
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {selectedRequest && (
         <RequestDetailModal

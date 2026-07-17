@@ -210,6 +210,21 @@ export class LeaveCampaignService {
     }
   }
 
+  private async notifyHrOfProposal(employee: any, campaignLabel: string) {
+    const hrUsers = await this.prisma.user.findMany({
+      where: { role: { name: 'HR' }, isActive: true },
+      select: { id: true },
+    });
+    if (hrUsers.length > 0) {
+      const name = `${employee.user?.firstName || ''} ${employee.user?.lastName || ''}`.trim() || `#${employee.id}`;
+      await this.notificationsService.notifyProposalSubmitted(
+        hrUsers.map((u) => u.id),
+        name,
+        campaignLabel,
+      );
+    }
+  }
+
   private async isEligible(employeeId: number): Promise<boolean> {
     try {
       const employee = await this.prisma.employee.findUnique({
@@ -300,6 +315,10 @@ export class LeaveCampaignService {
 
     this.planningEngine.analyzeProposal(proposal.id).catch((err) => {
       this.logger.error(`Analyse automatique échouée pour la proposition #${proposal.id}: ${err.message}`);
+    });
+
+    this.notifyHrOfProposal(employee, campaign.label).catch((err) => {
+      this.logger.error(`Échec notification RH pour la proposition #${proposal.id}: ${err.message}`);
     });
 
     return proposal;
@@ -519,6 +538,14 @@ export class LeaveCampaignService {
       if (await this.isEligible(emp.id)) count++;
     }
     return count;
+  }
+
+  async remove(id: number) {
+    const campaign = await this.findOne(id);
+    const proposalsCount = await this.prisma.leaveProposal.count({ where: { campaignId: id } });
+    await this.prisma.leaveProposal.deleteMany({ where: { campaignId: id } });
+    await this.prisma.leaveCampaign.delete({ where: { id } });
+    return { message: `Campagne "${campaign.label}" supprimée avec ${proposalsCount} proposition(s)` };
   }
 
   private async writeAuditLog(action: string, entityType: string, entityId: number, oldValue: any, newValue: any, userId: number) {

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
 import { Button } from '../components/ui/button'
 import { cn } from '../lib/utils'
-import { ChevronLeft, ChevronRight, X, CalendarDays, Flag, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, CalendarDays, Flag, CheckCircle2 } from 'lucide-react'
 
 const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']

@@ -748,6 +748,17 @@ export class LeaveService {
     return employee;
   }
 
+  async removeRequest(id: number) {
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id },
+      include: { employee: { include: { user: true } } },
+    });
+    if (!request) throw new NotFoundException('Demande introuvable');
+    await this.prisma.leaveRequestHistory.deleteMany({ where: { leaveRequestId: id } });
+    await this.prisma.leaveRequest.delete({ where: { id } });
+    return { message: `Demande de ${request.employee.user.firstName} ${request.employee.user.lastName} supprimée` };
+  }
+
   async findRequestById(id: number) {
     const request = await this.prisma.leaveRequest.findUnique({
       where: { id },

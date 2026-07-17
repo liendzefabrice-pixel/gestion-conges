@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   ParseIntPipe,
@@ -71,6 +72,12 @@ export class LeaveCampaignController {
   @Roles('ADMIN', 'HR')
   archiveCampaign(@Param('id', ParseIntPipe) id: number) {
     return this.campaignService.archiveCampaign(id);
+  }
+
+  @Delete(':id')
+  @Roles('ADMIN', 'HR')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.campaignService.remove(id);
   }
 
   @Get('my/proposal')

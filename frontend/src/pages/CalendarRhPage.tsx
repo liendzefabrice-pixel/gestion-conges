@@ -174,11 +174,15 @@ export default function CalendarRhPage() {
         }
       })
 
-      ;(data?.conflicts || []).forEach((c: any) => {
-        if (c.leaveId && items.some((i) => i.type === 'leave' && i.data.id === c.leaveId)) {
-          hasConflict = true
-        }
-        if (c.otherLeaveId && items.some((i) => i.type === 'leave' && i.data.id === c.otherLeaveId)) {
+      const seenConflictIds = new Set<number>()
+      ;(data?.conflicts || []).forEach((c: any, ci: number) => {
+        const matchedLeave = c.leaveId && items.some((i) => i.type === 'leave' && i.data.id === c.leaveId)
+        const matchedOther = c.otherLeaveId && items.some((i) => i.type === 'leave' && i.data.id === c.otherLeaveId)
+        if (matchedLeave || matchedOther) {
+          if (!seenConflictIds.has(ci)) {
+            items.push({ type: 'conflict', data: c })
+            seenConflictIds.add(ci)
+          }
           hasConflict = true
         }
       })
@@ -621,7 +625,19 @@ export default function CalendarRhPage() {
                         )}>
                           {dayData.day}
                         </div>
-                        {dayData.hasConflict && <AlertTriangle className="size-3 text-red-500 shrink-0" />}
+                        {dayData.hasConflict && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const conflictItem = dayData.items.find(i => i.type === 'conflict')
+                              if (conflictItem) setDetail(conflictItem)
+                            }}
+                            title="Voir le conflit"
+                            className="hover:scale-110 transition-transform"
+                          >
+                            <AlertTriangle className="size-3 text-red-500 shrink-0" />
+                          </button>
+                        )}
                       </div>
 
                       <div className="space-y-0.5">

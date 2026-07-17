@@ -97,6 +97,12 @@ export class LeaveController {
     return this.leaveService.cancelRequest(id, employee.id);
   }
 
+  @Delete('requests/:id')
+  @Roles('HR', 'ADMIN')
+  removeRequest(@Param('id', ParseIntPipe) id: number) {
+    return this.leaveService.removeRequest(id);
+  }
+
   @Get('requests/my')
   @Roles('EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN')
   async findMyRequests(

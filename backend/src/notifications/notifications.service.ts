@@ -375,6 +375,18 @@ export class NotificationsService {
     });
   }
 
+  async notifyProposalSubmitted(hrUserIds: number[], employeeName: string, campaignLabel: string) {
+    await this.send({
+      userIds: hrUserIds,
+      title: 'Nouvelle proposition de congé',
+      message: `${employeeName} a soumis une proposition pour la campagne ${campaignLabel}.`,
+      type: 'PROPOSAL_SUBMITTED',
+      entityType: 'LEAVE_PROPOSAL',
+      entityId: 0,
+      link: '/campaigns',
+    });
+  }
+
   // ---------------------------------------------------------------------------
   // STANDARD CRUD (retained)
   // ---------------------------------------------------------------------------
