@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 import type { AnnualLeavePlanning, Employee } from '../types'
 import { Button } from '../components/ui/button'
+import Tooltip from '../components/ui/tooltip'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
@@ -192,12 +193,16 @@ export default function LeavePlanningPage() {
                     <td className="p-4 px-5 text-sm text-muted-foreground">{p.plannedBy?.email}</td>
                     <td className="p-4 px-5 text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button size="sm" variant="ghost" onClick={() => handleEdit(p)}>
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => deleteMutation.mutate(p.id)} className="text-destructive hover:text-destructive">
-                          <Trash2 className="size-4" />
-                        </Button>
+                        <Tooltip content="Modifier">
+                          <Button size="sm" variant="ghost" onClick={() => handleEdit(p)}>
+                            <Pencil className="size-4" />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content="Supprimer">
+                          <Button size="sm" variant="ghost" onClick={() => deleteMutation.mutate(p.id)} className="text-destructive hover:text-destructive">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </Tooltip>
                       </div>
                     </td>
                   </tr>

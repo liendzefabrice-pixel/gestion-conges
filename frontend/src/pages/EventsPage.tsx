@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '../components/ui/select'
 import { cn } from '../lib/utils'
+import Tooltip from '../components/ui/tooltip'
 import { Plus, Pencil, Trash2, Eye, AlertTriangle, Info, Calendar, CalendarCheck, CalendarRange, Search, RotateCcw } from 'lucide-react'
 
 const eventTypeLabels: Record<string, string> = {
@@ -292,16 +293,22 @@ export default function EventsPage() {
                     </td>
                     <td className="p-4 px-5 text-right">
                       <div className="flex gap-1 justify-end">
-                        <Button size="sm" variant="ghost" onClick={() => setViewingId(viewingId === e.id ? null : e.id)} title="Voir">
-                          <Eye className="size-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleEdit(e)} title="Modifier">
-                          <Pencil className="size-4" />
-                        </Button>
-                        {e.status !== 'ARCHIVE' && (
-                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => archiveMutation.mutate(e.id)} title="Archiver">
-                            <Trash2 className="size-4" />
+                        <Tooltip content="Voir">
+                          <Button size="sm" variant="ghost" onClick={() => setViewingId(viewingId === e.id ? null : e.id)}>
+                            <Eye className="size-4" />
                           </Button>
+                        </Tooltip>
+                        <Tooltip content="Modifier">
+                          <Button size="sm" variant="ghost" onClick={() => handleEdit(e)}>
+                            <Pencil className="size-4" />
+                          </Button>
+                        </Tooltip>
+                        {e.status !== 'ARCHIVE' && (
+                          <Tooltip content="Archiver">
+                            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => archiveMutation.mutate(e.id)}>
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </Tooltip>
                         )}
                       </div>
                     </td>

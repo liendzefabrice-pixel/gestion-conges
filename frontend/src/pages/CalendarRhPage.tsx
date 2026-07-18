@@ -8,6 +8,7 @@ import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { cn } from '../lib/utils'
+import Tooltip from '../components/ui/tooltip'
 import {
   ChevronLeft, ChevronRight, RotateCcw, Search,
   CalendarDays, CalendarCheck, AlertTriangle, Users, Flag, BadgeAlert, X,
@@ -371,7 +372,9 @@ export default function CalendarRhPage() {
           <h2 className="font-semibold text-lg">
             {type === 'leave' ? 'Congé' : type === 'event' ? 'Événement' : type === 'holiday' ? 'Jour férié' : type === 'proposal' ? 'Programmation' : 'Conflit'}
           </h2>
-          <Button variant="ghost" size="sm" onClick={() => setDetail(null)}><X className="size-4" /></Button>
+          <Tooltip content="Fermer">
+            <Button variant="ghost" size="sm" onClick={() => setDetail(null)}><X className="size-4" /></Button>
+          </Tooltip>
         </div>
         <div className="flex-1 overflow-y-auto p-6">
           {panelContent()}
@@ -553,9 +556,11 @@ export default function CalendarRhPage() {
           {/* Navigation */}
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={prevMonth}>
-                <ChevronLeft className="size-4" />
-              </Button>
+              <Tooltip content="Mois précédent">
+                <Button variant="outline" size="sm" onClick={prevMonth}>
+                  <ChevronLeft className="size-4" />
+                </Button>
+              </Tooltip>
               <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
                 <SelectTrigger className="h-9 text-sm min-w-[140px]">
                   <span className="flex-1 text-left">{monthNames[month - 1]}</span>
@@ -574,9 +579,11 @@ export default function CalendarRhPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={nextMonth}>
-                <ChevronRight className="size-4" />
-              </Button>
+              <Tooltip content="Mois suivant">
+                <Button variant="outline" size="sm" onClick={nextMonth}>
+                  <ChevronRight className="size-4" />
+                </Button>
+              </Tooltip>
             </div>
             <Button variant="outline" size="sm" onClick={goToday}>
               Aujourd'hui
@@ -626,17 +633,18 @@ export default function CalendarRhPage() {
                           {dayData.day}
                         </div>
                         {dayData.hasConflict && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              const conflictItem = dayData.items.find(i => i.type === 'conflict')
-                              if (conflictItem) setDetail(conflictItem)
-                            }}
-                            title="Voir le conflit"
-                            className="hover:scale-110 transition-transform"
-                          >
-                            <AlertTriangle className="size-3 text-red-500 shrink-0" />
-                          </button>
+                          <Tooltip content="Voir le conflit">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const conflictItem = dayData.items.find(i => i.type === 'conflict')
+                                if (conflictItem) setDetail(conflictItem)
+                              }}
+                              className="hover:scale-110 transition-transform"
+                            >
+                              <AlertTriangle className="size-3 text-red-500 shrink-0" />
+                            </button>
+                          </Tooltip>
                         )}
                       </div>
 

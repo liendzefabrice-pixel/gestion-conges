@@ -28,6 +28,7 @@ import {
   DialogFooter,
 } from '../components/ui/dialog'
 import RequestDetailModal from '../components/RequestDetailModal'
+import Tooltip from '../components/ui/tooltip'
 import { Calendar, Filter, Loader2, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 
 const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
@@ -361,14 +362,16 @@ export default function LeavePage() {
                     </td>
                     {(role === 'HR' || role === 'ADMIN') && (
                       <td className="p-4 px-5 text-right">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={(e) => { e.stopPropagation(); setRequestToDelete(r) }}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                        <Tooltip content="Supprimer">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={(e) => { e.stopPropagation(); setRequestToDelete(r) }}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </Tooltip>
                       </td>
                     )}
                   </tr>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 import { Button } from '../components/ui/button'
+import Tooltip from '../components/ui/tooltip'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
@@ -199,22 +200,30 @@ export default function HolidaysPage() {
                     <TableCell className="text-muted-foreground text-sm">{h.description || '—'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(h)}>
-                          <Pencil className="size-3.5" />
-                        </Button>
+                        <Tooltip content="Modifier">
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(h)}>
+                            <Pencil className="size-3.5" />
+                          </Button>
+                        </Tooltip>
                         {deletingId === h.id ? (
                           <div className="flex gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => deleteMutation.mutate(h.id)} disabled={deleteMutation.isPending}>
-                              <Check className="size-3.5 text-destructive" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setDeletingId(null)}>
-                              <X className="size-3.5" />
-                            </Button>
+                            <Tooltip content="Confirmer">
+                              <Button size="sm" variant="ghost" onClick={() => deleteMutation.mutate(h.id)} disabled={deleteMutation.isPending}>
+                                <Check className="size-3.5 text-destructive" />
+                              </Button>
+                            </Tooltip>
+                            <Tooltip content="Annuler">
+                              <Button size="sm" variant="ghost" onClick={() => setDeletingId(null)}>
+                                <X className="size-3.5" />
+                              </Button>
+                            </Tooltip>
                           </div>
                         ) : (
-                          <Button variant="ghost" size="sm" onClick={() => setDeletingId(h.id)}>
-                            <Trash2 className="size-3.5 text-destructive" />
-                          </Button>
+                          <Tooltip content="Supprimer">
+                            <Button variant="ghost" size="sm" onClick={() => setDeletingId(h.id)}>
+                              <Trash2 className="size-3.5 text-destructive" />
+                            </Button>
+                          </Tooltip>
                         )}
                       </div>
                     </TableCell>

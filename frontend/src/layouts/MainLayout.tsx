@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import NotificationsBadge from '../components/NotificationsBadge'
 import Topbar from '../components/Topbar'
+import Tooltip from '../components/ui/tooltip'
 import { ToastContainer } from '../components/Toast'
 import { translateRole } from '../lib/utils'
 import {
@@ -137,9 +138,8 @@ export default function MainLayout() {
                 <div className={cn('space-y-0.5', collapsed ? 'px-2' : 'px-3')}>
                   {visibleItems.map((item) => {
                     const Icon = item.icon
-                    return (
+                    const link = (
                       <NavLink
-                        key={item.path}
                         to={item.path}
                         className={({ isActive }) =>
                           cn(
@@ -153,7 +153,6 @@ export default function MainLayout() {
                               : 'text-gray-600 hover:bg-green-50 hover:text-primary',
                           )
                         }
-                        title={collapsed ? item.label : undefined}
                       >
                         <Icon className="size-5 shrink-0" />
                         {!collapsed && (
@@ -164,6 +163,9 @@ export default function MainLayout() {
                         )}
                       </NavLink>
                     )
+                    return collapsed ? (
+                      <Tooltip key={item.path} content={item.label} side="right">{link}</Tooltip>
+                    ) : <Fragment key={item.path}>{link}</Fragment>
                   })}
                 </div>
               </div>
@@ -172,41 +174,64 @@ export default function MainLayout() {
 
           {/* Mon compte */}
           <div className={collapsed ? 'px-2' : 'px-3'}>
-            <NavLink
-              to="/account"
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center rounded-xl text-sm font-medium transition-all duration-150',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1',
-                  collapsed
-                    ? 'justify-center h-10 w-10 mx-auto'
-                    : 'gap-3 px-3 py-2.5',
-                  isActive
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-gray-600 hover:bg-green-50 hover:text-primary',
-                )
-              }
-              title={collapsed ? 'Mon compte' : undefined}
-            >
-              <User className="size-5 shrink-0" />
-              {!collapsed && <span className="truncate">Mon compte</span>}
-            </NavLink>
+            {collapsed ? (
+              <Tooltip content="Mon compte" side="right">
+                <NavLink
+                  to="/account"
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center rounded-xl text-sm font-medium transition-all duration-150',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1',
+                      collapsed
+                        ? 'justify-center h-10 w-10 mx-auto'
+                        : 'gap-3 px-3 py-2.5',
+                      isActive
+                        ? 'bg-primary text-white shadow-sm'
+                        : 'text-gray-600 hover:bg-green-50 hover:text-primary',
+                    )
+                  }
+                >
+                  <User className="size-5 shrink-0" />
+                  {!collapsed && <span className="truncate">Mon compte</span>}
+                </NavLink>
+              </Tooltip>
+            ) : (
+              <NavLink
+                to="/account"
+                className={({ isActive }) =>
+                  cn(
+                    'flex items-center rounded-xl text-sm font-medium transition-all duration-150',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1',
+                    collapsed
+                      ? 'justify-center h-10 w-10 mx-auto'
+                      : 'gap-3 px-3 py-2.5',
+                    isActive
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'text-gray-600 hover:bg-green-50 hover:text-primary',
+                  )
+                }
+              >
+                <User className="size-5 shrink-0" />
+                {!collapsed && <span className="truncate">Mon compte</span>}
+              </NavLink>
+            )}
           </div>
         </nav>
 
         {/* Toggle */}
         <div className={cn('shrink-0', collapsed ? 'flex justify-center py-3' : 'px-4 py-1')}>
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className={cn(
-              'flex items-center justify-center rounded-xl transition-all duration-150 text-gray-400 hover:text-primary hover:bg-blue-50',
-              collapsed ? 'h-8 w-8' : 'w-full h-8 gap-2 px-2',
-            )}
-            title={collapsed ? 'Déplier' : 'Replier'}
-          >
-            <ChevronLeft className={cn('size-4 transition-transform duration-200', collapsed && 'rotate-180')} />
-            {!collapsed && <span className="text-xs font-medium">Replier</span>}
-          </button>
+          <Tooltip content={collapsed ? 'Déplier' : 'Replier'} side="right">
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className={cn(
+                'flex items-center justify-center rounded-xl transition-all duration-150 text-gray-400 hover:text-primary hover:bg-blue-50',
+                collapsed ? 'h-8 w-8' : 'w-full h-8 gap-2 px-2',
+              )}
+            >
+              <ChevronLeft className={cn('size-4 transition-transform duration-200', collapsed && 'rotate-180')} />
+              {!collapsed && <span className="text-xs font-medium">Replier</span>}
+            </button>
+          </Tooltip>
         </div>
 
         {/* Separator */}
@@ -217,13 +242,14 @@ export default function MainLayout() {
           {collapsed ? (
             <div className="flex flex-col items-center gap-3">
               <img src="/images/Avatar.png" alt="" className="w-10 h-10 rounded-full shrink-0 object-cover" />
-              <button
-                onClick={handleLogout}
-                className="flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-destructive hover:bg-red-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
-                title="Déconnexion"
-              >
-                <LogOut className="size-4 shrink-0" />
-              </button>
+              <Tooltip content="Déconnexion" side="right">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-destructive hover:bg-red-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive/30"
+                >
+                  <LogOut className="size-4 shrink-0" />
+                </button>
+              </Tooltip>
             </div>
           ) : (
             <>

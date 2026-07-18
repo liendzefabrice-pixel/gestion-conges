@@ -4,6 +4,7 @@ import api from '../services/api'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
 import { Button } from '../components/ui/button'
+import Tooltip from '../components/ui/tooltip'
 import { cn } from '../lib/utils'
 import { ChevronLeft, ChevronRight, X, CalendarDays, Flag, CheckCircle2 } from 'lucide-react'
 
@@ -122,15 +123,19 @@ export default function CalendarPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={prevMonth}>
-                <ChevronLeft className="size-4" />
-              </Button>
+              <Tooltip content="Mois précédent">
+                <Button variant="outline" size="sm" onClick={prevMonth}>
+                  <ChevronLeft className="size-4" />
+                </Button>
+              </Tooltip>
               <span className="text-lg font-semibold min-w-[200px] text-center">
                 {monthNames[month - 1]} {year}
               </span>
-              <Button variant="outline" size="sm" onClick={nextMonth}>
-                <ChevronRight className="size-4" />
-              </Button>
+              <Tooltip content="Mois suivant">
+                <Button variant="outline" size="sm" onClick={nextMonth}>
+                  <ChevronRight className="size-4" />
+                </Button>
+              </Tooltip>
             </CardTitle>
           </div>
         </CardHeader>
@@ -258,7 +263,9 @@ export default function CalendarPage() {
               <h2 className="font-semibold text-lg">
                 {detail.type === 'leave' ? 'Congé' : detail.type === 'event' ? 'Événement' : 'Jour férié'}
               </h2>
-              <Button variant="ghost" size="sm" onClick={() => setDetail(null)}><X className="size-4" /></Button>
+              <Tooltip content="Fermer">
+                <Button variant="ghost" size="sm" onClick={() => setDetail(null)}><X className="size-4" /></Button>
+              </Tooltip>
             </div>
             <div className="flex-1 overflow-y-auto p-6">
               {detail.type === 'holiday' && (

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { translateRole } from '../lib/utils'
 import { cn } from '../lib/utils'
+import Tooltip from '../components/ui/tooltip'
 import {
   PanelLeftClose,
   PanelLeft,
@@ -12,6 +13,8 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import api from '../services/api'
 
@@ -57,6 +60,7 @@ export default function Topbar({ collapsed, onToggleCollapse }: TopbarProps) {
   const { user, logout } = useAuth()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notifCount, setNotifCount] = useState(0)
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const roleName = user?.role?.name || ''
@@ -75,6 +79,11 @@ export default function Topbar({ collapsed, onToggleCollapse }: TopbarProps) {
     const interval = setInterval(fetchCount, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
+  }, [dark])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -99,17 +108,18 @@ export default function Topbar({ collapsed, onToggleCollapse }: TopbarProps) {
       <div className="flex items-center h-full px-6 gap-4">
         {/* Left: collapse + title + breadcrumb */}
         <div className="flex items-center gap-4 min-w-0">
-          <button
-            onClick={onToggleCollapse}
-            className="flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-primary hover:bg-blue-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-            title={collapsed ? 'Déplier' : 'Replier'}
-          >
-            {collapsed ? (
-              <PanelLeft className="size-5" />
-            ) : (
-              <PanelLeftClose className="size-5" />
-            )}
-          </button>
+          <Tooltip content={collapsed ? 'Déplier' : 'Replier'} side="bottom">
+            <button
+              onClick={onToggleCollapse}
+              className="flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-primary hover:bg-blue-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            >
+              {collapsed ? (
+                <PanelLeft className="size-5" />
+              ) : (
+                <PanelLeftClose className="size-5" />
+              )}
+            </button>
+          </Tooltip>
 
           <div className="min-w-0">
             <h1 className="text-lg font-semibold text-foreground leading-tight truncate">
@@ -133,19 +143,30 @@ export default function Topbar({ collapsed, onToggleCollapse }: TopbarProps) {
 
         {/* Right: notifications, date, user */}
         <div className="flex items-center gap-3">
+          {/* Theme toggle */}
+          <Tooltip content={dark ? 'Mode clair' : 'Mode sombre'} side="bottom">
+            <button
+              onClick={() => setDark(!dark)}
+              className="flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-primary hover:bg-blue-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            >
+              {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
+            </button>
+          </Tooltip>
+
           {/* Notifications bell */}
-          <button
-            onClick={() => navigate('/notifications')}
-            className="relative flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-primary hover:bg-blue-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-            title="Notifications"
-          >
-            <Bell className="size-5" />
-            {notifCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-destructive text-white text-[10px] font-bold rounded-full h-4.5 min-w-[18px] px-1 flex items-center justify-center leading-none shadow-sm">
-                {notifCount > 99 ? '99+' : notifCount}
-              </span>
-            )}
-          </button>
+          <Tooltip content="Notifications" side="bottom">
+            <button
+              onClick={() => navigate('/notifications')}
+              className="relative flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-primary hover:bg-blue-50 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            >
+              <Bell className="size-5" />
+              {notifCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-destructive text-white text-[10px] font-bold rounded-full h-4.5 min-w-[18px] px-1 flex items-center justify-center leading-none shadow-sm">
+                  {notifCount > 99 ? '99+' : notifCount}
+                </span>
+              )}
+            </button>
+          </Tooltip>
 
           {/* Date */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 text-xs text-muted-foreground">

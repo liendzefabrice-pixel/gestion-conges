@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../services/api'
 import { Button } from '../components/ui/button'
+import Tooltip from '../components/ui/tooltip'
 import { Input } from '../components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
@@ -152,12 +153,16 @@ export default function SkillsPage() {
               <TableCell>{s.employeeCount}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-1">
-                  <Button variant="ghost" size="sm" onClick={() => { setEditSkill(s); setForm({ name: s.name, description: s.description || '' }) }}>
-                    <Pencil className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(s.id)}>
-                    <Trash2 className="size-4" />
-                  </Button>
+                  <Tooltip content="Modifier">
+                    <Button variant="ghost" size="sm" onClick={() => { setEditSkill(s); setForm({ name: s.name, description: s.description || '' }) }}>
+                      <Pencil className="size-4" />
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content="Supprimer">
+                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(s.id)}>
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </Tooltip>
                 </div>
               </TableCell>
             </TableRow>

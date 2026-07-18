@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { PasswordInput } from '../components/ui/password-input';
 import { Badge } from '../components/ui/badge';
+import Tooltip from '../components/ui/tooltip';
 import { Card, CardContent } from '../components/ui/card';
 import { PageHeader } from '../components/ui/page-header';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
@@ -486,16 +487,17 @@ export default function UsersPage() {
                         >
                           {u.isActive ? 'Désactiver' : 'Activer'}
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-auto py-1 px-1 text-destructive hover:text-destructive"
-                          onClick={() => confirmDelete(u.id, displayName)}
-                          disabled={submitting}
-                          title="Supprimer"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
+                        <Tooltip content="Supprimer">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto py-1 px-1 text-destructive hover:text-destructive"
+                            onClick={() => confirmDelete(u.id, displayName)}
+                            disabled={submitting}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </Tooltip>
                       </>
                     )}
                     {isSelf && (

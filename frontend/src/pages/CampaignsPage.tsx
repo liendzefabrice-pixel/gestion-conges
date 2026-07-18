@@ -2,6 +2,7 @@ import { useState, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '../services/api'
 import { Button } from '../components/ui/button'
+import Tooltip from '../components/ui/tooltip'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Card, CardContent } from '../components/ui/card'
@@ -251,13 +252,17 @@ export default function CampaignsPage() {
                               Archiver
                             </Button>
                           )}
-                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setCampaignToDelete(c) }}>
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                          {c.status !== 'ARCHIVEE' && (
-                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingCampaign(c); setEditForm({ label: c.label, description: c.description || '', startDate: c.startDate ? c.startDate.slice(0,10) : '', endDate: c.endDate ? c.endDate.slice(0,10) : '' }) }}>
-                              <Settings className="size-3.5" />
+                          <Tooltip content="Supprimer">
+                            <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={(e) => { e.stopPropagation(); setCampaignToDelete(c) }}>
+                              <Trash2 className="size-3.5" />
                             </Button>
+                          </Tooltip>
+                          {c.status !== 'ARCHIVEE' && (
+                            <Tooltip content="Modifier">
+                              <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingCampaign(c); setEditForm({ label: c.label, description: c.description || '', startDate: c.startDate ? c.startDate.slice(0,10) : '', endDate: c.endDate ? c.endDate.slice(0,10) : '' }) }}>
+                                <Settings className="size-3.5" />
+                              </Button>
+                            </Tooltip>
                           )}
                           {expandedCampaign === c.id ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
                         </div>
