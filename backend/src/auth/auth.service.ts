@@ -129,6 +129,12 @@ export class AuthService {
       );
     }
 
+    if (!user.isActive) {
+      throw new BadRequestException(
+        'Votre compte a été désactivé. La réinitialisation du mot de passe n\'est pas autorisée.',
+      );
+    }
+
     const otpExpiration = this.configService.get<number>('OTP_EXPIRATION_MINUTES') || 10;
     const maxRequests = this.configService.get<number>('OTP_MAX_REQUESTS') || 3;
     const rateWindowMinutes = this.configService.get<number>('OTP_RATE_LIMIT_WINDOW_MINUTES') || 15;

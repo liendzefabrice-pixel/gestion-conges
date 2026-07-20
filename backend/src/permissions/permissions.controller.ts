@@ -98,4 +98,14 @@ export class PermissionsController {
     const employee = await this.permissionsService.getEmployeeByUserId(user.id);
     return this.permissionsService.getPermissionBalances(employee.id);
   }
+
+  @Patch('requests/:id/cancel')
+  @Roles('EMPLOYEE', 'HR', 'ADMIN')
+  async cancelRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    const employee = await this.permissionsService.getEmployeeByUserId(user.id);
+    return this.permissionsService.cancelRequest(id, employee.id, user.id);
+  }
 }

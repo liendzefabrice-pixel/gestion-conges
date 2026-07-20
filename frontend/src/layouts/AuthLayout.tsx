@@ -1,11 +1,30 @@
+import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { branding } from '../config/branding'
 import { ToastContainer } from '../components/Toast'
+import { Sun, Moon } from 'lucide-react'
 
 export default function AuthLayout() {
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('theme', dark ? 'dark' : 'light')
+  }, [dark])
+
   return (
     <div className="min-h-screen flex">
       <ToastContainer />
+
+      {/* Theme toggle */}
+      <button
+        onClick={() => setDark(!dark)}
+        className="fixed top-4 right-4 z-50 flex items-center justify-center h-9 w-9 rounded-xl text-gray-400 hover:text-primary hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700"
+        aria-label={dark ? 'Mode clair' : 'Mode sombre'}
+      >
+        {dark ? <Sun className="size-5" /> : <Moon className="size-5" />}
+      </button>
+
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#0B6B3A] via-[#0A5F35] to-[#064B2A] relative overflow-hidden">
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 25px 25px, white 1px, transparent 0)', backgroundSize: '50px 50px' }} />
         <div className="relative flex flex-col justify-center px-16">

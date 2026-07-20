@@ -30,6 +30,9 @@ export class MailService {
         port: port || 587,
         secure: port === 465,
         auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
       });
       this.logger.log(`SMTP transporter initialized: ${host}:${port}`);
     } else {
@@ -90,7 +93,6 @@ export class MailService {
       this.logger.log(`Email sent to ${options.to} — ${options.subject}`);
     } catch (error) {
       this.logger.error(`Failed to send email to ${options.to}: ${error.message}`);
-      throw error;
     }
   }
 

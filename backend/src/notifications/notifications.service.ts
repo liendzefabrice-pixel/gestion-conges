@@ -1,18 +1,64 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { DatabaseChannel } from './channels/database.channel';
+import { MailChannel } from './channels/mail.channel';
 import { NotificationPayload } from './interfaces/notification-channel.interface';
+
+const EMAIL_TYPES = new Set([
+  'LEAVE_CREATED',
+  'LEAVE_RH_REVIEWED',
+  'LEAVE_TRANSMITTED',
+  'LEAVE_DECIDED',
+  'LEAVE_CANCELLED',
+  'PERMISSION_CREATED',
+  'PERMISSION_RH_REVIEWED',
+  'PERMISSION_TRANSMITTED',
+  'PERMISSION_DECIDED',
+  'PERMISSION_CANCELLED',
+  'CAMPAIGN_OPENED',
+  'PROPOSAL_SUBMITTED',
+  'USER_CREATED',
+  'USER_ACTIVATED',
+  'USER_DEACTIVATED',
+]);
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
   constructor(
     private prisma: PrismaService,
     private databaseChannel: DatabaseChannel,
+    private mailChannel: MailChannel,
   ) {}
 
   private async send(payload: NotificationPayload): Promise<void> {
     if (payload.userIds.length === 0) return;
     await this.databaseChannel.send(payload);
+    await this.sendEmailIfNeeded(payload);
+  }
+
+  private async sendEmailIfNeeded(payload: NotificationPayload): Promise<void> {
+    if (!EMAIL_TYPES.has(payload.type)) return;
+
+    try {
+      const users = await this.prisma.user.findMany({
+        where: { id: { in: payload.userIds }, isActive: true },
+        select: { email: true, firstName: true },
+      });
+
+      if (users.length === 0) return;
+
+      await this.mailChannel.send({
+        recipients: users.map((u) => ({ email: u.email, firstName: u.firstName || u.email })),
+        subject: payload.title,
+        title: payload.title,
+        message: payload.message,
+        actionUrl: payload.link ? `${process.env.APP_URL || 'http://localhost:5173'}${payload.link}` : undefined,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send email notification for type "${payload.type}": ${error.message}`);
+    }
   }
 
   private async getAdminUserIds(): Promise<number[]> {
@@ -203,6 +249,21 @@ export class NotificationsService {
       title: `Demande de permission ${label}`,
       message: `Votre demande de permission a été ${label} par ${directorName}.`,
       type: 'PERMISSION_DECIDED',
+      link: '/permissions',
+      entityType: 'PERMISSION_REQUEST',
+      entityId: permissionRequestId,
+    });
+  }
+
+  async permissionCancelled(permissionRequestId: number, employeeId: number, employeeName: string) {
+    const userId = await this.getEmployeeUserId(employeeId);
+    const [hrIds, adminIds] = await Promise.all([this.getHrUserIds(), this.getAdminUserIds()]);
+    const recipientIds = [...new Set([...(userId ? [userId] : []), ...hrIds, ...adminIds])];
+    await this.send({
+      userIds: recipientIds,
+      title: 'Demande de permission annulée',
+      message: `${employeeName} a annulé sa demande de permission.`,
+      type: 'PERMISSION_CANCELLED',
       link: '/permissions',
       entityType: 'PERMISSION_REQUEST',
       entityId: permissionRequestId,

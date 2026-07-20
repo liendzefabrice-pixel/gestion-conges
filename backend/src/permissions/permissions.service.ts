@@ -395,6 +395,56 @@ export class PermissionsService {
     });
   }
 
+  async cancelRequest(id: number, employeeId: number, userId: number) {
+    const request = await this.prisma.permissionRequest.findUnique({
+      where: { id },
+      include: {
+        employee: {
+          include: { user: { select: { id: true, email: true, firstName: true, lastName: true } } },
+        },
+      },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Demande de permission introuvable');
+    }
+
+    if (request.employeeId !== employeeId) {
+      throw new BadRequestException('Vous ne pouvez annuler que vos propres demandes');
+    }
+
+    const cancellable = ['EN_ATTENTE_RH', 'AVIS_RH_RENDU', 'EN_ATTENTE_DIRECTION'];
+    if (!cancellable.includes(request.status)) {
+      throw new BadRequestException('Cette demande ne peut plus être annulée');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.permissionRequest.update({
+        where: { id },
+        data: { status: 'ANNULE' },
+      });
+
+      await this.recordHistory(tx, id, request.status, 'ANNULEE', userId);
+
+      const year = request.startDate.getFullYear();
+      const permissionBalance = await tx.permissionBalance.findUnique({
+        where: { employeeId_year: { employeeId, year } },
+      });
+
+      if (permissionBalance) {
+        await tx.permissionBalance.update({
+          where: { id: permissionBalance.id },
+          data: { pendingDays: Math.max(0, permissionBalance.pendingDays - request.duration) },
+        });
+      }
+
+      const employeeName = `${request.employee.user.firstName || ''} ${request.employee.user.lastName || ''}`.trim() || request.employee.user.email;
+      this.notificationsService.permissionCancelled(id, employeeId, employeeName);
+
+      return updated;
+    });
+  }
+
   async getPermissionBalances(employeeId: number) {
     return this.prisma.permissionBalance.findMany({
       where: { employeeId },
