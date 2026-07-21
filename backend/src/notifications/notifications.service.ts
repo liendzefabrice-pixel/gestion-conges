@@ -54,7 +54,7 @@ export class NotificationsService {
         subject: payload.title,
         title: payload.title,
         message: payload.message,
-        actionUrl: payload.link ? `${process.env.APP_URL || 'http://localhost:5173'}${payload.link}` : undefined,
+        actionUrl: payload.link ? `${process.env.FRONTEND_URL || 'http://localhost:5173'}${payload.link}` : undefined,
       });
     } catch (error) {
       this.logger.error(`Failed to send email notification for type "${payload.type}": ${error.message}`);

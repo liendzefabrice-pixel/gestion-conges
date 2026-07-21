@@ -161,9 +161,6 @@ export class InternalEventsService {
   // Notification extension points (reserved for future use)
   // ---------------------------------------------------------------------------
   private async notifyCreated(event: any) {
-    // TODO: envoyer notification interne et email aux RH/Admin
-    // this.notificationsService.send({ ... })
-    // this.mailService.send({ ... })
     this.logger.log(`[NOTIFICATION] Événement créé : ${event.title}`);
   }
 
