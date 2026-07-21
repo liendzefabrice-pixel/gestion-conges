@@ -198,24 +198,20 @@ export class ReplacementAvailabilityRule implements DecisionRule {
     });
     if (overlappingLeave) return 'En congé sur la période';
 
-    const overlappingProposal = await prisma.leaveProposal.findFirst({
+    const overlappingProposals = await prisma.leaveProposal.findMany({
       where: {
         employeeId: replacementId,
-        status: { in: ['SOUMISE', 'ACCEPTEE_RH', 'ACCEPTEE_DIRECTION'] },
-        desiredStartDate: { lte: endDate },
-        OR: [
-          {
-            desiredEndDate: { gte: startDate },
-          },
-          {
-            desiredEndDate: null,
-            duration: { not: null },
-            desiredStartDate: { lte: endDate },
-          },
-        ],
+        status: { in: ['ACCEPTEE', 'RECUE', 'EN_ANALYSE'] },
       },
     });
-    if (overlappingProposal) return 'Proposition de congé en cours';
+
+    for (const prop of overlappingProposals) {
+      const propEnd = new Date(prop.desiredStartDate);
+      propEnd.setDate(propEnd.getDate() + (prop.duration || 1) - 1);
+      if (startDate <= propEnd && endDate >= prop.desiredStartDate) {
+        return 'Proposition de congé en cours';
+      }
+    }
 
     const overlappingPermission = await prisma.permissionRequest.findFirst({
       where: {

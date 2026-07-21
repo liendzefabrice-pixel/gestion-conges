@@ -53,7 +53,7 @@ export class DecisionEngineService {
 
     const totalScore = evaluations.reduce((sum, r) => sum + r.score, 0);
     const maxScore = evaluations.reduce((sum, r) => sum + r.maxScore, 0);
-    const score = Math.round((totalScore / maxScore) * 100);
+    const score = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
     const suggestion = this.computeSuggestion(evaluations, context);
 
