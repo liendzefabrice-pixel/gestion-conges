@@ -7,6 +7,7 @@ import api from '../services/api'
 import { leaveRequestSchema, type LeaveRequestFormData } from '../lib/schemas'
 import type { LeaveRequest, LeaveType, LeaveEligibility, WorkingDaysResult } from '../types'
 import { Button } from '../components/ui/button'
+import { toast } from '../components/Toast'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Badge } from '../components/ui/badge'
@@ -208,7 +209,7 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
           </div>
           <Button type="submit" disabled={isSubmitting || calcLoading}>
             {isSubmitting ? (
-              <><Loader2 className="size-4 animate-spin mr-2" />Soumission...</>
+              <><Loader2 className="size-4 animate-spin " />Soumission...</>
             ) : 'Soumettre la demande'}
           </Button>
         </form>
@@ -420,7 +421,7 @@ export default function LeavePage() {
               disabled={deleteMutation.isPending}
               onClick={() => deleteMutation.mutate(requestToDelete!.id)}
             >
-              {deleteMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <Trash2 className="size-4 mr-1.5" />}
+              {deleteMutation.isPending ? <Loader2 className="size-4  animate-spin" /> : <Trash2 className="size-4 " />}
               Supprimer
             </Button>
           </DialogFooter>

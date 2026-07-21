@@ -111,7 +111,7 @@ function NewPermissionForm({ onSuccess }: { onSuccess: () => void }) {
             {errors.reason && <p className="text-sm text-destructive">{errors.reason.message}</p>}
           </div>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? <><Loader2 className="size-4 animate-spin mr-2" />Soumission...</> : 'Soumettre'}
+            {isSubmitting ? <><Loader2 className="size-4 animate-spin " />Soumission...</> : 'Soumettre'}
           </Button>
         </form>
       </CardContent>

@@ -544,7 +544,7 @@ export default function CalendarRhPage() {
               </Select>
             </div>
             <Button variant="ghost" size="sm" className="h-9" onClick={resetFilters}>
-              <RotateCcw className="size-3.5 mr-1.5" />Réinitialiser
+              <RotateCcw className="size-3.5 " />Réinitialiser
             </Button>
           </div>
         </CardContent>

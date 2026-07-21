@@ -236,19 +236,19 @@ export default function CampaignsPage() {
                         <div className="flex gap-1 justify-end items-center">
                           {c.status === 'BROUILLON' && (
                             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); openMutation.mutate(c.id) }}>
-                              <Play className="size-3.5 mr-1.5" />
+                              <Play className="size-3.5 " />
                               Ouvrir
                             </Button>
                           )}
                           {c.status === 'OUVERTE' && (
                             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); closeMutation.mutate(c.id) }}>
-                              <XCircle className="size-3.5 mr-1.5" />
+                              <XCircle className="size-3.5 " />
                               Clôturer
                             </Button>
                           )}
                           {c.status === 'CLOTUREE' && (
                             <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); archiveMutation.mutate(c.id) }}>
-                              <Archive className="size-3.5 mr-1.5" />
+                              <Archive className="size-3.5 " />
                               Archiver
                             </Button>
                           )}
@@ -433,7 +433,7 @@ export default function CampaignsPage() {
                         newEndDate: String(selectedProposal.suggestedEndDate),
                       })}
                     >
-                      {updateProposalStatusMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <ThumbsUp className="size-4 mr-1.5" />}
+                      {updateProposalStatusMutation.isPending ? <Loader2 className="size-4  animate-spin" /> : <ThumbsUp className="size-4 " />}
                       Valider la proposition du moteur
                     </Button>
                     <Button
@@ -446,7 +446,7 @@ export default function CampaignsPage() {
                         setManualEnd(String(selectedProposal.suggestedEndDate).slice(0, 10))
                       }}
                     >
-                      <Pencil className="size-4 mr-1.5" />
+                      <Pencil className="size-4 " />
                       Modifier manuellement
                     </Button>
                     <Button
@@ -456,7 +456,7 @@ export default function CampaignsPage() {
                       className="text-destructive border-destructive/30 hover:bg-red-50"
                       onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'REFUSEE' })}
                     >
-                      {updateProposalStatusMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <X className="size-4 mr-1.5" />}
+                      {updateProposalStatusMutation.isPending ? <Loader2 className="size-4  animate-spin" /> : <X className="size-4 " />}
                       Refuser
                     </Button>
                   </div>
@@ -487,7 +487,7 @@ export default function CampaignsPage() {
                         newEndDate: manualEnd,
                       })}
                     >
-                      {updateProposalStatusMutation.isPending && <Loader2 className="size-4 mr-1.5 animate-spin" />}
+                      {updateProposalStatusMutation.isPending && <Loader2 className="size-4  animate-spin" />}
                       Valider
                     </Button>
                     <Button size="sm" variant="outline" disabled={updateProposalStatusMutation.isPending} onClick={() => setManualEdit(false)}>
@@ -504,7 +504,7 @@ export default function CampaignsPage() {
                     disabled={updateProposalStatusMutation.isPending}
                     onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'ACCEPTEE' })}
                   >
-                    {updateProposalStatusMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <ThumbsUp className="size-4 mr-1.5" />}
+                    {updateProposalStatusMutation.isPending ? <Loader2 className="size-4  animate-spin" /> : <ThumbsUp className="size-4 " />}
                     Accepter
                   </Button>
                   <Button
@@ -514,7 +514,7 @@ export default function CampaignsPage() {
                     className="text-destructive border-destructive/30 hover:bg-red-50"
                     onClick={() => updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: 'REFUSEE' })}
                   >
-                    {updateProposalStatusMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <X className="size-4 mr-1.5" />}
+                    {updateProposalStatusMutation.isPending ? <Loader2 className="size-4  animate-spin" /> : <X className="size-4 " />}
                     Refuser
                   </Button>
                 </div>
@@ -651,7 +651,7 @@ export default function CampaignsPage() {
               disabled={deleteMutation.isPending}
               onClick={() => deleteMutation.mutate(campaignToDelete.id)}
             >
-              {deleteMutation.isPending ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <Trash2 className="size-4 mr-1.5" />}
+              {deleteMutation.isPending ? <Loader2 className="size-4  animate-spin" /> : <Trash2 className="size-4 " />}
               Supprimer
             </Button>
           </DialogFooter>

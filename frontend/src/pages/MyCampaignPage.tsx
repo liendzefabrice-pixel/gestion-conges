@@ -150,7 +150,7 @@ export default function MyCampaignPage() {
                     />
                   </div>
                   <Button type="submit" disabled={submitMutation.isPending}>
-                    <Send className="size-4 mr-2" />
+                    <Send className="size-4 " />
                     {submitMutation.isPending ? 'Envoi...' : 'Soumettre ma proposition'}
                   </Button>
                 </form>

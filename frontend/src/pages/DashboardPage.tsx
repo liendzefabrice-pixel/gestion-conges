@@ -312,9 +312,6 @@ function AdminDashboard({
             <Clock className="size-3.5 shrink-0" />
             <span>{formattedTime}</span>
           </div>
-          <Button>
-            Nouvelle action
-          </Button>
         </div>
       </div>
 
@@ -592,9 +589,6 @@ function HrDashboard({ data, user }: { data: DashboardHr; user: User | null }) {
             <Clock className="size-3.5 shrink-0" />
             <span>{formattedTime}</span>
           </div>
-          <Button>
-            Nouveau dossier
-          </Button>
         </div>
       </div>
 

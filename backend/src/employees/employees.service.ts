@@ -142,7 +142,7 @@ export class EmployeesService {
     const where: any = {};
 
     if (!userRole || userRole !== 'ADMIN') {
-      where.user = { isActive: true, role: { name: { not: 'ADMIN' } } };
+      where.user = { role: { name: { not: 'ADMIN' } } };
     } else {
       where.user = { role: { name: { not: 'ADMIN' } } };
     }

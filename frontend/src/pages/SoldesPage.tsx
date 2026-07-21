@@ -100,9 +100,9 @@ function BalanceCard({
           )}
           {role === 'ADMIN' && (
             <Button variant="ghost" size="sm" onClick={() => setShowHistory(!showHistory)} className="ml-auto">
-              <History className="size-3.5 mr-1" />
+              <History className="size-3.5 " />
               Historique
-              {showHistory ? <ChevronUp className="size-3.5 ml-1" /> : <ChevronDown className="size-3.5 ml-1" />}
+              {showHistory ? <ChevronUp className="size-3.5 " /> : <ChevronDown className="size-3.5 " />}
             </Button>
           )}
         </div>

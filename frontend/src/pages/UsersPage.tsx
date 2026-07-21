@@ -297,7 +297,7 @@ export default function UsersPage() {
               disabled={submitting}
             >
               {submitting ? (
-                <><Loader2 className="size-4 mr-2 animate-spin" />Traitement...</>
+                <><Loader2 className="size-4  animate-spin" />Traitement...</>
               ) : 'Confirmer'}
             </Button>
           </DialogFooter>
@@ -426,7 +426,7 @@ export default function UsersPage() {
             <DialogFooter showCloseButton className="mt-6">
               <Button type="submit" disabled={submitting}>
                 {submitting ? (
-                  <><Loader2 className="size-4 mr-2 animate-spin" />Traitement en cours...</>
+                  <><Loader2 className="size-4  animate-spin" />Traitement en cours...</>
                 ) : (
                   modalMode === 'create' ? 'Créer l\'utilisateur' : 'Enregistrer'
                 )}

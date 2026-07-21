@@ -118,7 +118,7 @@ export default function EmployeesPage() {
         if (annual) map[item.employee.id] = annual.remaining;
       }
       setBalances(map);
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch((err) => console.error('Erreur chargement employés:', err)).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
@@ -593,7 +593,7 @@ export default function EmployeesPage() {
           <div className="flex gap-2 mb-3">
             <Button variant={detailTab === 'info' ? 'primary' : 'outline'} size="sm" onClick={() => setDetailTab('info')}>Infos</Button>
             <Button variant={detailTab === 'history' ? 'primary' : 'outline'} size="sm" onClick={() => setDetailTab('history')}>
-              <History className="size-3.5 mr-1" /> Historique
+              <History className="size-3.5 " /> Historique
             </Button>
           </div>
 

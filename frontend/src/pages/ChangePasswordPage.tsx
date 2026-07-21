@@ -99,7 +99,7 @@ export default function ChangePasswordPage() {
             </div>
             <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? (
-                <><Loader2 className="size-4 mr-2 animate-spin" />Changement en cours...</>
+                <><Loader2 className="size-4  animate-spin" />Changement en cours...</>
               ) : 'Changer le mot de passe'}
             </Button>
           </form>

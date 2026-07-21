@@ -37,6 +37,7 @@ export class UsersController {
   }
 
   @Get('roles')
+  @Roles('ADMIN', 'HR')
   findAllRoles() {
     return this.usersService.findAllRoles();
   }

@@ -444,7 +444,7 @@ export class NotificationsService {
       type: 'PROPOSAL_SUBMITTED',
       entityType: 'LEAVE_PROPOSAL',
       entityId: 0,
-      link: '/campaigns',
+      link: '/leave-campaigns',
     });
   }
 

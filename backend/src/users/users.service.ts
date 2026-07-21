@@ -301,6 +301,27 @@ export class UsersService {
     await this.findOne(id);
 
     const result = await this.prisma.$transaction(async (tx) => {
+      const employee = await tx.employee.findUnique({ where: { userId: id } });
+
+      if (employee) {
+        await tx.leaveProposal.deleteMany({ where: { employeeId: employee.id } });
+        await tx.permissionBalance.deleteMany({ where: { employeeId: employee.id } });
+        await tx.leaveBalance.deleteMany({ where: { employeeId: employee.id } });
+        await tx.leaveRequest.deleteMany({ where: { employeeId: employee.id } });
+        await tx.permissionRequest.deleteMany({ where: { employeeId: employee.id } });
+        await tx.annualLeavePlanning.deleteMany({ where: { employeeId: employee.id } });
+        await tx.employee.delete({ where: { id: employee.id } });
+      }
+
+      await tx.notification.deleteMany({ where: { userId: id } });
+      await tx.auditLog.deleteMany({ where: { userId: id } });
+      await tx.balanceAdjustment.deleteMany({ where: { authorId: id } });
+      await tx.annualLeavePlanning.deleteMany({ where: { plannedById: id } });
+      await tx.decisionAnalysis.deleteMany({ where: { OR: [{ createdById: id }, { decidedById: id }] } });
+      await tx.leaveRequestHistory.deleteMany({ where: { userId: id } });
+      await tx.permissionRequestHistory.deleteMany({ where: { userId: id } });
+      await tx.passwordResetOtp.deleteMany({ where: { userId: id } });
+
       await tx.auditLog.create({
         data: {
           action: 'USER_DELETED',
@@ -310,7 +331,6 @@ export class UsersService {
         },
       });
 
-      await tx.employee.deleteMany({ where: { userId: id } });
       return tx.user.delete({ where: { id } });
     });
 

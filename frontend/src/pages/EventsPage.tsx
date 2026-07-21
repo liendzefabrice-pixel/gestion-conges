@@ -153,7 +153,7 @@ export default function EventsPage() {
         description="Gérez les périodes importantes de l'entreprise"
         actions={
           <Button onClick={() => { setEditingId(null); setForm(defaultForm); setShowForm(true) }}>
-            <Plus className="size-4 mr-2" />
+            <Plus className="size-4 " />
             Nouvel événement
           </Button>
         }
@@ -239,7 +239,7 @@ export default function EventsPage() {
               </Select>
             </div>
             <Button variant="ghost" size="sm" className="h-9" onClick={() => setFilters({ year: '', type: '', priority: '', status: '', departmentId: '', search: '' })}>
-              <RotateCcw className="size-3.5 mr-1.5" />Réinitialiser
+              <RotateCcw className="size-3.5 " />Réinitialiser
             </Button>
           </div>
         </CardContent>

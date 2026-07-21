@@ -84,10 +84,10 @@ export default function DecisionEnginePage() {
               />
             </div>
             <Button size="sm" className="h-9" onClick={handleSearch} disabled={!entityId}>
-              <Search className="size-3.5 mr-1.5" />Analyser
+              <Search className="size-3.5 " />Analyser
             </Button>
             <Button variant="ghost" size="sm" className="h-9" onClick={() => { setEntityId(''); setSearchId('') }}>
-              <RotateCcw className="size-3.5 mr-1.5" />Réinitialiser
+              <RotateCcw className="size-3.5 " />Réinitialiser
             </Button>
           </div>
         </CardContent>

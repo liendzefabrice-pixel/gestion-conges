@@ -216,7 +216,7 @@ export class LeaveCampaignService {
       select: { id: true },
     });
     if (hrUsers.length > 0) {
-      const name = `${employee.user?.firstName || ''} ${employee.user?.lastName || ''}`.trim() || `#${employee.id}`;
+      const name = `${employee.firstName || ''} ${employee.lastName || ''}`.trim() || `#${employee.id}`;
       await this.notificationsService.notifyProposalSubmitted(
         hrUsers.map((u) => u.id),
         name,
@@ -267,7 +267,10 @@ export class LeaveCampaignService {
   }
 
   async submitProposal(userId: number, dto: SubmitProposalDto) {
-    const employee = await this.prisma.employee.findUnique({ where: { userId } });
+    const employee = await this.prisma.employee.findUnique({
+      where: { userId },
+      include: { user: { select: { firstName: true, lastName: true } } },
+    });
     if (!employee) throw new NotFoundException('Profil employé introuvable');
 
     const campaign = await this.getCurrentCampaign();
