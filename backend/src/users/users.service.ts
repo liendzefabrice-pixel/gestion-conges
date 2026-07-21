@@ -309,14 +309,12 @@ export class UsersService {
         await tx.leaveBalance.deleteMany({ where: { employeeId: employee.id } });
         await tx.leaveRequest.deleteMany({ where: { employeeId: employee.id } });
         await tx.permissionRequest.deleteMany({ where: { employeeId: employee.id } });
-        await tx.annualLeavePlanning.deleteMany({ where: { employeeId: employee.id } });
         await tx.employee.delete({ where: { id: employee.id } });
       }
 
       await tx.notification.deleteMany({ where: { userId: id } });
       await tx.auditLog.deleteMany({ where: { userId: id } });
       await tx.balanceAdjustment.deleteMany({ where: { authorId: id } });
-      await tx.annualLeavePlanning.deleteMany({ where: { plannedById: id } });
       await tx.decisionAnalysis.deleteMany({ where: { OR: [{ createdById: id }, { decidedById: id }] } });
       await tx.leaveRequestHistory.deleteMany({ where: { userId: id } });
       await tx.permissionRequestHistory.deleteMany({ where: { userId: id } });

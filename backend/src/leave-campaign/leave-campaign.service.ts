@@ -201,12 +201,7 @@ export class LeaveCampaignService {
 
     const userIds = proposals.map((p) => p.employee.userId).filter(Boolean);
     if (userIds.length > 0) {
-      await this.notificationsService.createNotification(
-        userIds,
-        'Campagne clôturée',
-        `La campagne "${campaign.label}" est désormais clôturée. Merci de votre participation.`,
-        'INFO',
-      );
+      await this.notificationsService.notifyCampaignClosed(userIds, campaign.label);
     }
   }
 
@@ -252,14 +247,19 @@ export class LeaveCampaignService {
       where: { campaignId_employeeId: { campaignId: campaign.id, employeeId: employee.id } },
     });
 
-    let annualBalance: { available: number; acquired: number; consumed: number; reserved: number } | null = null;
+    const hireDate = new Date(employee.hireDate);
+    const now = new Date();
+    const diffMonths = (now.getFullYear() - hireDate.getFullYear()) * 12 + now.getMonth() - hireDate.getMonth();
+    const seniorityYears = Math.floor(diffMonths / 12);
+
+    let annualBalance: { available: number; acquired: number; consumed: number; reserved: number; seniority: string } | null = null;
     try {
       const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
       const bal = result.balances.find(
         (b) => b.leaveTypeName.toLowerCase().includes('annuel') || b.leaveTypeName.toLowerCase().includes('annual'),
       );
       if (bal) {
-        annualBalance = bal;
+        annualBalance = { ...bal, seniority: `${seniorityYears} an${seniorityYears > 1 ? 's' : ''}` };
       }
     } catch {}
 
@@ -288,22 +288,26 @@ export class LeaveCampaignService {
       throw new ConflictException('Vous avez déjà soumis une proposition pour cette campagne');
     }
 
-    let duration = dto.duration;
-    if (!duration) {
-      try {
-        const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
-        const annualBalance = result.balances.find(
-          (b) => b.leaveTypeName.toLowerCase().includes('annuel') || b.leaveTypeName.toLowerCase().includes('annual'),
-        );
-        duration = annualBalance?.available ?? 0;
-      } catch {
-        duration = 0;
-      }
+    let duration = 0;
+    try {
+      const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
+      const annualBalance = result.balances.find(
+        (b) => b.leaveTypeName.toLowerCase().includes('annuel') || b.leaveTypeName.toLowerCase().includes('annual'),
+      );
+      duration = annualBalance?.available ?? 0;
+    } catch {
+      duration = 0;
     }
+
+    const startDate = new Date(dto.desiredStartDate);
+    const endDate = duration > 0 ? addWorkingDays(startDate, duration - 1) : startDate;
+    const returnDate = addWorkingDays(endDate, 1);
 
     const proposal = await this.prisma.leaveProposal.create({
       data: {
-        desiredStartDate: new Date(dto.desiredStartDate),
+        desiredStartDate: startDate,
+        endDate,
+        returnDate,
         duration,
         comment: dto.comment,
         campaignId: campaign.id,
@@ -322,6 +326,16 @@ export class LeaveCampaignService {
 
     this.notifyHrOfProposal(employee, campaign.label).catch((err) => {
       this.logger.error(`Échec notification RH pour la proposition #${proposal.id}: ${err.message}`);
+    });
+
+    this.notificationsService.createNotification(
+      [employee.userId],
+      'Proposition enregistrée',
+      `Votre proposition pour la campagne "${campaign.label}" a bien été reçue et sera analysée.`,
+      'PROPOSAL_SUBMITTED',
+      '/my-campaign',
+    ).catch((err) => {
+      this.logger.error(`Échec notification employé pour la proposition #${proposal.id}: ${err.message}`);
     });
 
     return proposal;
@@ -350,11 +364,28 @@ export class LeaveCampaignService {
       comment: existing.comment,
     };
 
+    let duration = 0;
+    try {
+      const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
+      const annualBalance = result.balances.find(
+        (b) => b.leaveTypeName.toLowerCase().includes('annuel') || b.leaveTypeName.toLowerCase().includes('annual'),
+      );
+      duration = annualBalance?.available ?? 0;
+    } catch {
+      duration = 0;
+    }
+
+    const startDate = new Date(dto.desiredStartDate);
+    const endDate = duration > 0 ? addWorkingDays(startDate, duration - 1) : startDate;
+    const returnDate = addWorkingDays(endDate, 1);
+
     const updated = await this.prisma.leaveProposal.update({
       where: { id: existing.id },
       data: {
-        desiredStartDate: new Date(dto.desiredStartDate),
-        duration: dto.duration ?? existing.duration,
+        desiredStartDate: startDate,
+        endDate,
+        returnDate,
+        duration,
         comment: dto.comment,
         status: 'RECUE',
         analysisStatus: 'PENDING',
@@ -365,7 +396,7 @@ export class LeaveCampaignService {
     });
 
     await this.writeAuditLog('PROPOSITION_MODIFIEE', 'LeaveProposal', existing.id, oldValue, {
-      desiredStartDate: dto.desiredStartDate, duration: dto.duration ?? existing.duration,
+      desiredStartDate: dto.desiredStartDate, duration,
     }, userId);
 
     this.planningEngine.analyzeProposal(updated.id).catch((err) => {
@@ -478,21 +509,24 @@ export class LeaveCampaignService {
     await this.writeAuditLog('PROPOSITION_STATUT_MAJ', 'LeaveProposal', proposalId,
       { status: oldStatus }, { status: dto.status, ...(dto.newStartDate && { newStartDate: dto.newStartDate }) }, 1);
 
-    if (dto.status === 'ACCEPTEE' && proposal.employee?.user) {
-      const campaign = await this.prisma.leaveCampaign.findUnique({ where: { id: proposal.campaignId } });
-      const label = campaign?.label || 'Campagne';
-      await this.notificationsService.createNotification(
-        [proposal.employee.userId],
-        'Proposition acceptée',
-        `Votre proposition pour "${label}" a été acceptée.`,
-        'INFO',
-      );
-    }
+    if (proposal.employee?.user) {
+      const campaignLabel = updated.campaign?.label || 'Campagne';
+      const employeeUserId = proposal.employee.userId;
 
-    if (dto.status === 'ACCEPTEE' && dto.newStartDate) {
-      await this.createLeaveRequestFromProposal(proposal).catch((err) => {
-        this.logger.error(`Échec création congé pour la proposition #${proposalId}: ${err.message}`);
-      });
+      if (dto.status === 'ACCEPTEE') {
+        await this.notificationsService.notifyProposalAccepted([employeeUserId], campaignLabel);
+
+        await this.createLeaveRequestFromProposal(updated).catch((err) => {
+          this.logger.error(`Échec création congé pour la proposition #${proposalId}: ${err.message}`);
+        });
+      } else if (dto.status === 'REFUSEE') {
+        await this.notificationsService.notifyProposalRefused([employeeUserId], campaignLabel);
+      } else if (dto.status === 'REPROGRAMMEE') {
+        const newStart = dto.newStartDate
+          ? new Date(dto.newStartDate).toLocaleDateString('fr-FR')
+          : new Date(updated.desiredStartDate).toLocaleDateString('fr-FR');
+        await this.notificationsService.notifyProposalReprogrammed([employeeUserId], campaignLabel, newStart);
+      }
     }
 
     return updated;
@@ -500,7 +534,8 @@ export class LeaveCampaignService {
 
   private async createLeaveRequestFromProposal(proposal: any) {
     const startDate = new Date(proposal.desiredStartDate);
-    const endDate = addWorkingDays(startDate, (proposal.duration || 1) - 1);
+    const endDate = proposal.endDate ? new Date(proposal.endDate) : addWorkingDays(startDate, (proposal.duration || 1) - 1);
+    const returnDate = proposal.returnDate ? new Date(proposal.returnDate) : addWorkingDays(endDate, 1);
 
     const annualLeaveType = await this.prisma.leaveType.findFirst({
       where: { name: { contains: 'annuel', mode: 'insensitive' } },
@@ -511,7 +546,7 @@ export class LeaveCampaignService {
     }
 
     const existingLeave = await this.prisma.leaveRequest.findFirst({
-      where: { employeeId: proposal.employeeId, annualLeavePlanningId: null, leaveTypeId: annualLeaveType.id, status: 'APPROUVE' },
+      where: { employeeId: proposal.employeeId, leaveTypeId: annualLeaveType.id, status: 'APPROUVE' },
     });
 
     if (existingLeave) return;
@@ -520,6 +555,7 @@ export class LeaveCampaignService {
       data: {
         startDate,
         endDate,
+        returnDate,
         duration: proposal.duration,
         reason: `Congé annuel programmé via campagne "${proposal.campaign?.label || ''}"`,
         status: 'APPROUVE',

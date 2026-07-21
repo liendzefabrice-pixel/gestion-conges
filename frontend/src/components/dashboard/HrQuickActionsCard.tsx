@@ -25,9 +25,9 @@ const actions: HrActionItem[] = [
   },
   {
     icon: ClipboardList,
-    label: 'Créer un planning annuel',
-    description: 'Planifier les congés',
-    path: '/leave-planning',
+    label: 'Campagnes de congés',
+    description: 'Gérer les campagnes annuelles',
+    path: '/leave-campaigns',
     colorClass: 'text-emerald-600 bg-emerald-100 hover:bg-emerald-200',
   },
   {

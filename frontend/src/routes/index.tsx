@@ -15,8 +15,6 @@ import PositionsPage from '../pages/PositionsPage';
 import LeaveTypesPage from '../pages/LeaveTypesPage';
 import EmployeesPage from '../pages/EmployeesPage';
 import LeavePage from '../pages/LeavePage';
-import LeavePlanningPage from '../pages/LeavePlanningPage';
-import MyPlanningPage from '../pages/MyPlanningPage';
 import SoldesPage from '../pages/SoldesPage';
 import HolidaysPage from '../pages/HolidaysPage';
 import PermissionsPage from '../pages/PermissionsPage';
@@ -80,10 +78,8 @@ function AppRoutes() {
         <Route path="leave-types" element={R(['ADMIN'])(<LeaveTypesPage />)} />
         <Route path="employees" element={R(['ADMIN', 'HR'])(<EmployeesPage />)} />
         <Route path="leave" element={R(['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'])(<LeavePage />)} />
-        <Route path="leave-planning" element={R(['ADMIN', 'HR'])(<LeavePlanningPage />)} />
         <Route path="leave-campaigns" element={R(['ADMIN', 'HR'])(<CampaignsPage />)} />
         <Route path="my-campaign" element={R(['EMPLOYEE'])(<MyCampaignPage />)} />
-        <Route path="my-planning" element={R(['EMPLOYEE'])(<MyPlanningPage />)} />
         <Route path="soldes" element={R(['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'])(<SoldesPage />)} />
         <Route path="holidays" element={R(['ADMIN'])(<HolidaysPage />)} />
         <Route path="internal-events" element={R(['ADMIN', 'HR'])(<EventsPage />)} />

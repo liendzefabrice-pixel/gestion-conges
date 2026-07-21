@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { CardDescription } from '../ui/card'
-import { UserPlus, Users, Building2, Calendar, CalendarCheck, FileText } from 'lucide-react'
+import { UserPlus, Users, Building2, Calendar, CalendarCheck, ClipboardList, FileText } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface ActionItem {
@@ -46,10 +46,10 @@ const defaultActions: ActionItem[] = [
     colorClass: 'text-purple-600 bg-purple-100 hover:bg-purple-200',
   },
   {
-    icon: CalendarCheck,
-    label: 'Planifier les congés',
-    description: 'Planning annuel',
-    path: '/leave-planning',
+    icon: ClipboardList,
+    label: 'Campagnes de congés',
+    description: 'Gérer les campagnes annuelles',
+    path: '/leave-campaigns',
     colorClass: 'text-cyan-600 bg-cyan-100 hover:bg-cyan-200',
   },
   {

@@ -53,9 +53,9 @@ const actions: DirectorActionItem[] = [
   },
   {
     icon: ClipboardList,
-    label: 'Accéder au planning annuel',
-    description: 'Vue d\'ensemble',
-    path: '/leave-planning',
+    label: 'Voir les campagnes',
+    description: 'Consulter les programmations',
+    path: '/leave-campaigns',
     colorClass: 'text-cyan-600 bg-cyan-100 hover:bg-cyan-200',
   },
 ]

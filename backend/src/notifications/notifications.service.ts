@@ -17,6 +17,10 @@ const EMAIL_TYPES = new Set([
   'PERMISSION_CANCELLED',
   'CAMPAIGN_OPENED',
   'PROPOSAL_SUBMITTED',
+  'PROPOSAL_ACCEPTED',
+  'PROPOSAL_REFUSED',
+  'PROPOSAL_REPROGRAMMED',
+  'CAMPAIGN_CLOSED',
   'USER_CREATED',
   'USER_ACTIVATED',
   'USER_DEACTIVATED',
@@ -445,6 +449,53 @@ export class NotificationsService {
       entityType: 'LEAVE_PROPOSAL',
       entityId: 0,
       link: '/leave-campaigns',
+    });
+  }
+
+  async notifyProposalAccepted(userIds: number[], campaignLabel: string) {
+    await this.send({
+      userIds,
+      title: 'Proposition acceptée',
+      message: `Votre proposition pour la campagne ${campaignLabel} a été acceptée.`,
+      type: 'PROPOSAL_ACCEPTED',
+      entityType: 'LEAVE_PROPOSAL',
+      entityId: 0,
+      link: '/leave-campaigns',
+    });
+  }
+
+  async notifyProposalRefused(userIds: number[], campaignLabel: string) {
+    await this.send({
+      userIds,
+      title: 'Proposition refusée',
+      message: `Votre proposition pour la campagne ${campaignLabel} a été refusée.`,
+      type: 'PROPOSAL_REFUSED',
+      entityType: 'LEAVE_PROPOSAL',
+      entityId: 0,
+      link: '/leave-campaigns',
+    });
+  }
+
+  async notifyProposalReprogrammed(userIds: number[], campaignLabel: string, newStartDate: string) {
+    await this.send({
+      userIds,
+      title: 'Proposition reprogrammée',
+      message: `Votre proposition pour la campagne ${campaignLabel} a été reprogrammée au ${newStartDate}.`,
+      type: 'PROPOSAL_REPROGRAMMED',
+      entityType: 'LEAVE_PROPOSAL',
+      entityId: 0,
+      link: '/leave-campaigns',
+    });
+  }
+
+  async notifyCampaignClosed(userIds: number[], campaignLabel: string) {
+    await this.send({
+      userIds,
+      title: 'Campagne clôturée',
+      message: `La campagne ${campaignLabel} est désormais clôturée. Merci de votre participation.`,
+      type: 'CAMPAIGN_CLOSED',
+      entityType: 'CAMPAIGN',
+      entityId: 0,
     });
   }
 

@@ -18,7 +18,7 @@ import {
 } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Search } from 'lucide-react';
+import { Search, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 
 type ModalMode = 'create' | 'edit' | null;
 
@@ -51,6 +51,7 @@ export default function LeaveTypesPage() {
   const [page, setPage] = useState(0);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
 
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [editing, setEditing] = useState<any>(null);
@@ -68,7 +69,7 @@ export default function LeaveTypesPage() {
   const [formMinDuration, setFormMinDuration] = useState('');
 
   const load = () => {
-    api.get('/leave-types').then((res) => setLeaveTypes(res.data));
+    api.get('/leave-types').then((res) => { setLeaveTypes(res.data); setError(''); }).catch(() => setError('Erreur lors du chargement des types de congés'));
   };
 
   useEffect(() => { load(); }, []);
@@ -163,6 +164,20 @@ export default function LeaveTypesPage() {
     }
   };
 
+  const handleDelete = () => {
+    const target = deleteTarget;
+    if (!target) return;
+    setDeleteTarget(null);
+    api.delete(`/leave-types/${target.id}`)
+      .then(() => {
+        setSuccess('Type de congé supprimé avec succès');
+        load();
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || 'Erreur lors de la suppression');
+      });
+  };
+
   const toggleActive = async (lt: any) => {
     try {
       await api.patch(`/leave-types/${lt.id}`, { isActive: !(lt.isActive !== false) });
@@ -188,10 +203,11 @@ export default function LeaveTypesPage() {
         }
       />
 
-      {success && (
+      {(success || error) && (
         <Card className="mb-6">
           <CardContent className="p-4">
-            <div className="p-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200">{success}</div>
+            {success && <div className="p-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200">{success}</div>}
+            {error && <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">{error}</div>}
           </CardContent>
         </Card>
       )}
@@ -251,6 +267,9 @@ export default function LeaveTypesPage() {
                     >
                       {lt.isActive !== false ? 'Désactiver' : 'Activer'}
                     </Button>
+                    <Button variant="ghost" size="sm" className="h-auto py-1 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(lt)}>
+                      <Trash2 className="size-4" />
+                    </Button>
                   </div>
                 </TableCell>
               )}
@@ -279,6 +298,22 @@ export default function LeaveTypesPage() {
           </Button>
         </div>
       )}
+
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer le type de congé <strong>{deleteTarget?.name}</strong> ?
+              Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>Annuler</Button>
+            <Button type="button" variant="danger" onClick={handleDelete}>Supprimer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={modalMode !== null} onOpenChange={(open) => { if (!open) closeModal(); }}>
         <DialogContent className="sm:max-w-lg">

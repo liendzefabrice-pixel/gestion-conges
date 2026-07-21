@@ -385,6 +385,18 @@ export default function CampaignsPage() {
                   <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Durée</p>
                   <p className="text-sm font-medium mt-0.5">{selectedProposal.duration} jour{selectedProposal.duration > 1 ? 's' : ''}</p>
                 </div>
+                {selectedProposal.endDate && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Fin estimée</p>
+                    <p className="text-sm font-medium mt-0.5">{formatDate(selectedProposal.endDate)}</p>
+                  </div>
+                )}
+                {selectedProposal.returnDate && (
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Reprise</p>
+                    <p className="text-sm font-medium mt-0.5">{formatDate(selectedProposal.returnDate)}</p>
+                  </div>
+                )}
               </div>
 
               {/* Analysis */}

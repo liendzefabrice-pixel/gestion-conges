@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import { leaveRequestSchema, type LeaveRequestFormData } from '../lib/schemas'
-import type { LeaveRequest, LeaveType, LeaveEligibility, WorkingDaysResult } from '../types'
+import type { LeaveRequest, LeaveType, WorkingDaysResult } from '../types'
 import { Button } from '../components/ui/button'
 import { toast } from '../components/Toast'
 import { Input } from '../components/ui/input'
@@ -32,8 +32,6 @@ import RequestDetailModal from '../components/RequestDetailModal'
 import Tooltip from '../components/ui/tooltip'
 import { Calendar, Filter, Loader2, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 
-const months = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
-
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info'; color: string }> = {
   BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
   EN_ATTENTE_RH: { label: 'En attente RH', variant: 'warning', color: 'text-amber-700 bg-amber-100' },
@@ -48,10 +46,6 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
   const { data: leaveTypes } = useQuery<LeaveType[]>({
     queryKey: ['leave-types'],
     queryFn: () => api.get('/leave/types').then((r) => r.data),
-  })
-  const { data: eligibility } = useQuery<LeaveEligibility>({
-    queryKey: ['leave-eligibility'],
-    queryFn: () => api.get('/leave-planning/eligibility').then((r) => r.data),
   })
   const queryClient = useQueryClient()
   const [error, setError] = useState('')
@@ -132,18 +126,6 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
         <CardTitle>Nouvelle demande de congé</CardTitle>
       </CardHeader>
       <CardContent>
-        {eligibility && (
-          <div className={`mb-4 p-4 rounded-xl border text-sm ${eligibility.eligible ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
-            <p className={`font-medium ${eligibility.eligible ? 'text-green-800' : 'text-amber-800'}`}>
-              {eligibility.eligible ? '✅ Vous êtes éligible aux congés' : '❌ Vous n\'êtes pas encore éligible (ancienneté < 1 an)'}
-            </p>
-            {eligibility.planning && (
-              <p className="text-amber-700 mt-1">
-                Mois planifié : {months[eligibility.planning.month]} {eligibility.planning.year}
-              </p>
-            )}
-          </div>
-        )}
         <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
           {error && (
             <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200 flex items-start gap-2">
@@ -157,11 +139,11 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un type" />
               </SelectTrigger>
-              <SelectContent>
-                {leaveTypes?.map((t) => (
-                  <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
+               <SelectContent>
+                  {leaveTypes?.filter((t) => !t.name.toLowerCase().includes('annuel')).map((t) => (
+                    <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
+                  ))}
+                </SelectContent>
             </Select>
             {errors.leaveTypeId && <p className="text-sm text-destructive">{errors.leaveTypeId.message}</p>}
           </div>

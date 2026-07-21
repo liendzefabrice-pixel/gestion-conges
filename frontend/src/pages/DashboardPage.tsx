@@ -597,7 +597,7 @@ function HrDashboard({ data, user }: { data: DashboardHr; user: User | null }) {
         <AdminKpiCard
           icon={<Users className="size-5" />}
           title="Employés"
-          value={data.planning.totalEmployees}
+          value={data.employees}
           subtitle="Employés enregistrés"
           color="blue"
           evolution="+0%"
@@ -624,22 +624,6 @@ function HrDashboard({ data, user }: { data: DashboardHr; user: User | null }) {
           value={data.totalProcessed.permission}
           subtitle="Demandes de permission"
           color="purple"
-          evolution="+0%"
-        />
-        <AdminKpiCard
-          icon={<CalendarRange className="size-5" />}
-          title="Planning annuel"
-          value={data.planning.withPlanning}
-          subtitle="Congés annuels programmés"
-          color="cyan"
-          evolution={`${data.planning.totalEmployees} employés`}
-        />
-        <AdminKpiCard
-          icon={<AlertTriangle className="size-5" />}
-          title="Employés à planifier"
-          value={data.planning.withoutPlanning}
-          subtitle="Action requise"
-          color="red"
           evolution="+0%"
         />
       </div>
@@ -713,21 +697,6 @@ function HrDashboard({ data, user }: { data: DashboardHr; user: User | null }) {
           </div>
         </DashboardChartCard>
 
-        <DashboardChartCard title="Planning annuel des congés" subtitle="Taux de planification">
-          <div className="pt-2">
-            <DashboardBarChart
-              data={[
-                { name: 'Planifiés', value: data.planning.withPlanning },
-                { name: 'Non planifiés', value: data.planning.withoutPlanning },
-              ]}
-              dataKey="value"
-              xAxisKey="name"
-              layout="horizontal"
-              color="#10B981"
-            />
-          </div>
-        </DashboardChartCard>
-
         <DashboardChartCard title="Répartition des types de congés" subtitle="Par catégorie">
           <div className="flex flex-col items-center justify-center h-48 text-center px-4">
             <CalendarDays className="size-10 text-muted-foreground/30 mb-3" />
@@ -762,22 +731,6 @@ function HrDashboard({ data, user }: { data: DashboardHr; user: User | null }) {
               title: 'Demandes à examiner',
               description: 'Congés et permissions en attente',
               count: data.toReview.total,
-            },
-            data.planning.withoutPlanning > 0 && {
-              id: 'without-planning',
-              icon: CalendarDays,
-              colorClass: 'text-blue-600 bg-blue-100',
-              title: 'Employés non planifiés',
-              description: 'Sans planning annuel',
-              count: data.planning.withoutPlanning,
-            },
-            data.planning.totalEmployees > 0 && {
-              id: 'total-employees',
-              icon: Users,
-              colorClass: 'text-emerald-600 bg-emerald-100',
-              title: 'Effectif total',
-              description: 'Employés enregistrés',
-              count: data.planning.totalEmployees,
             },
           ].filter(Boolean) as any[]}
         />
@@ -1187,9 +1140,9 @@ function EmployeeDashboard({ data, user }: { data: DashboardEmployee; user: User
         />
         <AdminKpiCard
           icon={<CalendarRange className="size-5" />}
-          title="Mois planifié"
-          value={data.planning ? monthsShort[data.planning.month - 1] || '' : 'Non planifié'}
-          subtitle="Congé annuel"
+          title="Proposition annuelle"
+          value={data.proposal?.status === 'ACCEPTEE' ? 'Acceptée' : data.proposal ? 'Soumise' : 'Non soumise'}
+          subtitle={data.proposal?.status === 'ACCEPTEE' ? 'Programmée' : data.proposal ? 'En attente' : 'Campagne'}
           color="cyan"
         />
         <AdminKpiCard
@@ -1359,44 +1312,41 @@ function EmployeeDashboard({ data, user }: { data: DashboardEmployee; user: User
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarRange className="size-4 text-muted-foreground" />
-              Planning annuel
+              Proposition annuelle
             </CardTitle>
-            <CardDescription>Votre planification de congés</CardDescription>
+            <CardDescription>Votre programme de congés</CardDescription>
           </CardHeader>
           <CardContent className="flex-1">
-            {data.planning ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-200/50">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Mois planifié</p>
-                    <p className="text-lg font-bold text-foreground mt-0.5">
-                      {monthsShort[data.planning.month - 1] || ''} {data.planning.year}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center w-12 h-12 rounded-full bg-cyan-500/10">
-                    <CalendarRange className="size-6 text-cyan-600" />
-                  </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between py-3 px-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-200/50">
+                <div>
+                  <p className="text-sm text-muted-foreground">Statut</p>
+                  <p className="text-lg font-bold text-foreground mt-0.5">
+                    {data.proposal?.status === 'ACCEPTEE' ? 'Acceptée' :
+                     data.proposal?.status === 'REFUSEE' ? 'Refusée' :
+                     data.proposal?.status === 'REPROGRAMMEE' ? 'Reprogrammée' :
+                     data.proposal ? 'Soumise' : 'Non soumise'}
+                  </p>
                 </div>
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-cyan-500/10">
+                  <CalendarRange className="size-6 text-cyan-600" />
+                </div>
+              </div>
+              {data.proposal && (
                 <div className="flex items-center justify-between py-2 px-4 rounded-xl bg-muted/50">
-                  <span className="text-sm text-muted-foreground">Éligibilité</span>
-                  <span className={cn('text-sm font-medium', data.eligibleForLeave ? 'text-emerald-600' : 'text-amber-600')}>
-                    {data.eligibleForLeave ? 'Éligible' : 'Non éligible'}
+                  <span className="text-sm text-muted-foreground">Date souhaitée</span>
+                  <span className="text-sm font-medium">
+                    {new Date(data.proposal.desiredStartDate).toLocaleDateString('fr-FR')}
                   </span>
                 </div>
-                <div className="flex items-center justify-between py-2 px-4 rounded-xl bg-muted/50">
-                  <span className="text-sm text-muted-foreground">Ancienneté</span>
-                  <span className="text-sm font-medium">{data.eligibleForLeave ? '1 an ou plus' : 'Moins d\'un an'}</span>
-                </div>
+              )}
+              <div className="flex items-center justify-between py-2 px-4 rounded-xl bg-muted/50">
+                <span className="text-sm text-muted-foreground">Éligibilité</span>
+                <span className={cn('text-sm font-medium', data.eligibleForLeave ? 'text-emerald-600' : 'text-amber-600')}>
+                  {data.eligibleForLeave ? 'Éligible' : 'Non éligible'}
+                </span>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <CalendarRange className="size-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm text-muted-foreground">Aucun planning défini</p>
-                <p className="text-xs text-muted-foreground/60 mt-1 max-w-[220px]">
-                  Vous n'avez pas encore de planning annuel de congés.
-                </p>
-              </div>
-            )}
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -13,8 +13,6 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { WorkingDaysService } from '../working-days/working-days.service';
 import { DecisionEngineService } from '../decision-engine/decision-engine.service';
 
-const ANNUAL_LEAVE_NAMES = ['congé annuel', 'annuel', 'annual'];
-
 @Injectable()
 export class LeaveService {
   constructor(
@@ -77,11 +75,6 @@ export class LeaveService {
       }
     }
     return returnDate;
-  }
-
-  private isAnnualLeave(leaveTypeName: string): boolean {
-    const lower = leaveTypeName.toLowerCase();
-    return ANNUAL_LEAVE_NAMES.some((name) => lower.includes(name));
   }
 
   async createLeaveType(createLeaveTypeDto: CreateLeaveTypeDto) {
@@ -177,20 +170,6 @@ export class LeaveService {
       }
     }
 
-    const isAnnual = this.isAnnualLeave(leaveType.name);
-
-    if (isAnnual) {
-      const hireDate = new Date(employee.hireDate);
-      const oneYearAgo = new Date(now);
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-
-      if (hireDate > oneYearAgo) {
-        throw new BadRequestException(
-          'Vous devez avoir au moins 1 an d\'ancienneté pour poser des congés annuels',
-        );
-      }
-    }
-
     if (leaveType.name.toLowerCase().includes('maternité')) {
       if (employee.user?.gender !== 'Femme') {
         throw new BadRequestException('Le congé maternité est réservé aux employées de sexe féminin');
@@ -231,20 +210,6 @@ export class LeaveService {
       throw new BadRequestException('La période sélectionnée ne contient aucun jour ouvrable');
     }
 
-    let planningId: number | null = null;
-    if (isAnnual) {
-      const planning = await this.prisma.annualLeavePlanning.findUnique({
-        where: { employeeId_year: { employeeId, year: startDate.getFullYear() } },
-      });
-
-      if (!planning) {
-        throw new BadRequestException(
-          'Vous n\'avez pas de planification annuelle pour cette année. Veuillez contacter le RH.',
-        );
-      }
-      planningId = planning.id;
-    }
-
     const returnDate = await this.computeReturnDate(endDate, 1);
 
     return this.prisma.$transaction(async (tx) => {
@@ -252,7 +217,6 @@ export class LeaveService {
         data: {
           employeeId,
           leaveTypeId: createLeaveRequestDto.leaveTypeId,
-          annualLeavePlanningId: planningId,
           startDate,
           endDate,
           returnDate,

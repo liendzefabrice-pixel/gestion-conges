@@ -63,6 +63,10 @@ enum NotificationType {
   HOLIDAY_ADDED
   CAMPAIGN_OPENED
   PROPOSAL_SUBMITTED
+  PROPOSAL_ACCEPTED
+  PROPOSAL_REFUSED
+  PROPOSAL_REPROGRAMMED
+  CAMPAIGN_CLOSED
   INFO
 }
 
@@ -124,8 +128,6 @@ model User {
   hrReviewedPermissions   PermissionRequest[]  @relation("Permission_HR_Review")
   directorDecidedPermissions PermissionRequest[] @relation("Permission_Director_Decision")
   permissionRequestHistories PermissionRequestHistory[]
-
-  annualLeavePlannings  AnnualLeavePlanning[]
 
   notifications Notification[]
   auditLogs     AuditLog[]
@@ -208,7 +210,6 @@ model Employee {
   leaveRequests          LeaveRequest[]
   permissionRequests     PermissionRequest[]
   leaveBalances          LeaveBalance[]
-  annualLeavePlannings   AnnualLeavePlanning[]
   leaveProposals         LeaveProposal[]
   skills                 EmployeeSkill[]
   replacementsAsEmployee  EmployeeReplacement[] @relation("EmployeeReplaced")
@@ -276,26 +277,6 @@ model LeaveType {
   updatedAt   DateTime @updatedAt
 }
 
-model AnnualLeavePlanning {
-  id          Int      @id @default(autoincrement())
-  employeeId  Int
-  employee    Employee @relation(fields: [employeeId], references: [id])
-  year        Int
-  month       Int
-
-  plannedById Int
-  plannedBy   User     @relation(fields: [plannedById], references: [id])
-
-  leaveRequests LeaveRequest[]
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([employeeId, year])
-  @@index([employeeId])
-  @@index([year])
-}
-
 model LeaveRequest {
   id             Int         @id @default(autoincrement())
   startDate      DateTime
@@ -316,9 +297,6 @@ model LeaveRequest {
   leaveTypeId    Int
   leaveType      LeaveType @relation(fields: [leaveTypeId], references: [id])
 
-  annualLeavePlanningId Int?
-  annualLeavePlanning  AnnualLeavePlanning? @relation(fields: [annualLeavePlanningId], references: [id])
-
   reviewedById   Int?
   reviewedBy     User?    @relation("HR_Review", fields: [reviewedById], references: [id])
 
@@ -332,7 +310,6 @@ model LeaveRequest {
 
   @@index([employeeId])
   @@index([status])
-  @@index([annualLeavePlanningId])
 }
 
 model LeaveRequestHistory {
@@ -558,6 +535,8 @@ model LeaveCampaign {
 model LeaveProposal {
   id               Int             @id @default(autoincrement())
   desiredStartDate DateTime
+  endDate          DateTime?
+  returnDate       DateTime?
   duration         Int             @default(0)
   comment          String?
   status           ProposalStatus  @default(RECUE)

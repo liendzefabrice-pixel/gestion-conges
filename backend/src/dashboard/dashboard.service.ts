@@ -72,16 +72,11 @@ export class DashboardService {
       this.prisma.permissionRequest.count({ where: { status: 'EN_ATTENTE_RH' } }),
     ]);
 
-    const [totalLeaves, totalPermissions] = await Promise.all([
+    const [totalLeaves, totalPermissions, totalEmployees] = await Promise.all([
       this.prisma.leaveRequest.count(),
       this.prisma.permissionRequest.count(),
+      this.prisma.employee.count(),
     ]);
-
-    const currentYear = new Date().getFullYear();
-    const totalEmployees = await this.prisma.employee.count();
-    const planningsCount = await this.prisma.annualLeavePlanning.count({
-      where: { year: currentYear },
-    });
 
     const openCampaign = await this.prisma.leaveCampaign.findFirst({
       where: { status: 'OUVERTE' },
@@ -102,6 +97,7 @@ export class DashboardService {
     }
 
     return {
+      employees: totalEmployees,
       toReview: {
         leave: pendingLeaves,
         permission: pendingPermissions,
@@ -110,11 +106,6 @@ export class DashboardService {
       totalProcessed: {
         leave: totalLeaves,
         permission: totalPermissions,
-      },
-      planning: {
-        totalEmployees,
-        withPlanning: planningsCount,
-        withoutPlanning: totalEmployees - planningsCount,
       },
       campaign,
     };
@@ -155,18 +146,18 @@ export class DashboardService {
       return {
         balances: [],
         pendingRequests: { leave: 0, permission: 0, total: 0 },
-        planning: null,
         eligibleForLeave: false,
       };
     }
 
-    const currentYear = new Date().getFullYear();
     const hireDate = new Date(employee.hireDate);
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     const eligibleForLeave = hireDate <= oneYearAgo;
 
-    const [leaveBalances, pendingLeaves, pendingPermissions, planning] =
+    const currentYear = new Date().getFullYear();
+
+    const [leaveBalances, pendingLeaves, pendingPermissions, proposal] =
       await Promise.all([
         this.prisma.leaveBalance.findMany({
           where: { employeeId: employee.id },
@@ -179,8 +170,13 @@ export class DashboardService {
         this.prisma.permissionRequest.count({
           where: { employeeId: employee.id, status: 'EN_ATTENTE_RH' },
         }),
-        this.prisma.annualLeavePlanning.findUnique({
-          where: { employeeId_year: { employeeId: employee.id, year: currentYear } },
+        this.prisma.leaveProposal.findFirst({
+          where: {
+            employeeId: employee.id,
+            campaign: { year: currentYear },
+          },
+          select: { status: true, desiredStartDate: true },
+          orderBy: { createdAt: 'desc' },
         }),
       ]);
 
@@ -198,9 +194,7 @@ export class DashboardService {
         permission: pendingPermissions,
         total: pendingLeaves + pendingPermissions,
       },
-      planning: planning
-        ? { month: planning.month, year: planning.year }
-        : null,
+      proposal,
       eligibleForLeave,
     };
   }

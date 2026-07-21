@@ -166,34 +166,11 @@ export interface DashboardAdmin {
   } | null;
 }
 
-export interface AnnualLeavePlanning {
-  id: number;
-  employeeId: number;
-  year: number;
-  month: number;
-  employee?: Employee;
-  plannedBy?: { id: number; email: string };
-  leaveRequests?: LeaveRequest[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface LeaveEligibility {
-  eligible: boolean;
-  hasPlanning: boolean;
-  planning: AnnualLeavePlanning | null;
-  hireDate: string;
-  seniorityYears: number;
-}
 
 export interface DashboardHr {
+  employees: number;
   toReview: { leave: number; permission: number; total: number };
   totalProcessed: { leave: number; permission: number };
-  planning: {
-    totalEmployees: number;
-    withPlanning: number;
-    withoutPlanning: number;
-  };
   campaign?: {
     id: number;
     label: string;
@@ -237,6 +214,6 @@ export interface DashboardEmployee {
     remaining: number;
   }[];
   pendingRequests: { leave: number; permission: number; total: number };
-  planning: { month: number; year: number } | null;
+  proposal?: { status: string; desiredStartDate: string } | null;
   eligibleForLeave: boolean;
 }

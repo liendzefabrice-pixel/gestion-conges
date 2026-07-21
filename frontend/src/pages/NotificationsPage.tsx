@@ -31,6 +31,10 @@ const notificationTypeConfig: Record<string, { label: string; variant: 'info' | 
   LEAVE_TYPE_CREATED: { label: 'Type de congé créé', variant: 'secondary' },
   HOLIDAY_ADDED: { label: 'Jour férié ajouté', variant: 'secondary' },
   CAMPAIGN_OPENED: { label: 'Campagne ouverte', variant: 'info' },
+  CAMPAIGN_CLOSED: { label: 'Campagne clôturée', variant: 'info' },
+  PROPOSAL_ACCEPTED: { label: 'Proposition acceptée', variant: 'success' },
+  PROPOSAL_REFUSED: { label: 'Proposition refusée', variant: 'danger' },
+  PROPOSAL_REPROGRAMMED: { label: 'Proposition reprogrammée', variant: 'warning' },
   INFO: { label: 'Information', variant: 'default' },
 };
 

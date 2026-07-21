@@ -38,10 +38,10 @@ const actions: EmployeeActionItem[] = [
     colorClass: 'text-amber-600 bg-amber-100 hover:bg-amber-200',
   },
   {
-    icon: ClipboardList,
-    label: 'Mon planning',
-    description: 'Planning annuel',
-    path: '/my-planning',
+    icon: Calendar,
+    label: 'Ma programmation',
+    description: 'Soumettre ma proposition annuelle',
+    path: '/my-campaign',
     colorClass: 'text-purple-600 bg-purple-100 hover:bg-purple-200',
   },
   {

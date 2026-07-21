@@ -56,20 +56,25 @@ export class CampaignValidationRule implements DecisionRule {
       };
     }
 
-    const planning = await prisma.annualLeavePlanning.findUnique({
-      where: { employeeId_year: { employeeId, year: startDate.getFullYear() } },
-      include: { leaveRequests: { where: { status: 'APPROUVE' } } },
+    const year = startDate.getFullYear();
+    const proposal = await prisma.leaveProposal.findFirst({
+      where: {
+        employeeId,
+        status: 'ACCEPTEE',
+        campaign: { year },
+      },
+      select: { id: true },
     });
 
-    if (!planning) {
+    if (!proposal) {
       return {
         ruleName: this.name,
         label: this.label,
         status: 'WARN',
         score: 5,
         maxScore: this.weight,
-        message: 'Aucune planification annuelle trouvée',
-        details: 'L\'employé n\'a pas de planification pour cette année',
+        message: 'Aucune proposition acceptée pour cette année',
+        details: 'L\'employé n\'a pas de proposition acceptée dans la campagne annuelle',
       };
     }
 
@@ -79,8 +84,8 @@ export class CampaignValidationRule implements DecisionRule {
       status: 'PASS',
       score: this.weight,
       maxScore: this.weight,
-      message: 'Planification annuelle existante',
-      details: `${planning.leaveRequests.length} congé(s) déjà approuvé(s) cette année`,
+      message: 'Proposition acceptée dans la campagne annuelle',
+      details: `Proposition #${proposal.id} acceptée pour l'année ${year}`,
     };
   }
 }

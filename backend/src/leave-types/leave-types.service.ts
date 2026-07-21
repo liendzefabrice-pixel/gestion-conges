@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { CreateLeaveTypeDto } from './dto/create-leave-type.dto';
@@ -68,6 +69,15 @@ export class LeaveTypesService {
 
   async remove(id: number) {
     await this.findOne(id);
-    return this.prisma.leaveType.delete({ where: { id } });
+    try {
+      return await this.prisma.leaveType.delete({ where: { id } });
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
+        throw new BadRequestException(
+          'Impossible de supprimer ce type de congé car il est utilisé par des demandes ou soldes existants. Désactivez-le plutôt.',
+        );
+      }
+      throw err;
+    }
   }
 }
