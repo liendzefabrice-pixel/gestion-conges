@@ -13,7 +13,6 @@ import {
   Briefcase,
   List,
   Calendar,
-  CalendarCheck,
   CalendarDays,
   ClipboardList,
   FileText,
@@ -24,7 +23,6 @@ import {
   ChevronLeft,
   Wallet,
   CalendarX,
-  Gauge,
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
@@ -49,19 +47,21 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: 'Demandes',
+    items: [
+      { label: 'Congés', path: '/leave', icon: Calendar, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
+      { label: 'Permissions', path: '/permissions', icon: FileText, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
+    ],
+  },
+  {
     title: 'Gestion',
     items: [
       { label: 'Employés', path: '/employees', icon: Users, roles: ['ADMIN', 'HR', 'DIRECTOR'] },
       { label: 'Départements', path: '/departments', icon: Building2, roles: ['ADMIN', 'DIRECTOR'] },
       { label: 'Postes', path: '/positions', icon: Briefcase, roles: ['ADMIN', 'DIRECTOR'] },
-      { label: 'Congés', path: '/leave', icon: Calendar, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
-      { label: 'Permissions', path: '/permissions', icon: FileText, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'] },
       { label: 'Soldes', path: '/soldes', icon: Wallet, roles: ['ADMIN', 'HR', 'DIRECTOR'] },
       { label: 'Campagnes', path: '/leave-campaigns', icon: ClipboardList, roles: ['ADMIN', 'HR', 'DIRECTOR'] },
-      { label: 'Événements', path: '/internal-events', icon: CalendarX, roles: ['ADMIN', 'HR'] },
       { label: 'Calendrier', path: '/calendar', icon: CalendarDays, roles: ['ADMIN', 'HR', 'DIRECTOR'] },
-      { label: 'Calendrier RH', path: '/calendar-rh', icon: CalendarDays, roles: ['ADMIN', 'HR'] },
-      { label: 'Décision RH', path: '/decision-engine', icon: Gauge, roles: ['ADMIN', 'HR'] },
       { label: 'Jours fériés', path: '/holidays', icon: CalendarX, roles: ['ADMIN', 'DIRECTOR'] },
     ],
   },
@@ -70,7 +70,11 @@ const navSections: NavSection[] = [
     items: [
       { label: 'Utilisateurs', path: '/users', icon: UserCog, roles: ['ADMIN'] },
       { label: 'Types de congés', path: '/leave-types', icon: List, roles: ['ADMIN'] },
-      { label: 'Compétences', path: '/skills', icon: List, roles: ['ADMIN'] },
+    ],
+  },
+  {
+    title: null,
+    items: [
       { label: 'Notifications', path: '/notifications', icon: Bell, roles: ['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'], badge: true },
     ],
   },

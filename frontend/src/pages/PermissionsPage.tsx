@@ -68,7 +68,7 @@ function NewPermissionForm({ onSuccess }: { onSuccess: () => void }) {
   })
 
   return (
-    <Card className="mb-6 border-primary/20">
+    <Card className="mb-6">
       <CardHeader>
         <CardTitle>Nouvelle demande de permission</CardTitle>
       </CardHeader>

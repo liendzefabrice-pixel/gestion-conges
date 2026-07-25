@@ -593,7 +593,7 @@ export class LeaveCampaignService {
         data: { action, entityType, entityId, oldValue: oldValue ?? undefined, newValue: newValue ?? undefined, userId },
       });
     } catch (err) {
-      this.logger.error(`Échec écriture journal d'audit: ${err.message}`);
+      this.logger.error(`Échec écriture historique des activités: ${err.message}`);
     }
   }
 }

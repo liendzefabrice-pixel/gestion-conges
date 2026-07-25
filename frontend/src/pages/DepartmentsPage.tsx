@@ -212,19 +212,15 @@ export default function DepartmentsPage() {
       />
 
       {success && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="p-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200">{success}</div>
-          </CardContent>
-        </Card>
+        <div className="mb-6">
+          <div className="p-3 text-sm text-emerald-700 bg-emerald-50 rounded-lg border border-emerald-200">{success}</div>
+        </div>
       )}
 
       {error && (
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">{error}</div>
-          </CardContent>
-        </Card>
+        <div className="mb-6">
+          <div className="p-3 text-sm text-red-700 bg-red-50 rounded-lg border border-red-200">{error}</div>
+        </div>
       )}
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4">
