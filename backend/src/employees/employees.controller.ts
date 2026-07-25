@@ -24,7 +24,7 @@ export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Post()
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   create(
     @Body() createEmployeeDto: CreateEmployeeDto,
     @CurrentUser() user: { id: number },
@@ -51,13 +51,13 @@ export class EmployeesController {
   }
 
   @Get(':id/history')
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   getHistory(@Param('id', ParseIntPipe) id: number) {
     return this.employeesService.getHistory(id);
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
@@ -67,7 +67,7 @@ export class EmployeesController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { id: number },

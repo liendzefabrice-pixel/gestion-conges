@@ -51,4 +51,8 @@ export class CreateEmployeeDto {
 
   @IsInt({ message: 'Veuillez sélectionner un département' })
   departmentId: number;
+
+  @IsOptional()
+  @IsInt({ message: 'Rôle invalide' })
+  roleId?: number;
 }

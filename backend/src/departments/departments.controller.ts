@@ -23,7 +23,7 @@ export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) {}
 
   @Post()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   create(
     @Body() createDepartmentDto: CreateDepartmentDto,
     @CurrentUser() user: { id: number },
@@ -42,7 +42,7 @@ export class DepartmentsController {
   }
 
   @Patch(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDepartmentDto: UpdateDepartmentDto,
@@ -52,7 +52,7 @@ export class DepartmentsController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { id: number },

@@ -77,16 +77,27 @@ export class EmployeesService {
     const hireDate = this.validateHireDate(createEmployeeDto.hireDate);
     const hashedPassword = await bcrypt.hash(createEmployeeDto.password, 10);
 
-    const employeeRole = await this.prisma.role.findUnique({
-      where: { name: 'EMPLOYEE' },
-    });
+    let targetRoleId: number;
+    if (createEmployeeDto.roleId) {
+      const role = await this.prisma.role.findUnique({ where: { id: createEmployeeDto.roleId } });
+      if (!role) {
+        throw new NotFoundException('Rôle introuvable');
+      }
+      if (role.name !== 'EMPLOYEE' && role.name !== 'HR') {
+        throw new BadRequestException('Seuls les rôles Employé ou RH peuvent être attribués');
+      }
+      targetRoleId = role.id;
+    } else {
+      const employeeRole = await this.prisma.role.findUnique({ where: { name: 'EMPLOYEE' } });
+      targetRoleId = employeeRole!.id;
+    }
 
     const employee = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: createEmployeeDto.email.trim().toLowerCase(),
           password: hashedPassword,
-          roleId: employeeRole!.id,
+          roleId: targetRoleId,
           mustChangePassword: true,
           firstName: createEmployeeDto.firstName,
           lastName: createEmployeeDto.lastName,
@@ -249,6 +260,16 @@ export class EmployeesService {
     }
 
     const { position, positionId, roleId, ...rest } = updateEmployeeDto;
+
+    if (roleId !== undefined) {
+      const role = await this.prisma.role.findUnique({ where: { id: roleId } });
+      if (!role) {
+        throw new NotFoundException('Rôle introuvable');
+      }
+      if (role.name !== 'EMPLOYEE' && role.name !== 'HR') {
+        throw new BadRequestException('Seuls les rôles Employé ou RH peuvent être attribués');
+      }
+    }
 
     const updated = await this.prisma.$transaction(async (tx) => {
       if (roleId !== undefined) {

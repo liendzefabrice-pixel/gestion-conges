@@ -18,7 +18,7 @@ import {
 } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Search, Loader2, AlertTriangle } from 'lucide-react';
+import { Search, Plus, Loader2, AlertTriangle } from 'lucide-react';
 
 type ModalMode = 'create' | 'edit' | null;
 
@@ -30,7 +30,7 @@ const PAGE_SIZE = 8;
 
 export default function DepartmentsPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role?.name === 'ADMIN';
+  const canManage = user?.role?.name === 'ADMIN' || user?.role?.name === 'DIRECTOR';
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -202,10 +202,10 @@ export default function DepartmentsPage() {
         title="Départements"
         description="Gérez les départements de l'entreprise"
         actions={
-          isAdmin ? (
+          canManage ? (
             <Button onClick={openCreate} disabled={submitting}>
-              {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
-              Nouveau département
+              <Plus className="size-4" />
+              Ajouter
             </Button>
           ) : undefined
         }
@@ -278,7 +278,7 @@ export default function DepartmentsPage() {
               <TableHead>Description</TableHead>
               <TableHead>Date de création</TableHead>
               <TableHead>Statut</TableHead>
-              {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+              {canManage && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -297,7 +297,7 @@ export default function DepartmentsPage() {
                     {d.isActive !== false ? 'Actif' : 'Inactif'}
                   </Badge>
                 </TableCell>
-                {isAdmin && (
+                {canManage && (
                   <TableCell className="text-right">
                     <div className="flex flex-col items-end gap-1">
                       <Button variant="ghost" size="sm" className="h-auto py-1" onClick={() => openEdit(d)}>
@@ -326,7 +326,7 @@ export default function DepartmentsPage() {
             ))}
             {paged.length === 0 && (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={canManage ? 8 : 7} className="text-center text-muted-foreground py-8">
                   {search ? 'Aucun département ne correspond à votre recherche' : 'Aucun département'}
                 </TableCell>
               </TableRow>

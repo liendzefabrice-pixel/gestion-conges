@@ -22,7 +22,7 @@ export class HolidaysController {
   constructor(private readonly holidaysService: HolidaysService) {}
 
   @Post()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   create(@Body() createHolidayDto: CreateHolidayDto) {
     return this.holidaysService.create(createHolidayDto);
   }
@@ -38,7 +38,7 @@ export class HolidaysController {
   }
 
   @Patch(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateHolidayDto: UpdateHolidayDto,
@@ -47,7 +47,7 @@ export class HolidaysController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.holidaysService.remove(id);
   }

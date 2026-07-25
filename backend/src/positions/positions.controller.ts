@@ -23,7 +23,7 @@ export class PositionsController {
   constructor(private readonly positionsService: PositionsService) {}
 
   @Post()
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   create(
     @Body() createPositionDto: CreatePositionDto,
     @CurrentUser() user: { id: number },
@@ -47,7 +47,7 @@ export class PositionsController {
   }
 
   @Patch(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updatePositionDto: UpdatePositionDto,
@@ -57,7 +57,7 @@ export class PositionsController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'DIRECTOR')
   remove(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: { id: number },

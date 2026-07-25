@@ -47,7 +47,7 @@ type SortDir = 'asc' | 'desc';
 
 export default function EmployeesPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role?.name === 'ADMIN';
+  const canManage = user?.role?.name === 'ADMIN' || user?.role?.name === 'DIRECTOR';
 
   const [employees, setEmployees] = useState<(Employee & { seniority?: string })[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -86,7 +86,7 @@ export default function EmployeesPage() {
 
   const initForm = () => ({
     matricule: '', firstName: '', lastName: '', email: '', password: '',
-    position: '', positionId: '', hireDate: '', departmentId: '',
+    position: '', positionId: '', hireDate: '', departmentId: '', roleId: '',
   });
   const [form, setForm] = useState(initForm());
   const [editForm, setEditForm] = useState({
@@ -142,6 +142,7 @@ export default function EmployeesPage() {
         position: form.position || undefined,
         hireDate: form.hireDate,
         departmentId: Number(form.departmentId),
+        roleId: form.roleId ? Number(form.roleId) : undefined,
       });
       setForm(initForm());
       setShowCreate(false);
@@ -297,7 +298,7 @@ export default function EmployeesPage() {
     }
   };
 
-  const colCount = isAdmin ? 11 : 10;
+  const colCount = canManage ? 11 : 10;
 
   const filteredEmployees = useMemo(() => {
     let result = [...employees];
@@ -481,6 +482,24 @@ export default function EmployeesPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Rôle</Label>
+                <Select value={form.roleId || null} onValueChange={(v) => handleChange('roleId', v || '')}>
+                  <SelectTrigger>
+                    <span className="flex flex-1 text-left">
+                      {form.roleId
+                        ? translateRole(roles.find(r => r.id === Number(form.roleId))?.name || '')
+                        : <span className="text-muted-foreground">Sélectionner un rôle</span>
+                      }
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.filter((r) => r.name !== 'ADMIN' && r.name !== 'DIRECTOR').map((r) => (
+                      <SelectItem key={r.id} value={String(r.id)}>{translateRole(r.name)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="col-span-2 pt-2">
                 <Button type="submit" loading={submitting}>Créer l'employé</Button>
               </div>
@@ -562,7 +581,7 @@ export default function EmployeesPage() {
                     </span>
                   </SelectTrigger>
                   <SelectContent>
-                    {roles.filter((r) => r.name !== 'ADMIN').map((r) => (
+                    {roles.filter((r) => r.name !== 'ADMIN' && r.name !== 'DIRECTOR').map((r) => (
                       <SelectItem key={r.id} value={String(r.id)}>{translateRole(r.name)}</SelectItem>
                     ))}
                   </SelectContent>
@@ -913,7 +932,7 @@ export default function EmployeesPage() {
                 <span className="inline-flex items-center">Ancienneté <SortIcon columnKey="seniority" /></span>
               </TableHead>
               <TableHead>Solde annuel</TableHead>
-              {isAdmin && (
+              {canManage && (
                 <TableHead className="cursor-pointer select-none text-right" onClick={() => toggleSort('status')}>
                   <span className="inline-flex items-center justify-end">Statut <SortIcon columnKey="status" /></span>
                 </TableHead>
@@ -948,7 +967,7 @@ export default function EmployeesPage() {
                 <TableCell className="text-muted-foreground">{formatDate(e.hireDate)}</TableCell>
                 <TableCell className="text-muted-foreground">{e.seniority}</TableCell>
                 <TableCell className="font-medium text-primary">{balances[e.id] !== undefined ? `${balances[e.id]} jours` : '—'}</TableCell>
-                {isAdmin && (
+                {canManage && (
                   <TableCell className="text-right">
                     <div className="flex flex-col items-end gap-1">
                       <Badge variant={e.user?.isActive ? 'success' : 'danger'} className="mb-1">

@@ -73,17 +73,17 @@ function AppRoutes() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="account/security" element={<AccountSecurityPage />} />
-        <Route path="departments" element={R(['ADMIN'])(<DepartmentsPage />)} />
-        <Route path="positions" element={R(['ADMIN'])(<PositionsPage />)} />
+        <Route path="departments" element={R(['ADMIN', 'DIRECTOR'])(<DepartmentsPage />)} />
+        <Route path="positions" element={R(['ADMIN', 'DIRECTOR'])(<PositionsPage />)} />
         <Route path="leave-types" element={R(['ADMIN'])(<LeaveTypesPage />)} />
-        <Route path="employees" element={R(['ADMIN', 'HR'])(<EmployeesPage />)} />
+        <Route path="employees" element={R(['ADMIN', 'HR', 'DIRECTOR'])(<EmployeesPage />)} />
         <Route path="leave" element={R(['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'])(<LeavePage />)} />
-        <Route path="leave-campaigns" element={R(['ADMIN', 'HR'])(<CampaignsPage />)} />
+        <Route path="leave-campaigns" element={R(['ADMIN', 'HR', 'DIRECTOR'])(<CampaignsPage />)} />
         <Route path="my-campaign" element={R(['EMPLOYEE'])(<MyCampaignPage />)} />
-        <Route path="soldes" element={R(['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'])(<SoldesPage />)} />
-        <Route path="holidays" element={R(['ADMIN'])(<HolidaysPage />)} />
+        <Route path="soldes" element={R(['ADMIN', 'HR', 'DIRECTOR'])(<SoldesPage />)} />
+        <Route path="holidays" element={R(['ADMIN', 'DIRECTOR'])(<HolidaysPage />)} />
         <Route path="internal-events" element={R(['ADMIN', 'HR'])(<EventsPage />)} />
-        <Route path="calendar" element={R(['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'])(<CalendarPage />)} />
+        <Route path="calendar" element={R(['ADMIN', 'HR', 'DIRECTOR'])(<CalendarPage />)} />
         <Route path="calendar-rh" element={R(['ADMIN', 'HR'])(<CalendarRhPage />)} />
         <Route path="decision-engine" element={R(['ADMIN', 'HR'])(<DecisionEnginePage />)} />
         <Route path="permissions" element={R(['ADMIN', 'HR', 'DIRECTOR', 'EMPLOYEE'])(<PermissionsPage />)} />

@@ -30,7 +30,7 @@ const PAGE_SIZE = 8;
 
 export default function PositionsPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role?.name === 'ADMIN';
+  const canManage = user?.role?.name === 'ADMIN' || user?.role?.name === 'DIRECTOR';
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -197,12 +197,12 @@ export default function PositionsPage() {
   };
 
   const modalTitle = modalMode === 'create' ? 'Nouveau poste' : 'Modifier le poste';
-  const colCount = isAdmin ? 9 : 8;
+  const colCount = canManage ? 9 : 8;
 
   const activeDepartments = useMemo(() => {
-    if (isAdmin) return departments;
+    if (canManage) return departments;
     return departments.filter((d) => d.isActive !== false);
-  }, [departments, isAdmin]);
+  }, [departments, canManage]);
 
   return (
     <div>
@@ -210,7 +210,7 @@ export default function PositionsPage() {
         title="Postes"
         description="Gérez les postes et fonctions de l'entreprise"
         actions={
-          isAdmin ? (
+          canManage ? (
             <Button onClick={openCreate} disabled={submitting}>
               {submitting ? <Loader2 className="size-4 animate-spin" /> : null}
               Nouveau poste
@@ -304,7 +304,7 @@ export default function PositionsPage() {
               <TableHead>Remplaçable</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Date de création</TableHead>
-              {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+              {canManage && <TableHead className="text-right">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -332,7 +332,7 @@ export default function PositionsPage() {
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{p.createdAt ? formatDate(p.createdAt) : '—'}</TableCell>
-                {isAdmin && (
+                {canManage && (
                   <TableCell className="text-right">
                     <div className="flex flex-col items-end gap-1">
                       <Button variant="ghost" size="sm" className="h-auto py-1" onClick={() => openEdit(p)}>

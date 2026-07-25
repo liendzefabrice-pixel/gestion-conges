@@ -28,13 +28,13 @@ export class SkillsController {
   }
 
   @Get()
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   findAll() {
     return this.skillsService.findAll();
   }
 
   @Get(':id')
-  @Roles('ADMIN', 'HR')
+  @Roles('ADMIN', 'HR', 'DIRECTOR')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.skillsService.findOne(id);
   }
