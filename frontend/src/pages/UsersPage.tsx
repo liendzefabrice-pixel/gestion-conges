@@ -67,7 +67,6 @@ export default function UsersPage() {
     targetId: number;
   }>({ open: false, title: '', message: '', action: 'deactivate', targetId: 0 });
 
-  const isAdminUser = currentUser?.role?.name === 'ADMIN';
   const currentUserId = currentUser?.id;
 
   const loadUsers = useCallback(() => api.get('/users').then((res) => setUsers(res.data)), []);
@@ -389,7 +388,7 @@ export default function UsersPage() {
               {modalMode === 'edit' && (
                 <div className="space-y-2">
                   <Label>Statut</Label>
-                  <Select value={isActive} onValueChange={setIsActive}>
+                  <Select value={isActive} onValueChange={(value) => setIsActive(value ?? 'true')}>
                     <SelectTrigger>
                       <span className="flex flex-1 text-left">
                         {isActive === 'true' ? 'Actif' : isActive === 'false' ? 'Inactif' : <span className="text-muted-foreground">Sélectionner</span>}

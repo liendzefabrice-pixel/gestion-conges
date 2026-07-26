@@ -75,7 +75,6 @@ export default function CalendarPage() {
   const days: { day: number; events: any[]; leaves: any[]; holidays: any[] }[] = []
 
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const dateObj = new Date(year, month - 1, d)
 
     const dayEvents = (data?.internalEvents || []).filter((e: any) => {

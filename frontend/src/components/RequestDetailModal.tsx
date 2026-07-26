@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import api from '../services/api';
-import type { LeaveRequest, PermissionRequest, LeaveBalance } from '../types';
+import type { LeaveRequest, PermissionRequest } from '../types';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { Textarea } from '../components/ui/textarea';
-import { CalendarDays, Clock, User, FileText, MessageSquare, Scale, History, Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { CalendarDays, User, FileText, MessageSquare, Scale, History, Loader2, ArrowRight } from 'lucide-react';
 
 type RequestType = LeaveRequest | PermissionRequest;
 
@@ -36,7 +35,7 @@ const permissionTypeLabels: Record<string, string> = {
 };
 
 function Timeline({ request }: { request: any }) {
-  const steps = [];
+  const steps: Array<{ label: string; date: any; author: any; done: boolean; detail?: string; isCurrent?: boolean }> = [];
   steps.push({ label: 'Demande créée', date: request.createdAt, author: request.employee?.user?.email, done: !!request.createdAt });
   if (request.histories) {
     const sortedHistories = [...(request.histories || [])].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());

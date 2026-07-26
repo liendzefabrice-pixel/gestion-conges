@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '../components/ui/select'
 import { cn } from '../lib/utils'
-import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X, Loader2, Archive, Settings, Calendar, FileText, Trash2 } from 'lucide-react'
+import { Play, XCircle, ChevronDown, ChevronRight, CheckCircle2, AlertTriangle, CalendarClock, History, ThumbsUp, Pencil, X, Loader2, Archive, Settings, Trash2 } from 'lucide-react'
 import { toast } from '../components/Toast'
 
 const proposalStatusLabels: Record<string, string> = {
@@ -72,12 +72,12 @@ export default function CampaignsPage() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (data: { year: number; label: string }) =>
+    mutationFn: (data: { year: number; label: string; description?: string; startDate?: string; endDate?: string }) =>
       api.post('/leave-campaigns', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leave-campaigns'] })
       setShowCreate(false)
-      setFormData({ year: String(new Date().getFullYear()), label: '' })
+      setFormData({ year: String(new Date().getFullYear()), label: '', description: '', startDate: '', endDate: '' })
       setError('')
     },
     onError: (err: any) => {
@@ -559,8 +559,8 @@ export default function CampaignsPage() {
                 <Select
                   value={dropdownStatus}
                   onValueChange={(v) => {
-                    setDropdownStatus(v)
-                    updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: v })
+                    setDropdownStatus(v ?? '')
+                    updateProposalStatusMutation.mutate({ proposalId: selectedProposal.id, status: v ?? '' })
                   }}
                 >
                   <SelectTrigger className="h-8 text-xs w-[150px]">

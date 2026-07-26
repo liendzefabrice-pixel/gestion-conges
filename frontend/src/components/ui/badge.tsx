@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 import type { ReactNode, HTMLAttributes } from 'react'
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'outline'
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'outline' | 'secondary'
   children: ReactNode
 }
 
@@ -13,6 +13,7 @@ const variants: Record<string, string> = {
   danger: 'bg-destructive/10 text-destructive border-transparent',
   info: 'bg-blue-100 text-blue-700 border-transparent',
   outline: 'bg-transparent text-muted-foreground border-border',
+  secondary: 'bg-secondary/10 text-secondary-foreground border-transparent',
 }
 
 export function Badge({ variant = 'default', children, className, ...props }: BadgeProps) {

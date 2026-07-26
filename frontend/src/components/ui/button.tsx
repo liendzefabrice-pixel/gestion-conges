@@ -2,8 +2,8 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost'
-  size?: 'sm' | 'md' | 'lg'
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'default' | 'destructive'
+  size?: 'sm' | 'md' | 'lg' | 'icon'
   loading?: boolean
   children: ReactNode
 }
@@ -14,12 +14,15 @@ const variants: Record<string, string> = {
   outline: 'bg-transparent text-foreground border border-input hover:bg-accent focus:ring-accent/20',
   danger: 'bg-destructive text-destructive-foreground hover:brightness-90 focus:ring-destructive/20',
   ghost: 'text-muted-foreground hover:bg-accent hover:text-foreground focus:ring-accent/20',
+  default: 'bg-primary text-primary-foreground hover:brightness-90 focus:ring-primary/20',
+  destructive: 'bg-destructive text-destructive-foreground hover:brightness-90 focus:ring-destructive/20',
 }
 
 const sizes: Record<string, string> = {
   sm: 'h-9 px-3 text-xs gap-1.5',
   md: 'h-10 px-4 text-sm gap-2',
   lg: 'h-12 px-6 text-base gap-2.5',
+  icon: 'h-10 w-10 p-0 text-sm',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

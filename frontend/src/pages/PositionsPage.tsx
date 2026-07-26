@@ -243,7 +243,7 @@ export default function PositionsPage() {
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span>Département :</span>
-          <Select value={filterDeptId} onValueChange={(v) => { setFilterDeptId(v); setPage(0); }}>
+          <Select value={filterDeptId} onValueChange={(v) => { setFilterDeptId(v ?? ''); setPage(0); }}>
             <SelectTrigger className="w-44">
               <span className="flex flex-1 text-left">
                 {filterDeptId
@@ -464,7 +464,7 @@ export default function PositionsPage() {
               {modalMode === 'edit' && (
                 <div className="space-y-2">
                   <Label>Statut</Label>
-                  <Select value={formIsActive} onValueChange={setFormIsActive}>
+                  <Select value={formIsActive} onValueChange={(value) => setFormIsActive(value ?? 'true')}>
                     <SelectTrigger>
                       <span className="flex flex-1 text-left">
                         {formIsActive === 'true' ? 'Actif' : formIsActive === 'false' ? 'Inactif' : <span className="text-muted-foreground">Sélectionner</span>}

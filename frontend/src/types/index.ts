@@ -87,6 +87,7 @@ export interface LeaveRequest {
   leaveType: LeaveType;
   reviewedBy?: { id: number; email: string };
   decidedBy?: { id: number; email: string };
+  returnDate?: string | null;
   createdAt?: string;
   reviewedAt?: string;
   decidedAt?: string;
@@ -100,6 +101,7 @@ export interface PermissionRequest {
   reason: string;
   status: 'EN_ATTENTE_RH' | 'AVIS_RH_RENDU' | 'APPROUVE' | 'REFUSE';
   employee: { id: number; firstName?: string; lastName?: string; user: { email: string; firstName?: string; lastName?: string }; position?: string; department?: { name: string } };
+  permissionType?: string;
   reviewedBy?: { id: number; email: string };
   decidedBy?: { id: number; email: string };
 }

@@ -40,7 +40,7 @@ function DialogContent({
   children,
   showCloseButton = true,
   ...props
-}: DialogPrimitive.Popup.Props & { showCloseButton?: boolean }) {
+}: DialogPrimitive.Popup.Props & { showCloseButton?: boolean; children?: React.ReactNode }) {
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -60,7 +60,7 @@ function DialogContent({
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            render={<Button variant="ghost" size="sm" className="absolute top-3 right-3" />}
+            render={<Button variant="ghost" size="sm" className="absolute top-3 right-3">x</Button>}
           >
             <XIcon className="size-4" />
             <span className="sr-only">Fermer</span>
@@ -98,7 +98,7 @@ function DialogFooter({
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close render={<Button variant="outline" />}>
+        <DialogPrimitive.Close render={<Button variant="outline">Annuler</Button>}>
           Annuler
         </DialogPrimitive.Close>
       )}

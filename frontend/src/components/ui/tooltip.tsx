@@ -15,7 +15,7 @@ export function Tooltip({ content, children, side = 'top', delay = 0, className 
   const [visible, setVisible] = useState(false)
   const triggerRef = useRef<HTMLSpanElement>(null)
   const [pos, setPos] = useState({ top: 0, left: 0 })
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current) }

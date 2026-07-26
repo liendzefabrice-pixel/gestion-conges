@@ -426,7 +426,7 @@ export default function DepartmentsPage() {
               {modalMode === 'edit' && (
                 <div className="space-y-2">
                   <Label>Statut</Label>
-                  <Select value={formIsActive} onValueChange={setFormIsActive}>
+                  <Select value={formIsActive} onValueChange={(value) => setFormIsActive(value ?? 'true')}>
                     <SelectTrigger>
                       <span className="flex flex-1 text-left">
                         {formIsActive === 'true' ? 'Actif' : formIsActive === 'false' ? 'Inactif' : <span className="text-muted-foreground">Sélectionner</span>}

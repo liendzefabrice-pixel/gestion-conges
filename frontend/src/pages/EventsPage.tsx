@@ -4,7 +4,7 @@ import api from '../services/api'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Card, CardContent } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
 import {
   Dialog,
@@ -366,7 +366,7 @@ export default function EventsPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Type</Label>
-                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v ?? 'AUTRE' })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(eventTypeLabels).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
@@ -375,7 +375,7 @@ export default function EventsPage() {
               </div>
               <div className="space-y-2">
                 <Label>Priorité</Label>
-                <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v })}>
+                <Select value={form.priority} onValueChange={(v) => setForm({ ...form, priority: v ?? 'MOYENNE' })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(priorityConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
@@ -396,7 +396,7 @@ export default function EventsPage() {
             {!editingId && (
               <div className="space-y-2">
                 <Label>Statut</Label>
-                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v ?? 'BROUILLON' })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(statusConfig).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
@@ -411,7 +411,7 @@ export default function EventsPage() {
             {!form.allCompany && (
               <div className="space-y-2">
                 <Label>Département concerné</Label>
-                <Select value={form.departmentId} onValueChange={(v) => setForm({ ...form, departmentId: v })}>
+                <Select value={form.departmentId} onValueChange={(v) => setForm({ ...form, departmentId: v ?? '' })}>
                   <SelectTrigger><SelectValue placeholder="Sélectionner" /></SelectTrigger>
                   <SelectContent>
                     {departments.map((d: any) => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}

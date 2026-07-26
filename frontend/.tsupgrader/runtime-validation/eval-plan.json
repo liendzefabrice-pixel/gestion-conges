@@ -1,0 +1,13 @@
+{
+  "name": "frontend-runtime-baseline",
+  "description": "Basic runtime validation plan for the Vite frontend",
+  "projectType": "webapp",
+  "assertions": [
+    {
+      "name": "build succeeds",
+      "type": "command",
+      "command": "npm run build",
+      "expected": "success"
+    }
+  ]
+}

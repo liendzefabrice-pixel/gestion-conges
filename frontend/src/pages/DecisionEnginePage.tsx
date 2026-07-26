@@ -8,14 +8,14 @@ import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select'
 import { cn } from '../lib/utils'
-import { Gauge, Search, RotateCcw, CheckCircle2, AlertTriangle, XCircle, History, Eye } from 'lucide-react'
+import { Gauge, Search, RotateCcw, CheckCircle2, AlertTriangle, XCircle, Eye } from 'lucide-react'
 
 export default function DecisionEnginePage() {
   const [entityType, setEntityType] = useState<'LEAVE_REQUEST' | 'LEAVE_PROPOSAL'>('LEAVE_REQUEST')
   const [entityId, setEntityId] = useState('')
   const [searchId, setSearchId] = useState('')
 
-  const { data: analysis, isLoading, refetch } = useQuery({
+  const { data: analysis, isLoading } = useQuery({
     queryKey: ['decision-analysis-view', entityType, searchId],
     queryFn: async () => {
       if (!searchId) return null

@@ -82,7 +82,7 @@ function NewPermissionForm({ onSuccess }: { onSuccess: () => void }) {
         <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
           <div className="space-y-2">
             <Label>Type de permission</Label>
-            <Select value={permissionType} onValueChange={setPermissionType}>
+            <Select value={permissionType} onValueChange={(value) => setPermissionType(value ?? 'PERMISSION')}>
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner un type" />
               </SelectTrigger>
@@ -208,7 +208,7 @@ export default function PermissionsPage() {
             {filtered.map((r) => (
               <TableRow key={r.id} className="cursor-pointer" onClick={() => setSelectedRequest(r)}>
                 <TableCell>{r.employee?.user?.email || 'N/A'}</TableCell>
-                <TableCell>{permissionTypeLabels[r.permissionType] || 'Permission'}</TableCell>
+                <TableCell>{permissionTypeLabels[r.permissionType ?? ''] || 'Permission'}</TableCell>
                 <TableCell className="text-sm">
                   {new Date(r.startDate).toLocaleDateString('fr-FR')} - {new Date(r.endDate).toLocaleDateString('fr-FR')}
                 </TableCell>

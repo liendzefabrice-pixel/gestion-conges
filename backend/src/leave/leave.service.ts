@@ -261,6 +261,28 @@ export class LeaveService {
         }
       }
 
+      let warning: string | undefined;
+
+      if (leaveType.deductsFromAnnualBalance) {
+        const year = startDate.getFullYear();
+        const balance = await tx.leaveBalance.findUnique({
+          where: {
+            employeeId_leaveTypeId_year: {
+              employeeId,
+              leaveTypeId: createLeaveRequestDto.leaveTypeId,
+              year,
+            },
+          },
+        });
+
+        if (balance) {
+          const remaining = balance.totalDays + balance.adjustedDays - balance.usedDays - balance.pendingDays;
+          if (remaining < 0) {
+            warning = `Attention : votre demande dépasse votre solde disponible de ${Math.abs(remaining)} jour(s).`;
+          }
+        }
+      }
+
       const employeeName = `${request.employee.user.firstName || ''} ${request.employee.user.lastName || ''}`.trim() || request.employee.user.email;
       this.notificationsService.leaveCreated(
         request.id,
@@ -271,7 +293,7 @@ export class LeaveService {
         endDate,
       );
 
-      return request;
+      return warning ? { request, warning } : request;
     });
   }
 

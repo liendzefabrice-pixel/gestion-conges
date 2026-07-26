@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { CardDescription } from '../ui/card'
-import { Clock, UserPlus, Calendar, CheckCircle, FileText } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface ActivityItem {
@@ -16,13 +16,6 @@ interface ActivityItem {
 interface RecentActivityCardProps {
   activities?: ActivityItem[]
   className?: string
-}
-
-const iconMap: Record<string, { icon: typeof Clock; color: string }> = {
-  USER_CREATED: { icon: UserPlus, color: 'text-blue-600 bg-blue-100' },
-  LEAVE_CREATED: { icon: Calendar, color: 'text-amber-600 bg-amber-100' },
-  LEAVE_APPROVED: { icon: CheckCircle, color: 'text-emerald-600 bg-emerald-100' },
-  LEAVE_REJECTED: { icon: FileText, color: 'text-red-600 bg-red-100' },
 }
 
 export function RecentActivityCard({ activities, className }: RecentActivityCardProps) {

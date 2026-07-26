@@ -14,15 +14,19 @@ import {
 
 function useCountdown(initial: number) {
   const [remaining, setRemaining] = useState(initial)
-  const timerRef = useRef<ReturnType<typeof setInterval>>()
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const start = useCallback(() => {
     setRemaining(initial)
-    clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => {
+    if (timerRef.current !== null) {
+      clearInterval(timerRef.current)
+    }
+    timerRef.current = window.setInterval(() => {
       setRemaining((r) => {
         if (r <= 1) {
-          clearInterval(timerRef.current)
+          if (timerRef.current !== null) {
+            clearInterval(timerRef.current)
+          }
           return 0
         }
         return r - 1
@@ -31,7 +35,11 @@ function useCountdown(initial: number) {
   }, [initial])
 
   useEffect(() => {
-    return () => clearInterval(timerRef.current)
+    return () => {
+      if (timerRef.current !== null) {
+        clearInterval(timerRef.current)
+      }
+    }
   }, [])
 
   return { remaining, start }

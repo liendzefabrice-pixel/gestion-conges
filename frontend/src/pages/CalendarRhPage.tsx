@@ -6,7 +6,7 @@ import { PageHeader } from '../components/ui/page-header'
 import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select'
 import { cn } from '../lib/utils'
 import Tooltip from '../components/ui/tooltip'
 import {
@@ -98,26 +98,25 @@ export default function CalendarRhPage() {
   })
   const [detail, setDetail] = useState<DetailItem | null>(null)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<any>({
     queryKey: ['calendar-rh', month, year, filters],
     queryFn: () => api.get('/calendar-rh', {
       params: { month, year, ...filters },
       paramsSerializer: { indexes: null },
     }).then((r) => r.data),
-    keepPreviousData: true,
   })
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<any>({
     queryKey: ['calendar-rh-stats', month, year],
     queryFn: () => api.get('/calendar-rh/stats', { params: { month, year } }).then((r) => r.data),
   })
 
-  const { data: departments } = useQuery({
+  const { data: departments } = useQuery<any[]>({
     queryKey: ['departments-list'],
     queryFn: () => api.get('/departments').then((r) => r.data),
   })
 
-  const { data: leaveTypes } = useQuery({
+  const { data: leaveTypes } = useQuery<any[]>({
     queryKey: ['leave-types-list'],
     queryFn: () => api.get('/leave-types').then((r) => r.data),
   })
@@ -193,7 +192,7 @@ export default function CalendarRhPage() {
     return result
   }, [data, year, month, daysInMonth])
 
-  const conflictCount = data?.conflicts?.length || 0
+  const conflictCount = (data as any)?.conflicts?.length || 0
 
   const prevMonth = () => {
     if (month === 1) { setMonth(12); setYear(year - 1) }
@@ -213,8 +212,6 @@ export default function CalendarRhPage() {
     departmentId: '', employeeId: '', leaveTypeId: '', eventType: '',
     status: '', priority: '', search: '',
   })
-
-  const formatDate = (d: Date) => d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   const renderDetailPanel = () => {
     if (!detail) return null
@@ -485,7 +482,7 @@ export default function CalendarRhPage() {
             </div>
             <div className="space-y-1 min-w-[130px]">
               <Label className="text-xs">Département</Label>
-              <Select value={filters.departmentId || null} onValueChange={(v) => setFilters({ ...filters, departmentId: v === '__all__' ? '' : v })}>
+              <Select value={filters.departmentId || ''} onValueChange={(v) => setFilters({ ...filters, departmentId: v === '__all__' ? '' : (v ?? '') })}>
                 <SelectTrigger className="h-9 text-sm">
                   <span className="flex-1 text-left">{filters.departmentId ? departments?.find((d: any) => String(d.id) === filters.departmentId)?.name || filters.departmentId : 'Tous'}</span>
                 </SelectTrigger>
@@ -497,7 +494,7 @@ export default function CalendarRhPage() {
             </div>
             <div className="space-y-1 min-w-[130px]">
               <Label className="text-xs">Type de congé</Label>
-              <Select value={filters.leaveTypeId || null} onValueChange={(v) => setFilters({ ...filters, leaveTypeId: v === '__all__' ? '' : v })}>
+              <Select value={filters.leaveTypeId || ''} onValueChange={(v) => setFilters({ ...filters, leaveTypeId: v === '__all__' ? '' : (v ?? '') })}>
                 <SelectTrigger className="h-9 text-sm">
                   <span className="flex-1 text-left">{filters.leaveTypeId ? leaveTypes?.find((t: any) => String(t.id) === filters.leaveTypeId)?.name || filters.leaveTypeId : 'Tous'}</span>
                 </SelectTrigger>
@@ -509,7 +506,7 @@ export default function CalendarRhPage() {
             </div>
             <div className="space-y-1 min-w-[130px]">
               <Label className="text-xs">Type d'événement</Label>
-              <Select value={filters.eventType || null} onValueChange={(v) => setFilters({ ...filters, eventType: v === '__all__' ? '' : v })}>
+              <Select value={filters.eventType || ''} onValueChange={(v) => setFilters({ ...filters, eventType: v === '__all__' ? '' : (v ?? '') })}>
                 <SelectTrigger className="h-9 text-sm">
                   <span className="flex-1 text-left">{filters.eventType ? eventTypeLabels[filters.eventType] || filters.eventType : 'Tous'}</span>
                 </SelectTrigger>
@@ -521,7 +518,7 @@ export default function CalendarRhPage() {
             </div>
             <div className="space-y-1 min-w-[130px]">
               <Label className="text-xs">Statut</Label>
-              <Select value={filters.status || null} onValueChange={(v) => setFilters({ ...filters, status: v === '__all__' ? '' : v })}>
+              <Select value={filters.status || ''} onValueChange={(v) => setFilters({ ...filters, status: v === '__all__' ? '' : (v ?? '') })}>
                 <SelectTrigger className="h-9 text-sm">
                   <span className="flex-1 text-left">{filters.status ? leaveStatusLabels[filters.status] || filters.status : 'Tous'}</span>
                 </SelectTrigger>
@@ -533,7 +530,7 @@ export default function CalendarRhPage() {
             </div>
             <div className="space-y-1 min-w-[130px]">
               <Label className="text-xs">Priorité</Label>
-              <Select value={filters.priority || null} onValueChange={(v) => setFilters({ ...filters, priority: v === '__all__' ? '' : v })}>
+              <Select value={filters.priority || ''} onValueChange={(v) => setFilters({ ...filters, priority: v === '__all__' ? '' : (v ?? '') })}>
                 <SelectTrigger className="h-9 text-sm">
                   <span className="flex-1 text-left">{filters.priority ? priorityConfig[filters.priority]?.label || filters.priority : 'Toutes'}</span>
                 </SelectTrigger>

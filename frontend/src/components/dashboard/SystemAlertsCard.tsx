@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { CardDescription } from '../ui/card'
 import { Badge } from '../ui/badge'
-import { AlertTriangle, Bell, UserX, Calendar, CheckCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface AlertItem {

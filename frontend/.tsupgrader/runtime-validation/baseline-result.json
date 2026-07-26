@@ -1,0 +1,26 @@
+{
+  "planHash": "d7c3b1cba688a0c0d52a33286c496a908f13802896af1f7e54a7a614bc591ef3",
+  "phase": "baseline",
+  "recordedAtUtc": "2026-07-26T02:45:01.0522063Z",
+  "retryCount": 0,
+  "resetBaseline": false,
+  "result": {
+    "setupSucceeded": true,
+    "setupDurationMs": 0,
+    "setupFailureOutput": null,
+    "assertions": [
+      {
+        "name": "build succeeds",
+        "kind": "process",
+        "verificationMethod": "exit-code",
+        "passed": false,
+        "timedOut": false,
+        "skipped": false,
+        "skippedReason": null,
+        "exitCode": null,
+        "outputSample": "\u003Cspawn error: An error occurred trying to start process \u0027npm run build\u0027 with working directory \u0027d:\\Projets\\gestion-conges\\frontend\u0027. Le fichier sp\u00E9cifi\u00E9 est introuvable.\u003E\n",
+        "durationMs": 404
+      }
+    ]
+  }
+}

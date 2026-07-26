@@ -30,7 +30,7 @@ import {
 } from '../components/ui/dialog'
 import RequestDetailModal from '../components/RequestDetailModal'
 import Tooltip from '../components/ui/tooltip'
-import { Calendar, Filter, Loader2, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
+import { Filter, Loader2, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info'; color: string }> = {
   BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
@@ -52,7 +52,7 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
   const [selectedType, setSelectedType] = useState('')
   const [calcResult, setCalcResult] = useState<WorkingDaysResult | null>(null)
   const [calcLoading, setCalcLoading] = useState(false)
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<LeaveRequestFormData>({
     resolver: zodResolver(leaveRequestSchema),

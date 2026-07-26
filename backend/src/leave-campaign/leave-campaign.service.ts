@@ -564,39 +564,6 @@ export class LeaveCampaignService {
       },
     });
 
-    const year = startDate.getFullYear();
-    const balance = await this.prisma.leaveBalance.findUnique({
-      where: {
-        employeeId_leaveTypeId_year: {
-          employeeId: proposal.employeeId,
-          leaveTypeId: annualLeaveType.id,
-          year,
-        },
-      },
-    });
-
-    if (balance) {
-      const newUsedDays = balance.usedDays + proposal.duration;
-      const previousRemaining = balance.totalDays + balance.adjustedDays - balance.usedDays - balance.pendingDays;
-      const newRemaining = balance.totalDays + balance.adjustedDays - newUsedDays - balance.pendingDays;
-
-      await this.prisma.leaveBalance.update({
-        where: { id: balance.id },
-        data: { usedDays: newUsedDays },
-      });
-
-      await this.prisma.balanceAdjustment.create({
-        data: {
-          operationType: 'DEDUCTION_CONGES',
-          previousRemaining,
-          newRemaining,
-          comment: `Campagne annuelle "${proposal.campaign?.label || ''}" : ${proposal.duration} jour(s) du ${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')}`,
-          leaveBalanceId: balance.id,
-          authorId: 1,
-        },
-      });
-    }
-
     this.logger.log(`Congé #${leave.id} créé automatiquement pour la proposition #${proposal.id}`);
   }
 

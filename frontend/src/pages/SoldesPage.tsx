@@ -142,7 +142,7 @@ function AdjustModal({
   onClose,
   onSuccess,
 }: {
-  balance: LeaveBalance & { leaveType: { color?: string; name: string } }
+  balance: LeaveBalance & { leaveType: { color?: string; name: string }; employee?: { user?: { email?: string } } }
   onClose: () => void
   onSuccess: () => void
 }) {

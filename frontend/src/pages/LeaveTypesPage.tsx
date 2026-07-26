@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
-import { Card, CardContent } from '../components/ui/card';
 import { PageHeader } from '../components/ui/page-header';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '../components/ui/table';
 import {
@@ -16,9 +15,9 @@ import {
   DialogDescription,
   DialogFooter,
 } from '../components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '../components/ui/select';
 import { Label } from '../components/ui/label';
-import { Search, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
 
 type ModalMode = 'create' | 'edit' | null;
 
@@ -338,7 +337,7 @@ export default function LeaveTypesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Couleur</Label>
-                <Select value={formColor} onValueChange={setFormColor}>
+                <Select value={formColor} onValueChange={(value) => setFormColor(value ?? '#0B6B3A')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left items-center gap-2">
                       <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: formColor }} />
@@ -359,7 +358,7 @@ export default function LeaveTypesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Icône</Label>
-                <Select value={formIcon} onValueChange={setFormIcon}>
+                <Select value={formIcon} onValueChange={(value) => setFormIcon(value ?? 'Calendar')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">{formIcon}</span>
                   </SelectTrigger>
@@ -372,7 +371,7 @@ export default function LeaveTypesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Validation RH</Label>
-                <Select value={formRequiresRh} onValueChange={setFormRequiresRh}>
+                <Select value={formRequiresRh} onValueChange={(value) => setFormRequiresRh(value ?? 'true')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">{formRequiresRh === 'true' ? 'Oui' : 'Non'}</span>
                   </SelectTrigger>
@@ -384,7 +383,7 @@ export default function LeaveTypesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Validation Direction</Label>
-                <Select value={formRequiresDir} onValueChange={setFormRequiresDir}>
+                <Select value={formRequiresDir} onValueChange={(value) => setFormRequiresDir(value ?? 'false')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">{formRequiresDir === 'true' ? 'Oui' : 'Non'}</span>
                   </SelectTrigger>
@@ -396,7 +395,7 @@ export default function LeaveTypesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Justificatif requis</Label>
-                <Select value={formRequiresJustif} onValueChange={setFormRequiresJustif}>
+                <Select value={formRequiresJustif} onValueChange={(value) => setFormRequiresJustif(value ?? 'false')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">{formRequiresJustif === 'true' ? 'Oui' : 'Non'}</span>
                   </SelectTrigger>
@@ -408,7 +407,7 @@ export default function LeaveTypesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Déduit du solde</Label>
-                <Select value={formDeducts} onValueChange={setFormDeducts}>
+                <Select value={formDeducts} onValueChange={(value) => setFormDeducts(value ?? 'true')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">{formDeducts === 'true' ? 'Oui' : 'Non'}</span>
                   </SelectTrigger>
@@ -428,7 +427,7 @@ export default function LeaveTypesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Statut</Label>
-                <Select value={formIsActive} onValueChange={setFormIsActive}>
+                <Select value={formIsActive} onValueChange={(value) => setFormIsActive(value ?? 'true')}>
                   <SelectTrigger>
                     <span className="flex flex-1 text-left">{formIsActive === 'true' ? 'Actif' : 'Inactif'}</span>
                   </SelectTrigger>
