@@ -737,11 +737,48 @@ export class LeaveService {
   async removeRequest(id: number) {
     const request = await this.prisma.leaveRequest.findUnique({
       where: { id },
-      include: { employee: { include: { user: true } } },
+      include: {
+        employee: { include: { user: true } },
+        leaveType: true,
+      },
     });
     if (!request) throw new NotFoundException('Demande introuvable');
-    await this.prisma.leaveRequestHistory.deleteMany({ where: { leaveRequestId: id } });
-    await this.prisma.leaveRequest.delete({ where: { id } });
+
+    await this.prisma.$transaction(async (tx) => {
+      if (request.leaveType.deductsFromAnnualBalance) {
+        const year = request.startDate.getFullYear();
+        const balance = await tx.leaveBalance.findUnique({
+          where: {
+            employeeId_leaveTypeId_year: {
+              employeeId: request.employeeId,
+              leaveTypeId: request.leaveTypeId,
+              year,
+            },
+          },
+        });
+
+        if (balance) {
+          const isApproved = request.status === 'APPROUVE';
+          const isPending = ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION'].includes(request.status);
+
+          if (isApproved && balance.usedDays >= request.duration) {
+            await tx.leaveBalance.update({
+              where: { id: balance.id },
+              data: { usedDays: balance.usedDays - request.duration },
+            });
+          } else if (isPending && balance.pendingDays >= request.duration) {
+            await tx.leaveBalance.update({
+              where: { id: balance.id },
+              data: { pendingDays: balance.pendingDays - request.duration },
+            });
+          }
+        }
+      }
+
+      await tx.leaveRequestHistory.deleteMany({ where: { leaveRequestId: id } });
+      await tx.leaveRequest.delete({ where: { id } });
+    });
+
     return { message: `Demande de ${request.employee.user.firstName} ${request.employee.user.lastName} supprimée` };
   }
 

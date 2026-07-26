@@ -6,10 +6,10 @@ import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
-import { CalendarDays, Send, AlertCircle, CheckCircle2, Clock, UserCheck, Calendar, ArrowRight } from 'lucide-react'
+import { CalendarDays, Send, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
-const WEEKEND_DAYS = [0, 6]
+const WEEKEND_DAYS = [0]
 
 function addWorkingDays(from: Date, count: number): Date {
   const d = new Date(from)
@@ -97,34 +97,34 @@ export default function MyCampaignPage() {
         </CardHeader>
         <CardContent>
           {!campaign ? (
-            <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-              <AlertCircle className="size-5 text-yellow-600 shrink-0 mt-0.5" />
+            <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+              <AlertCircle className="size-5 text-gray-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-yellow-800">Aucune campagne ouverte</p>
-                <p className="text-sm text-yellow-700 mt-1">
+                <p className="text-sm font-medium text-gray-800">Aucune campagne ouverte</p>
+                <p className="text-sm text-gray-600 mt-1">
                   Aucune campagne de programmation des congés n'est ouverte pour le moment. Revenez plus tard.
                 </p>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200">
                 <div>
-                  <p className="text-sm font-medium text-green-800">{campaign.label}</p>
-                  <p className="text-xs text-green-600 mt-0.5">Année {campaign.year}</p>
+                  <p className="text-sm font-medium text-gray-800">{campaign.label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Année {campaign.year}</p>
                 </div>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
                   Ouverte
                 </span>
               </div>
 
               {balance && (
-                <div className="flex items-center gap-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-700">{balance.available}</p>
-                    <p className="text-xs text-blue-600">jours disponibles</p>
+                    <p className="text-2xl font-bold text-gray-900">{balance.available}</p>
+                    <p className="text-xs text-gray-500">jours disponibles</p>
                   </div>
-                  <div className="text-sm text-blue-700 space-y-0.5">
+                  <div className="text-sm text-gray-600 space-y-0.5">
                     <p>Acquis : {balance.acquired} j</p>
                     <p>Consommés : {balance.consumed} j</p>
                   </div>
@@ -132,38 +132,36 @@ export default function MyCampaignPage() {
               )}
 
               {proposal ? (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                    <CheckCircle2 className="size-5 text-blue-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">Proposition soumise</p>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Date souhaitée : {formatDate(new Date(proposal.desiredStartDate))}
+                <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <CheckCircle2 className="size-5 text-gray-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-800">Proposition soumise</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Date souhaitée : {formatDate(new Date(proposal.desiredStartDate))}
+                    </p>
+                    {proposal.duration > 0 && (
+                      <p className="text-sm text-gray-600 mt-0.5">Durée : {proposal.duration} jour(s)</p>
+                    )}
+                    {proposal.endDate && (
+                      <p className="text-sm text-gray-600 mt-0.5">
+                        Fin estimée : {formatDate(new Date(proposal.endDate))}
                       </p>
-                      {proposal.duration > 0 && (
-                        <p className="text-sm text-blue-700 mt-1">Durée : {proposal.duration} jour(s)</p>
-                      )}
-                      {proposal.endDate && (
-                        <p className="text-sm text-blue-700 mt-1">
-                          Fin estimée : {formatDate(new Date(proposal.endDate))}
-                        </p>
-                      )}
-                      {proposal.returnDate && (
-                        <p className="text-sm text-blue-700 mt-1">
-                          Reprise : {formatDate(new Date(proposal.returnDate))}
-                        </p>
-                      )}
-                      {proposal.comment && (
-                        <p className="text-sm text-blue-700 mt-1">Commentaire : {proposal.comment}</p>
-                      )}
-                      <p className="text-sm text-blue-700 mt-1">Statut : {
-                        proposal.status === 'RECUE' ? 'Reçue' :
-                        proposal.status === 'EN_ANALYSE' ? 'En analyse' :
-                        proposal.status === 'ACCEPTEE' ? 'Acceptée' :
-                        proposal.status === 'REPROGRAMMEE' ? 'Reprogrammée' :
-                        proposal.status === 'REFUSEE' ? 'Refusée' : proposal.status
-                      }</p>
-                    </div>
+                    )}
+                    {proposal.returnDate && (
+                      <p className="text-sm text-gray-600 mt-0.5">
+                        Reprise : {formatDate(new Date(proposal.returnDate))}
+                      </p>
+                    )}
+                    {proposal.comment && (
+                      <p className="text-sm text-gray-600 mt-0.5">Commentaire : {proposal.comment}</p>
+                    )}
+                    <p className="text-sm text-gray-600 mt-0.5">Statut : {
+                      proposal.status === 'RECUE' ? 'Reçue' :
+                      proposal.status === 'EN_ANALYSE' ? 'En analyse' :
+                      proposal.status === 'ACCEPTEE' ? 'Acceptée' :
+                      proposal.status === 'REPROGRAMMEE' ? 'Reprogrammée' :
+                      proposal.status === 'REFUSEE' ? 'Refusée' : proposal.status
+                    }</p>
                   </div>
                 </div>
               ) : (
@@ -184,41 +182,21 @@ export default function MyCampaignPage() {
 
                   {preview && (
                     <div className="p-4 rounded-xl bg-gray-50 border border-gray-200 space-y-2">
-                      <p className="text-sm font-semibold text-gray-800 flex items-center gap-2 mb-3">
-                        <Calendar className="size-4" />
-                        Récapitulatif de votre proposition
+                      <p className="text-sm font-semibold text-gray-800 mb-2">
+                        Récapitulatif
                       </p>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <UserCheck className="size-4" />
-                          <span>Ancienneté</span>
-                        </div>
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+                        <span className="text-gray-500">Ancienneté</span>
                         <p className="font-medium text-gray-900">
                           {balance?.seniority || 'Calcul en cours...'}
                         </p>
-
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Clock className="size-4" />
-                          <span>Durée calculée</span>
-                        </div>
+                        <span className="text-gray-500">Durée calculée</span>
                         <p className="font-medium text-gray-900">{duration} jour(s)</p>
-
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Calendar className="size-4" />
-                          <span>Début</span>
-                        </div>
+                        <span className="text-gray-500">Début</span>
                         <p className="font-medium text-gray-900">{formatDate(preview.start)}</p>
-
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <ArrowRight className="size-4" />
-                          <span>Fin estimée</span>
-                        </div>
+                        <span className="text-gray-500">Fin estimée</span>
                         <p className="font-medium text-gray-900">{formatDate(preview.end)}</p>
-
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Calendar className="size-4" />
-                          <span>Reprise estimée</span>
-                        </div>
+                        <span className="text-gray-500">Reprise estimée</span>
                         <p className="font-medium text-gray-900">{formatDate(preview.return)}</p>
                       </div>
                     </div>

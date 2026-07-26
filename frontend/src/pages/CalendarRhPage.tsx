@@ -611,6 +611,8 @@ export default function CalendarRhPage() {
 
                 {days.map((dayData) => {
                   const isToday = dayData.day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear()
+                  const dateObj = new Date(year, month - 1, dayData.day)
+                  const isSunday = dateObj.getDay() === 0
                   const dayHolidays = dayData.items.filter((i) => i.type === 'holiday')
                   const dayEvents = dayData.items.filter((i) => i.type === 'event')
                   const dayLeaves = dayData.items.filter((i) => i.type === 'leave')
@@ -620,19 +622,21 @@ export default function CalendarRhPage() {
                     <div
                       key={dayData.day}
                       className={cn(
-                        'bg-white min-h-[110px] p-1.5 transition-colors duration-150 hover:bg-gray-50 relative',
-                        isToday && 'ring-2 ring-primary ring-inset',
-                        dayData.hasConflict && 'ring-1 ring-red-300 ring-inset bg-red-50/30',
+                        'min-h-[110px] p-1.5 transition-colors duration-150 relative',
+                        isSunday ? 'bg-gray-50 opacity-40' : 'bg-white hover:bg-gray-50',
+                        isToday && !isSunday && 'ring-2 ring-primary ring-inset',
+                        dayData.hasConflict && !isSunday && 'ring-1 ring-red-300 ring-inset bg-red-50/30',
                       )}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className={cn(
                           'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full',
-                          isToday && 'bg-primary text-white',
+                          isToday && !isSunday && 'bg-primary text-white',
+                          isSunday && 'text-gray-400',
                         )}>
                           {dayData.day}
                         </div>
-                        {dayData.hasConflict && (
+                        {dayData.hasConflict && !isSunday && (
                           <Tooltip content="Voir le conflit">
                             <button
                               onClick={(e) => {
@@ -648,6 +652,7 @@ export default function CalendarRhPage() {
                         )}
                       </div>
 
+                      {!isSunday && (
                       <div className="space-y-0.5">
                         {dayHolidays.slice(0, 1).map((item, i) => (
                           <button
@@ -704,6 +709,7 @@ export default function CalendarRhPage() {
                           </div>
                         )}
                       </div>
+                      )}
                     </div>
                   )
                 })}

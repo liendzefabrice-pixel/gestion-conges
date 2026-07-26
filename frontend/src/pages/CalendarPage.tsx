@@ -164,67 +164,73 @@ export default function CalendarPage() {
                 {days.map((dayData) => {
                   const isToday =
                     dayData.day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear()
+                  const dateObj = new Date(year, month - 1, dayData.day)
+                  const isSunday = dateObj.getDay() === 0
                   return (
                     <div
                       key={dayData.day}
                       className={cn(
-                        'bg-white min-h-[100px] p-1.5 transition-colors duration-150 hover:bg-gray-50',
-                        isToday && 'ring-2 ring-primary ring-inset',
+                        'min-h-[100px] p-1.5 transition-colors duration-150',
+                        isSunday ? 'bg-gray-50 opacity-40' : 'bg-white hover:bg-gray-50',
+                        isToday && !isSunday && 'ring-2 ring-primary ring-inset',
                       )}
                     >
                       <div className={cn(
                         'text-xs font-semibold mb-1 w-6 h-6 flex items-center justify-center rounded-full',
-                        isToday && 'bg-primary text-white',
+                        isToday && !isSunday && 'bg-primary text-white',
+                        isSunday && 'text-gray-400',
                       )}>
                         {dayData.day}
                       </div>
 
-                      {/* Holidays */}
-                      {dayData.holidays.map((h: any, i: number) => (
-                        <button
-                          key={`hol-${i}`}
-                          onClick={() => setDetail({ type: 'holiday', data: h })}
-                          className="w-full text-[10px] px-1 py-0.5 rounded bg-red-100 text-red-700 mb-0.5 truncate text-left hover:bg-red-200 transition-colors cursor-pointer"
-                        >
-                          🎉 {h.name}
-                        </button>
-                      ))}
+                      {!isSunday && (<>
+                        {/* Holidays */}
+                        {dayData.holidays.map((h: any, i: number) => (
+                          <button
+                            key={`hol-${i}`}
+                            onClick={() => setDetail({ type: 'holiday', data: h })}
+                            className="w-full text-[10px] px-1 py-0.5 rounded bg-red-100 text-red-700 mb-0.5 truncate text-left hover:bg-red-200 transition-colors cursor-pointer"
+                          >
+                            🎉 {h.name}
+                          </button>
+                        ))}
 
-                      {/* Events */}
-                      {dayData.events.map((e: any, i: number) => (
-                        <button
-                          key={`evt-${i}`}
-                          onClick={() => setDetail({ type: 'event', data: e })}
-                          className={cn(
-                            'w-full text-[10px] px-1 py-0.5 rounded mb-0.5 truncate text-left transition-colors cursor-pointer hover:opacity-80',
-                            eventTypeColors[e.type] || 'border-l-4 border-l-green-500',
-                            priorityColors[e.priority] || 'bg-gray-100',
-                          )}
-                          title={`${e.title} (${e.type})`}
-                        >
-                          {e.title}
-                        </button>
-                      ))}
+                        {/* Events */}
+                        {dayData.events.map((e: any, i: number) => (
+                          <button
+                            key={`evt-${i}`}
+                            onClick={() => setDetail({ type: 'event', data: e })}
+                            className={cn(
+                              'w-full text-[10px] px-1 py-0.5 rounded mb-0.5 truncate text-left transition-colors cursor-pointer hover:opacity-80',
+                              eventTypeColors[e.type] || 'border-l-4 border-l-green-500',
+                              priorityColors[e.priority] || 'bg-gray-100',
+                            )}
+                            title={`${e.title} (${e.type})`}
+                          >
+                            {e.title}
+                          </button>
+                        ))}
 
-                      {/* Leaves */}
-                      {dayData.leaves.slice(0, 2).map((l: any, i: number) => (
-                        <button
-                          key={`leave-${i}`}
-                          onClick={() => setDetail({ type: 'leave', data: l })}
-                          className={cn(
-                            'w-full text-[10px] px-1 py-0.5 rounded mb-0.5 truncate text-left border transition-colors cursor-pointer hover:opacity-80',
-                            leaveStatusColors[l.status] || 'bg-gray-100',
-                          )}
-                          title={`${l.employee?.firstName} ${l.employee?.lastName} - ${l.leaveType?.name}`}
-                        >
-                          {l.employee?.firstName} {l.employee?.lastName?.[0]}.
-                        </button>
-                      ))}
-                      {dayData.leaves.length > 2 && (
-                        <div className="text-[10px] text-muted-foreground px-1">
-                          +{dayData.leaves.length - 2} autres
-                        </div>
-                      )}
+                        {/* Leaves */}
+                        {dayData.leaves.slice(0, 2).map((l: any, i: number) => (
+                          <button
+                            key={`leave-${i}`}
+                            onClick={() => setDetail({ type: 'leave', data: l })}
+                            className={cn(
+                              'w-full text-[10px] px-1 py-0.5 rounded mb-0.5 truncate text-left border transition-colors cursor-pointer hover:opacity-80',
+                              leaveStatusColors[l.status] || 'bg-gray-100',
+                            )}
+                            title={`${l.employee?.firstName} ${l.employee?.lastName} - ${l.leaveType?.name}`}
+                          >
+                            {l.employee?.firstName} {l.employee?.lastName?.[0]}.
+                          </button>
+                        ))}
+                        {dayData.leaves.length > 2 && (
+                          <div className="text-[10px] text-muted-foreground px-1">
+                            +{dayData.leaves.length - 2} autres
+                          </div>
+                        )}
+                      </>)}
                     </div>
                   )
                 })}

@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { LeaveBalancesService } from './leave-balances.service';
 import { AdjustBalanceDto } from './dto/adjust-balance.dto';
@@ -45,6 +46,12 @@ export class LeaveBalancesController {
     @CurrentUser() user: { id: number },
   ) {
     return this.leaveBalancesService.adjustBalance(id, dto, user.id);
+  }
+
+  @Post('recalculate')
+  @Roles('HR', 'ADMIN')
+  recalculate(@Query('employeeId') employeeId?: string) {
+    return this.leaveBalancesService.recalculate(employeeId ? Number(employeeId) : undefined);
   }
 
   @Get(':id/adjustments')
