@@ -3,22 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../contexts/AuthContext'
 import api from '../services/api'
 import type { LeaveBalance, BalanceAdjustment, EmployeeBalance } from '../types'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { Button } from '../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Card, CardContent } from '../components/ui/card'
 import { PageHeader } from '../components/ui/page-header'
-import { Badge } from '../components/ui/badge'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Textarea } from '../components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../components/ui/select'
-import { Calendar, Clock, History, Plus, Minus, ChevronDown, ChevronUp, Search } from 'lucide-react'
+import { History, Plus, Minus, ChevronDown, ChevronUp, Search } from 'lucide-react'
 import { cn } from '../lib/utils'
 
 const operationLabels: Record<string, string> = {
@@ -28,6 +19,10 @@ const operationLabels: Record<string, string> = {
   CREDIT_EXCEPTIONNEL: 'Crédit exceptionnel',
   REPORT: 'Report annuel',
   REGULARISATION: 'Régularisation',
+}
+
+function isAnnual(balance: LeaveBalance): boolean {
+  return balance.leaveType?.name?.toLowerCase().includes('annuel')
 }
 
 function BalanceCard({
@@ -46,21 +41,20 @@ function BalanceCard({
     enabled: showHistory && role === 'ADMIN',
   })
 
-  const color = balance.leaveType.color || '#0B6B3A'
   const usagePercent = balance.totalDays > 0 ? Math.round(((balance.usedDays + balance.pendingDays) / (balance.totalDays + balance.adjustedDays)) * 100) : 0
   const isLow = balance.remaining <= 2
   const isExhausted = balance.remaining <= 0
 
   return (
-    <Card className="border-l-4 overflow-hidden" style={{ borderLeftColor: color }}>
+    <Card className="border-l-4 overflow-hidden" style={{ borderLeftColor: '#0B6B3A' }}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="font-semibold text-base" style={{ color }}>{balance.leaveType.name}</p>
+            <p className="font-semibold text-base">Solde annuel</p>
             <p className="text-xs text-muted-foreground mt-0.5">Année {balance.year}</p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold" style={{ color }}>
+            <p className="text-3xl font-bold text-primary">
               {balance.remaining}
             </p>
             <p className="text-xs text-muted-foreground">jour{balance.remaining > 1 ? 's' : ''} restant{balance.remaining > 1 ? 's' : ''}</p>
@@ -72,7 +66,7 @@ function BalanceCard({
             className="h-full rounded-full transition-all duration-500"
             style={{
               width: `${Math.min(usagePercent, 100)}%`,
-              backgroundColor: isExhausted ? '#DC2626' : isLow ? '#F59E0B' : color,
+              backgroundColor: isExhausted ? '#DC2626' : isLow ? '#F59E0B' : '#0B6B3A',
             }}
           />
         </div>
@@ -172,8 +166,8 @@ function AdjustModal({
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="p-5 border-b">
-          <h2 className="text-lg font-bold">Ajuster le solde</h2>
-          <p className="text-sm text-muted-foreground mt-1">{balance.leaveType.name} — {balance.employee?.user?.email || `Année ${balance.year}`}</p>
+          <h2 className="text-lg font-bold">Ajuster le solde annuel</h2>
+          <p className="text-sm text-muted-foreground mt-1">{balance.employee?.user?.email || `Année ${balance.year}`}</p>
         </div>
         <div className="p-5 space-y-4">
           <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
@@ -234,7 +228,6 @@ function AdjustModal({
 export default function SoldesPage() {
   const { user } = useAuth()
   const role = user?.role?.name || ''
-  const [selectedEmployee, setSelectedEmployee] = useState<string>('')
   const [adjustingBalance, setAdjustingBalance] = useState<LeaveBalance & { leaveType: { color?: string; name: string } } | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -250,12 +243,6 @@ export default function SoldesPage() {
     enabled: role !== 'EMPLOYEE',
   })
 
-  const { data: selectedEmployeeBalances } = useQuery<EmployeeBalance>({
-    queryKey: ['balances', 'employee', selectedEmployee],
-    queryFn: () => api.get(`/leave-balances/${selectedEmployee}`).then((r) => r.data),
-    enabled: !!selectedEmployee,
-  })
-
   const queryClient = useQueryClient()
 
   const handleAdjustSuccess = () => {
@@ -263,100 +250,23 @@ export default function SoldesPage() {
     queryClient.invalidateQueries({ queryKey: ['balances'] })
   }
 
-  const { data: permBalance } = useQuery({
-    queryKey: ['permission-balance', 'my'],
-    queryFn: () => api.get('/permissions/balance').then((r) => r.data),
-    enabled: role === 'EMPLOYEE',
-  })
-
   if (role === 'EMPLOYEE') {
-    const currentYear = new Date().getFullYear()
-    const activeBalances = myBalances.filter((b) => b.year === currentYear)
-    const totalRemaining = activeBalances.reduce((sum, b) => sum + b.remaining, 0)
-    const perm = permBalance?.[0]
+    const annualBalances = myBalances.filter(isAnnual)
 
     return (
       <div className="space-y-6">
         <PageHeader
-          title="Mes soldes"
-          description="Consultez l'état de vos compteurs de congés et permissions"
+          title="Solde annuel"
+          description="Consultez votre solde de congé annuel"
         />
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-primary">{totalRemaining}</p>
-              <p className="text-xs text-muted-foreground mt-1">Jours de congé restants</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold">{activeBalances.length}</p>
-              <p className="text-xs text-muted-foreground mt-1">Types de congés</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-amber-600">
-                {activeBalances.reduce((s, b) => s + b.pendingDays, 0)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">En attente</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-purple-600">
-                {perm ? perm.totalDays + perm.adjustedDays - perm.usedDays - perm.pendingDays : 0}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">Permissions restantes</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-blue-600">{currentYear}</p>
-              <p className="text-xs text-muted-foreground mt-1">Année en cours</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {activeBalances.map((b) => (
-            <BalanceCard key={b.id} balance={b} role={role} />
-          ))}
-        </div>
-
-        {perm && (
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">Solde des permissions {perm.year}</h3>
-            <div className="grid grid-cols-4 gap-3 text-center">
-              <div className="p-4 rounded-xl bg-gray-50 border">
-                <p className="text-lg font-bold">{perm.totalDays}</p>
-                <p className="text-xs text-muted-foreground">Acquis</p>
-              </div>
-              <div className="p-4 rounded-xl bg-gray-50 border">
-                <p className="text-lg font-bold text-red-600">{perm.usedDays}</p>
-                <p className="text-xs text-muted-foreground">Utilisés</p>
-              </div>
-              <div className="p-4 rounded-xl bg-gray-50 border">
-                <p className="text-lg font-bold text-amber-600">{perm.pendingDays}</p>
-                <p className="text-xs text-muted-foreground">En attente</p>
-              </div>
-              <div className="p-4 rounded-xl bg-green-50 border border-green-200">
-                <p className="text-lg font-bold text-green-700">{perm.totalDays + perm.adjustedDays - perm.usedDays - perm.pendingDays}</p>
-                <p className="text-xs text-green-600">Disponibles</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {myBalances.some((b) => b.year !== currentYear) && (
-          <div>
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">Années précédentes</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {myBalances.filter((b) => b.year !== currentYear).map((b) => (
-                <BalanceCard key={b.id} balance={b} role={role} />
-              ))}
-            </div>
+        {annualBalances.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">Aucun solde annuel disponible</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {annualBalances.map((b) => (
+              <BalanceCard key={b.id} balance={b} role={role} />
+            ))}
           </div>
         )}
       </div>
@@ -373,30 +283,28 @@ export default function SoldesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Soldes des congés"
-        description="Consultez les soldes de congés des employés"
+        title="Soldes annuels"
+        description="Consultez les soldes de congé annuel des employés"
       />
 
-      {role === 'ADMIN' && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input
-                placeholder="Rechercher un employé (nom, email, matricule)..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Card>
+        <CardContent className="p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un employé (nom, email, matricule)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {filteredEmployees.map((eb) => {
-          const currentYearBalances = eb.balances.filter((b) => b.year === new Date().getFullYear())
-          const totalRemaining = currentYearBalances.reduce((s, b) => s + b.remaining, 0)
+          const annualBalances = eb.balances.filter(isAnnual)
+          if (annualBalances.length === 0) return null
 
           return (
             <details key={eb.employee.id} className="group">
@@ -410,7 +318,7 @@ export default function SoldesPage() {
                         <p className="text-xs text-muted-foreground">{eb.employee.user.email}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-primary">{totalRemaining}</p>
+                        <p className="text-xl font-bold text-primary">{annualBalances[0].remaining}</p>
                         <p className="text-xs text-muted-foreground">jours restants</p>
                       </div>
                     </div>
@@ -418,7 +326,7 @@ export default function SoldesPage() {
                 </Card>
               </summary>
               <div className="mt-2 space-y-3 pl-4 border-l-2 border-muted">
-                {currentYearBalances.map((b) => (
+                {annualBalances.map((b) => (
                   <BalanceCard
                     key={b.id}
                     balance={b}

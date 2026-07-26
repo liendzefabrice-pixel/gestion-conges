@@ -486,6 +486,28 @@ export class LeaveService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      if (request.leaveType.deductsFromAnnualBalance && dto.decision === 'APPROUVE') {
+        const year = request.startDate.getFullYear();
+        const leaveBalance = await tx.leaveBalance.findUnique({
+          where: {
+            employeeId_leaveTypeId_year: {
+              employeeId: request.employeeId,
+              leaveTypeId: request.leaveTypeId,
+              year,
+            },
+          },
+        });
+
+        if (leaveBalance) {
+          const remaining = leaveBalance.totalDays + leaveBalance.adjustedDays - leaveBalance.usedDays - leaveBalance.pendingDays;
+          if (remaining < request.duration) {
+            throw new BadRequestException(
+              `Solde annuel insuffisant. ${remaining} jour(s) disponible(s), ${request.duration} jour(s) demandé(s).`,
+            );
+          }
+        }
+      }
+
       const updated = await tx.leaveRequest.update({
         where: { id },
         data: {

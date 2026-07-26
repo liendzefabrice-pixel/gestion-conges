@@ -426,7 +426,9 @@ function EmployeeDashboard({ data, user }: { data: DashboardEmployee; user: User
     queryFn: () => api.get('/notifications/unread/count').then((r) => r.data.count ?? r.data ?? 0),
   })
 
-  const totalRemaining = data.balances.reduce((sum, b) => sum + b.remaining, 0)
+  const totalRemaining = data.balances
+    .filter((b) => b.type.toLowerCase().includes('annuel'))
+    .reduce((sum, b) => sum + b.remaining, 0)
   const pendingCount = myLeaves.filter((l) => l.status === 'EN_ATTENTE_RH' || l.status === 'AVIS_RH_RENDU').length
   const approvedCount = myLeaves.filter((l) => l.status === 'APPROUVE').length
   const rejectedCount = myLeaves.filter((l) => l.status === 'REFUSE').length
@@ -467,21 +469,11 @@ function EmployeeDashboard({ data, user }: { data: DashboardEmployee; user: User
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-gray-500">
               <WalletCards className="size-4" />
-              Solde de congés
+              Solde des congés annuels
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-gray-900">{totalRemaining} jour{totalRemaining > 1 ? 's' : ''}</p>
-            {data.balances.length > 0 && (
-              <div className="mt-3 space-y-1">
-                {data.balances.map((b) => (
-                  <div key={b.type} className="flex justify-between text-sm">
-                    <span className="text-gray-500">{b.type}</span>
-                    <span className="font-medium text-gray-700">{b.remaining} j</span>
-                  </div>
-                ))}
-              </div>
-            )}
           </CardContent>
         </Card>
 

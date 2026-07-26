@@ -140,7 +140,7 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
                 <SelectValue placeholder="Sélectionner un type" />
               </SelectTrigger>
                <SelectContent>
-                  {leaveTypes?.filter((t) => !t.name.toLowerCase().includes('annuel')).map((t) => (
+                   {leaveTypes?.map((t) => (
                     <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
                   ))}
                 </SelectContent>
