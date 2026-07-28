@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { LeaveBalancesService } from './leave-balances.service';
+import { LeaveBalanceReconciliationService } from '../leave-balance-reconciliation/leave-balance-reconciliation.service';
 import { AdjustBalanceDto } from './dto/adjust-balance.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -18,7 +19,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 @Controller('leave-balances')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LeaveBalancesController {
-  constructor(private readonly leaveBalancesService: LeaveBalancesService) {}
+  constructor(
+    private readonly leaveBalancesService: LeaveBalancesService,
+    private readonly reconciliationService: LeaveBalanceReconciliationService,
+  ) {}
 
   @Get('my')
   @Roles('EMPLOYEE', 'HR', 'DIRECTOR', 'ADMIN')
@@ -52,6 +56,12 @@ export class LeaveBalancesController {
   @Roles('HR', 'ADMIN')
   recalculate(@Query('employeeId') employeeId?: string) {
     return this.leaveBalancesService.recalculate(employeeId ? Number(employeeId) : undefined);
+  }
+
+  @Post('reconcile')
+  @Roles('ADMIN')
+  async reconcile() {
+    return this.reconciliationService.reconcile();
   }
 
   @Get(':id/adjustments')

@@ -1,13 +1,13 @@
 import { IsString, IsDateString, MinLength, MaxLength, IsOptional, IsEnum } from 'class-validator';
 
 export class CreatePermissionRequestDto {
-  @IsDateString()
+  @IsDateString({}, { message: 'La date de début est requise et doit être une date valide' })
   startDate: string;
 
-  @IsDateString()
+  @IsDateString({}, { message: 'La date de fin est requise et doit être une date valide' })
   endDate: string;
 
-  @IsString()
+  @IsString({ message: 'Le motif est requis' })
   @MinLength(3, { message: 'Le motif doit contenir au moins 3 caractères' })
   @MaxLength(500, { message: 'Le motif ne peut pas dépasser 500 caractères' })
   reason: string;

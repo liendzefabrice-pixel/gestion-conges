@@ -245,11 +245,12 @@ export class PermissionsService {
       const updated = await tx.permissionRequest.update({
         where: { id },
         data: {
-          status: 'AVIS_RH_RENDU',
+          status: 'EN_ATTENTE_DIRECTION',
           hrComment: dto.hrComment,
           hrOpinion: dto.hrOpinion,
           reviewedById: userId,
           reviewedAt: new Date(),
+          transmittedAt: new Date(),
         },
         include: {
           employee: {
@@ -259,10 +260,10 @@ export class PermissionsService {
         },
       });
 
-      await this.recordHistory(tx, id, 'EN_ATTENTE_RH', 'AVIS_RH_RENDU', userId, dto.hrComment || undefined);
+      await this.recordHistory(tx, id, 'EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION', userId, dto.hrComment || undefined);
       await this.recordAuditLog(tx, 'PERMISSION_REQUEST_REVIEWED', id, userId,
         { status: 'EN_ATTENTE_RH' },
-        { status: 'AVIS_RH_RENDU', hrOpinion: dto.hrOpinion },
+        { status: 'EN_ATTENTE_DIRECTION', hrOpinion: dto.hrOpinion },
       );
 
       const rhName = updated.reviewedBy?.email || 'RH';

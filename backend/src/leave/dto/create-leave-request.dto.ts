@@ -7,17 +7,17 @@ import {
 } from 'class-validator';
 
 export class CreateLeaveRequestDto {
-  @IsInt()
+  @IsInt({ message: 'Le type de congé est requis et doit être un nombre' })
   leaveTypeId: number;
 
-  @IsDateString()
+  @IsDateString({}, { message: 'La date de début est requise et doit être une date valide' })
   startDate: string;
 
-  @IsDateString()
+  @IsDateString({}, { message: 'La date de fin est requise et doit être une date valide' })
   endDate: string;
 
-  @IsString()
-  @MinLength(3)
-  @MaxLength(500)
+  @IsString({ message: 'Le motif est requis' })
+  @MinLength(3, { message: 'Le motif doit contenir au moins 3 caractères' })
+  @MaxLength(500, { message: 'Le motif ne peut pas dépasser 500 caractères' })
   reason: string;
 }

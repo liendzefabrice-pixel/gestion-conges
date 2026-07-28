@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
@@ -24,12 +25,14 @@ import { CalendarRhModule } from './calendar-rh/calendar-rh.module';
 import { DecisionEngineModule } from './decision-engine/decision-engine.module';
 import { SkillsModule } from './skills/skills.module';
 import { MailModule } from './mail/mail.module';
+import { LeaveBalanceReconciliationModule } from './leave-balance-reconciliation/leave-balance-reconciliation.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{
       ttl: 60000,
       limit: 100,
@@ -56,6 +59,7 @@ import { MailModule } from './mail/mail.module';
     NotificationsModule,
     DashboardModule,
     UsersModule,
+    LeaveBalanceReconciliationModule,
   ],
   controllers: [],
   providers: [

@@ -369,7 +369,7 @@ export class LeaveService {
       const updated = await tx.leaveRequest.update({
         where: { id },
         data: {
-          status: 'AVIS_RH_RENDU',
+          status: 'EN_ATTENTE_DIRECTION',
           hrComment: hrReviewDto.hrComment,
           hrOpinion: hrReviewDto.hrOpinion,
           reviewedById: userId,
@@ -388,7 +388,7 @@ export class LeaveService {
         tx,
         id,
         'EN_ATTENTE_RH',
-        'AVIS_RH_RENDU',
+        'EN_ATTENTE_DIRECTION',
         userId,
         hrReviewDto.hrComment || undefined,
       );
@@ -399,7 +399,7 @@ export class LeaveService {
         id,
         userId,
         { status: 'EN_ATTENTE_RH' },
-        { status: 'AVIS_RH_RENDU', hrOpinion: hrReviewDto.hrOpinion, hrComment: hrReviewDto.hrComment },
+        { status: 'EN_ATTENTE_DIRECTION', hrOpinion: hrReviewDto.hrOpinion, hrComment: hrReviewDto.hrComment },
       );
 
       const rhName = updated.reviewedBy?.email || 'RH';
@@ -521,7 +521,8 @@ export class LeaveService {
         });
 
         if (leaveBalance) {
-          const remaining = leaveBalance.totalDays + leaveBalance.adjustedDays - leaveBalance.usedDays - leaveBalance.pendingDays;
+          const otherPendingDays = Math.max(0, leaveBalance.pendingDays - request.duration);
+          const remaining = leaveBalance.totalDays + leaveBalance.adjustedDays - leaveBalance.usedDays - otherPendingDays;
           if (remaining < request.duration) {
             throw new BadRequestException(
               `Solde annuel insuffisant. ${remaining} jour(s) disponible(s), ${request.duration} jour(s) demandé(s).`,
@@ -592,7 +593,7 @@ export class LeaveService {
             await tx.balanceAdjustment.create({
               data: {
                 operationType: 'DEDUCTION_CONGES',
-                previousRemaining: leaveBalance.totalDays + leaveBalance.adjustedDays - leaveBalance.usedDays - leaveBalance.pendingDays,
+                previousRemaining: leaveBalance.totalDays + leaveBalance.adjustedDays - leaveBalance.usedDays - Math.max(0, leaveBalance.pendingDays - request.duration),
                 newRemaining: leaveBalance.totalDays + leaveBalance.adjustedDays - (leaveBalance.usedDays + request.duration) - Math.max(0, newPendingDays),
                 comment: `Congé ${request.leaveType.name} approuvé : ${request.duration} jour(s) du ${request.startDate.toLocaleDateString()} au ${request.endDate.toLocaleDateString()}`,
                 leaveBalanceId: leaveBalance.id,

@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Textarea } from '../components/ui/textarea';
 import { CalendarDays, User, FileText, MessageSquare, Scale, History, Loader2, ArrowRight } from 'lucide-react';
+import { toast } from './Toast';
 
 type RequestType = LeaveRequest | PermissionRequest;
 
@@ -118,6 +119,8 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
       await api.patch(endpoint, { hrComment, hrOpinion });
       onRefresh();
       onClose();
+    } catch (err: any) {
+      toast(err.response?.data?.message || 'Erreur lors de l\'avis RH', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -130,6 +133,8 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
       await api.patch(endpoint);
       onRefresh();
       onClose();
+    } catch (err: any) {
+      toast(err.response?.data?.message || 'Erreur lors de la transmission', 'error');
     } finally {
       setTransmitting(false);
     }
@@ -143,6 +148,8 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
       await api.patch(endpoint, { decision, directorComment });
       onRefresh();
       onClose();
+    } catch (err: any) {
+      toast(err.response?.data?.message || 'Erreur lors de la décision', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -154,6 +161,8 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
       await api.patch(`/leave/requests/${r.id}/cancel`);
       onRefresh();
       onClose();
+    } catch (err: any) {
+      toast(err.response?.data?.message || 'Erreur lors de l\'annulation', 'error');
     } finally {
       setCancelling(false);
     }
