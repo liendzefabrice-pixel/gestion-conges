@@ -99,6 +99,15 @@ export class PermissionsController {
     return this.permissionsService.getPermissionBalances(employee.id);
   }
 
+  @Patch('requests/:id/archive')
+  @Roles('HR', 'DIRECTOR', 'ADMIN')
+  archiveRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.permissionsService.archiveRequest(id, user.id);
+  }
+
   @Patch('requests/:id/cancel')
   @Roles('EMPLOYEE', 'HR', 'ADMIN')
   async cancelRequest(

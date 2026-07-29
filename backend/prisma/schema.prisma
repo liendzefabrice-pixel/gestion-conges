@@ -15,6 +15,7 @@ enum LeaveStatus {
   APPROUVE
   REFUSE
   ANNULE
+  ARCHIVE
 }
 
 enum CampaignStatus {

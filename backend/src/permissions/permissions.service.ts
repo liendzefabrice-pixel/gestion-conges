@@ -446,6 +446,31 @@ export class PermissionsService {
     });
   }
 
+  async archiveRequest(id: number, userId: number) {
+    const request = await this.prisma.permissionRequest.findUnique({
+      where: { id },
+      include: { employee: { include: { user: true } } },
+    });
+    if (!request) throw new NotFoundException('Demande introuvable');
+    if (request.status === 'ARCHIVE') throw new BadRequestException('Cette demande est déjà archivée');
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.permissionRequest.update({
+        where: { id },
+        data: { status: 'ARCHIVE' },
+      });
+
+      await this.recordHistory(tx, id, request.status, 'ARCHIVE', userId);
+      await this.recordAuditLog(tx, 'PERMISSION_REQUEST_ARCHIVED', id, userId,
+        { status: request.status },
+        { status: 'ARCHIVE' },
+      );
+    });
+
+    const employeeName = `${request.employee.user.firstName || ''} ${request.employee.user.lastName || ''}`.trim() || request.employee.user.email;
+    return { message: `Demande de ${employeeName} archivée` };
+  }
+
   async getPermissionBalances(employeeId: number) {
     return this.prisma.permissionBalance.findMany({
       where: { employeeId },

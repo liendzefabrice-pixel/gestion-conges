@@ -25,6 +25,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   APPROUVE: { label: 'Approuvé', variant: 'success', color: 'text-green-700 bg-green-100' },
   REFUSE: { label: 'Refusé', variant: 'danger', color: 'text-red-700 bg-red-100' },
   ANNULE: { label: 'Annulé', variant: 'outline', color: 'text-gray-500 bg-gray-100' },
+  ARCHIVE: { label: 'Archivé', variant: 'secondary', color: 'text-gray-500 bg-gray-100' },
 };
 
 const permissionTypeLabels: Record<string, string> = {
@@ -178,8 +179,8 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white border-b z-10 p-5 flex items-center justify-between rounded-t-xl">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white dark:bg-gray-900 border-b dark:border-gray-700 z-10 p-5 flex items-center justify-between rounded-t-xl">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-bold">
               {isLeave ? 'Demande de congé' : 'Demande de permission'}
@@ -249,11 +250,11 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
           </SectionCard>
 
           {canReview && (
-            <Card className="border-2 border-amber-200 bg-amber-50/50">
-              <CardContent className="p-5 space-y-4">
+            <Card>
+              <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
-                  <MessageSquare className="size-4 text-amber-600" />
-                  <h3 className="font-semibold text-amber-800">Avis RH</h3>
+                  <MessageSquare className="size-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Avis RH</h3>
                 </div>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -295,11 +296,11 @@ export default function RequestDetailModal({ request, type, role, onClose, onRef
           )}
 
           {canDecide && (
-            <Card className="border-2 border-blue-200 bg-blue-50/50">
-              <CardContent className="p-5 space-y-4">
+            <Card>
+              <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2">
-                  <Scale className="size-4 text-blue-600" />
-                  <h3 className="font-semibold text-blue-800">Décision de la direction</h3>
+                  <Scale className="size-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Décision de la direction</h3>
                 </div>
                 <Textarea rows={3} placeholder="Commentaire (obligatoire)" value={directorComment} onChange={(e) => setDirectorComment(e.target.value)} />
                 <div className="flex gap-2 justify-end">

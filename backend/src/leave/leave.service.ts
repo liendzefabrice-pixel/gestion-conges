@@ -210,6 +210,30 @@ export class LeaveService {
       throw new BadRequestException('La période sélectionnée ne contient aucun jour ouvrable');
     }
 
+    if (leaveType.deductsFromAnnualBalance) {
+      const year = startDate.getFullYear();
+      const balance = await this.prisma.leaveBalance.findUnique({
+        where: {
+          employeeId_leaveTypeId_year: {
+            employeeId,
+            leaveTypeId: createLeaveRequestDto.leaveTypeId,
+            year,
+          },
+        },
+      });
+
+      if (balance) {
+        const remaining = balance.totalDays + balance.adjustedDays - balance.usedDays - balance.pendingDays;
+        if (remaining < duration) {
+          throw new BadRequestException({
+            message: 'Solde insuffisant.',
+            remainingDays: remaining,
+            requestedDays: duration,
+          });
+        }
+      }
+    }
+
     const returnDate = await this.computeReturnDate(endDate, 1);
 
     return this.prisma.$transaction(async (tx) => {
@@ -261,28 +285,6 @@ export class LeaveService {
         }
       }
 
-      let warning: string | undefined;
-
-      if (leaveType.deductsFromAnnualBalance) {
-        const year = startDate.getFullYear();
-        const balance = await tx.leaveBalance.findUnique({
-          where: {
-            employeeId_leaveTypeId_year: {
-              employeeId,
-              leaveTypeId: createLeaveRequestDto.leaveTypeId,
-              year,
-            },
-          },
-        });
-
-        if (balance) {
-          const remaining = balance.totalDays + balance.adjustedDays - balance.usedDays - balance.pendingDays;
-          if (remaining < 0) {
-            warning = `Attention : votre demande dépasse votre solde disponible de ${Math.abs(remaining)} jour(s).`;
-          }
-        }
-      }
-
       const employeeName = `${request.employee.user.firstName || ''} ${request.employee.user.lastName || ''}`.trim() || request.employee.user.email;
       this.notificationsService.leaveCreated(
         request.id,
@@ -293,7 +295,7 @@ export class LeaveService {
         endDate,
       );
 
-      return warning ? { request, warning } : request;
+      return request;
     });
   }
 
@@ -755,6 +757,63 @@ export class LeaveService {
     }
 
     return employee;
+  }
+
+  async archiveRequest(id: number, userId: number) {
+    const request = await this.prisma.leaveRequest.findUnique({
+      where: { id },
+      include: {
+        employee: { include: { user: true } },
+        leaveType: true,
+      },
+    });
+    if (!request) throw new NotFoundException('Demande introuvable');
+    if (request.status === 'ARCHIVE') throw new BadRequestException('Cette demande est déjà archivée');
+
+    await this.prisma.$transaction(async (tx) => {
+      if (request.leaveType.deductsFromAnnualBalance) {
+        const year = request.startDate.getFullYear();
+        const balance = await tx.leaveBalance.findUnique({
+          where: {
+            employeeId_leaveTypeId_year: {
+              employeeId: request.employeeId,
+              leaveTypeId: request.leaveTypeId,
+              year,
+            },
+          },
+        });
+
+        if (balance) {
+          const isApproved = request.status === 'APPROUVE';
+          const isPending = ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION'].includes(request.status);
+
+          if (isApproved && balance.usedDays >= request.duration) {
+            await tx.leaveBalance.update({
+              where: { id: balance.id },
+              data: { usedDays: balance.usedDays - request.duration },
+            });
+          } else if (isPending && balance.pendingDays >= request.duration) {
+            await tx.leaveBalance.update({
+              where: { id: balance.id },
+              data: { pendingDays: balance.pendingDays - request.duration },
+            });
+          }
+        }
+      }
+
+      await tx.leaveRequest.update({
+        where: { id },
+        data: { status: 'ARCHIVE' },
+      });
+
+      await this.recordHistory(tx, id, request.status, 'ARCHIVE', userId);
+      await this.recordAuditLog(tx, 'LEAVE_REQUEST_ARCHIVED', id, userId,
+        { status: request.status },
+        { status: 'ARCHIVE' },
+      );
+    });
+
+    return { message: `Demande de ${request.employee.user.firstName} ${request.employee.user.lastName} archivée` };
   }
 
   async removeRequest(id: number) {

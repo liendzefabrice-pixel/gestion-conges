@@ -97,6 +97,15 @@ export class LeaveController {
     return this.leaveService.cancelRequest(id, employee.id);
   }
 
+  @Patch('requests/:id/archive')
+  @Roles('HR', 'DIRECTOR', 'ADMIN')
+  archiveRequest(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.leaveService.archiveRequest(id, user.id);
+  }
+
   @Delete('requests/:id')
   @Roles('HR', 'ADMIN')
   removeRequest(@Param('id', ParseIntPipe) id: number) {

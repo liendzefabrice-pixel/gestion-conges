@@ -30,7 +30,7 @@ import {
 } from '../components/ui/dialog'
 import RequestDetailModal from '../components/RequestDetailModal'
 import Tooltip from '../components/ui/tooltip'
-import { Filter, Loader2, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
+import { Filter, Loader2, AlertCircle, CheckCircle2, Trash2, Archive } from 'lucide-react'
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'warning' | 'success' | 'danger' | 'info'; color: string }> = {
   BROUILLON: { label: 'Brouillon', variant: 'default', color: 'text-gray-500 bg-gray-100' },
@@ -40,6 +40,7 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   APPROUVE: { label: 'Approuvé', variant: 'success', color: 'text-green-700 bg-green-100' },
   REFUSE: { label: 'Refusé', variant: 'danger', color: 'text-red-700 bg-red-100' },
   ANNULE: { label: 'Annulé', variant: 'outline', color: 'text-gray-500 bg-gray-100' },
+  ARCHIVE: { label: 'Archivé', variant: 'secondary', color: 'text-gray-500 bg-gray-100' },
 }
 
 function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
@@ -100,8 +101,13 @@ function NewLeaveForm({ onSuccess }: { onSuccess: () => void }) {
       onSuccess()
     },
     onError: (err: any) => {
-      const msg = err.response?.data?.message
-      setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur lors de la soumission')
+      const data = err.response?.data
+      if (data?.remainingDays !== undefined && data?.requestedDays !== undefined) {
+        setError(`Votre solde disponible est de ${data.remainingDays} jours alors que vous avez demandé ${data.requestedDays} jours.`)
+      } else {
+        const msg = data?.message
+        setError(Array.isArray(msg) ? msg[0] : msg || 'Erreur lors de la soumission')
+      }
     },
   })
 
@@ -234,6 +240,20 @@ export default function LeavePage() {
   })
 
   const [requestToDelete, setRequestToDelete] = useState<LeaveRequest | null>(null)
+  const [requestToArchive, setRequestToArchive] = useState<LeaveRequest | null>(null)
+
+  const archiveMutation = useMutation({
+    mutationFn: (id: number) => api.patch(`/leave/requests/${id}/archive`),
+    onSuccess: (res: any) => {
+      queryClient.invalidateQueries({ queryKey: ['leave-requests'] })
+      setRequestToArchive(null)
+      setSelectedRequest(null)
+      toast(res.data?.message || 'Demande archivée avec succès', 'success')
+    },
+    onError: (err: any) => {
+      toast(err?.response?.data?.message || "Erreur lors de l'archivage", 'error')
+    },
+  })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/leave/requests/${id}`),
@@ -317,7 +337,7 @@ export default function LeavePage() {
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Jours</th>
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Retour</th>
                   <th className="h-11 px-5 text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground">Statut</th>
-                  {(role === 'HR' || role === 'ADMIN') && (
+                  {(role === 'HR' || role === 'ADMIN' || role === 'DIRECTOR') && (
                     <th className="h-11 px-5 text-right font-semibold text-xs uppercase tracking-wider text-muted-foreground">Actions</th>
                   )}
                 </tr>
@@ -343,25 +363,38 @@ export default function LeavePage() {
                         {statusConfig[r.status]?.label}
                       </Badge>
                     </td>
-                    {(role === 'HR' || role === 'ADMIN') && (
+                    {(role === 'HR' || role === 'ADMIN' || role === 'DIRECTOR') && (
                       <td className="p-4 px-5 text-right">
-                        <Tooltip content="Supprimer">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            onClick={(e) => { e.stopPropagation(); setRequestToDelete(r) }}
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                        </Tooltip>
+                        <div className="flex items-center justify-end gap-1">
+                          <Tooltip content="Archiver">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => { e.stopPropagation(); setRequestToArchive(r) }}
+                            >
+                              <Archive className="size-4" />
+                            </Button>
+                          </Tooltip>
+                          {(role === 'HR' || role === 'ADMIN') && (
+                            <Tooltip content="Supprimer">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                                onClick={(e) => { e.stopPropagation(); setRequestToDelete(r) }}
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </Tooltip>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
                 ))}
                 {requests.length === 0 && (
                   <tr>
-                    <td colSpan={role === 'HR' || role === 'ADMIN' ? 7 : 6} className="p-4 px-5 text-center text-muted-foreground">Aucune demande</td>
+                    <td colSpan={role === 'HR' || role === 'ADMIN' || role === 'DIRECTOR' ? 7 : 6} className="p-4 px-5 text-center text-muted-foreground">Aucune demande</td>
                   </tr>
                 )}
               </tbody>
@@ -383,6 +416,32 @@ export default function LeavePage() {
           </Button>
         </div>
       )}
+
+      {/* Archive confirmation */}
+      <Dialog open={!!requestToArchive} onOpenChange={(o) => { if (!o) setRequestToArchive(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer l'archivage</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Êtes-vous sûr de vouloir archiver la demande de congé de <strong>{requestToArchive?.employee?.user?.firstName} {requestToArchive?.employee?.user?.lastName}</strong> ?
+            La demande sera masquée des listes actives.
+          </p>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setRequestToArchive(null)}>
+              Annuler
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={archiveMutation.isPending}
+              onClick={() => archiveMutation.mutate(requestToArchive!.id)}
+            >
+              {archiveMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <Archive className="size-4" />}
+              Archiver
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation */}
       <Dialog open={!!requestToDelete} onOpenChange={(o) => { if (!o) setRequestToDelete(null) }}>
