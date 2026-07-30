@@ -22,7 +22,7 @@ export class LeaveCampaignService {
     private workingDaysService: WorkingDaysService,
   ) {}
 
-  async create(dto: CreateCampaignDto) {
+  async create(dto: CreateCampaignDto, userId: number) {
     const existing = await this.prisma.leaveCampaign.findUnique({
       where: { year: dto.year },
     });
@@ -44,7 +44,7 @@ export class LeaveCampaignService {
       },
     });
 
-    await this.writeAuditLog('CAMPAGNE_CREEE', 'LeaveCampaign', campaign.id, null, campaign, 1);
+    await this.writeAuditLog('CAMPAGNE_CREEE', 'LeaveCampaign', campaign.id, null, campaign, userId);
     return campaign;
   }
 
@@ -68,7 +68,7 @@ export class LeaveCampaignService {
     return campaign;
   }
 
-  async update(id: number, dto: UpdateCampaignDto) {
+  async update(id: number, dto: UpdateCampaignDto, userId: number) {
     const campaign = await this.findOne(id);
 
     if (dto.startDate && dto.endDate && new Date(dto.startDate) >= new Date(dto.endDate)) {
@@ -87,11 +87,11 @@ export class LeaveCampaignService {
       },
     });
 
-    await this.writeAuditLog('CAMPAGNE_MODIFIEE', 'LeaveCampaign', id, oldValue, updated, 1);
+    await this.writeAuditLog('CAMPAGNE_MODIFIEE', 'LeaveCampaign', id, oldValue, updated, userId);
     return updated;
   }
 
-  async openCampaign(id: number) {
+  async openCampaign(id: number, userId: number) {
     const campaign = await this.findOne(id);
     if (campaign.status !== 'BROUILLON') {
       throw new BadRequestException('Seules les campagnes en brouillon peuvent être ouvertes');
@@ -109,7 +109,7 @@ export class LeaveCampaignService {
       data: { status: 'OUVERTE' },
     });
 
-    await this.writeAuditLog('CAMPAGNE_OUVERTE', 'LeaveCampaign', id, { status: campaign.status }, { status: 'OUVERTE' }, 1);
+    await this.writeAuditLog('CAMPAGNE_OUVERTE', 'LeaveCampaign', id, { status: campaign.status }, { status: 'OUVERTE' }, userId);
 
     this.notifyEligibleEmployees(id).catch((err) => {
       this.logger.error(`Échec envoi notifications campagne #${id}: ${err.message}`);
@@ -118,7 +118,7 @@ export class LeaveCampaignService {
     return updated;
   }
 
-  async closeCampaign(id: number) {
+  async closeCampaign(id: number, userId: number) {
     const campaign = await this.findOne(id);
     if (campaign.status !== 'OUVERTE') {
       throw new BadRequestException('Seules les campagnes ouvertes peuvent être clôturées');
@@ -129,7 +129,7 @@ export class LeaveCampaignService {
       data: { status: 'CLOTUREE' },
     });
 
-    await this.writeAuditLog('CAMPAGNE_CLOTUREE', 'LeaveCampaign', id, { status: campaign.status }, { status: 'CLOTUREE' }, 1);
+    await this.writeAuditLog('CAMPAGNE_CLOTUREE', 'LeaveCampaign', id, { status: campaign.status }, { status: 'CLOTUREE' }, userId);
 
     this.notifyClosureToParticipants(id).catch((err) => {
       this.logger.error(`Échec notification clôture campagne #${id}: ${err.message}`);
@@ -138,7 +138,7 @@ export class LeaveCampaignService {
     return updated;
   }
 
-  async archiveCampaign(id: number) {
+  async archiveCampaign(id: number, userId: number) {
     const campaign = await this.findOne(id);
     if (campaign.status !== 'CLOTUREE') {
       throw new BadRequestException('Seules les campagnes clôturées peuvent être archivées');
@@ -149,7 +149,7 @@ export class LeaveCampaignService {
       data: { status: 'ARCHIVEE' },
     });
 
-    await this.writeAuditLog('CAMPAGNE_ARCHIVEE', 'LeaveCampaign', id, { status: campaign.status }, { status: 'ARCHIVEE' }, 1);
+    await this.writeAuditLog('CAMPAGNE_ARCHIVEE', 'LeaveCampaign', id, { status: campaign.status }, { status: 'ARCHIVEE' }, userId);
 
     return updated;
   }
@@ -465,7 +465,7 @@ export class LeaveCampaignService {
     };
   }
 
-  async updateProposalStatus(proposalId: number, dto: UpdateProposalStatusDto) {
+  async updateProposalStatus(proposalId: number, dto: UpdateProposalStatusDto, userId: number) {
     const proposal = await this.prisma.leaveProposal.findUnique({
       where: { id: proposalId },
       include: { employee: { include: { user: true } } },
@@ -478,21 +478,6 @@ export class LeaveCampaignService {
     if (dto.newStartDate) updateData.desiredStartDate = new Date(dto.newStartDate);
     if (dto.newEndDate) updateData.suggestedEndDate = new Date(dto.newEndDate);
 
-    const updated = await this.prisma.leaveProposal.update({
-      where: { id: proposalId },
-      data: updateData,
-      include: {
-        employee: {
-          include: {
-            user: { select: { id: true, email: true, firstName: true, lastName: true } },
-            department: { select: { name: true } },
-          },
-        },
-        campaign: true,
-        analysisLogs: { orderBy: { createdAt: 'asc' } },
-      },
-    });
-
     const actionLabels: Record<string, string> = {
       ACCEPTEE: 'VALIDATION_RH',
       REFUSEE: 'REFUS_RH',
@@ -503,12 +488,46 @@ export class LeaveCampaignService {
       ? `Période modifiée : ${new Date(dto.newStartDate).toLocaleDateString('fr-FR')} → ${dto.newEndDate ? new Date(dto.newEndDate).toLocaleDateString('fr-FR') : ''}`
       : `Statut mis à jour : ${dto.status}`;
 
-    await this.prisma.proposalAnalysisLog.create({
-      data: { proposalId, action, details: actionDetail },
-    });
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.leaveProposal.update({
+        where: { id: proposalId },
+        data: updateData,
+        include: {
+          employee: {
+            include: {
+              user: { select: { id: true, email: true, firstName: true, lastName: true } },
+              department: { select: { name: true } },
+            },
+          },
+          campaign: true,
+          analysisLogs: { orderBy: { createdAt: 'asc' } },
+        },
+      });
 
-    await this.writeAuditLog('PROPOSITION_STATUT_MAJ', 'LeaveProposal', proposalId,
-      { status: oldStatus }, { status: dto.status, ...(dto.newStartDate && { newStartDate: dto.newStartDate }) }, 1);
+      await tx.proposalAnalysisLog.create({
+        data: { proposalId, action, details: actionDetail },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'PROPOSITION_STATUT_MAJ',
+          entityType: 'LeaveProposal',
+          entityId: proposalId,
+          oldValue: { status: oldStatus },
+          newValue: {
+            status: dto.status,
+            ...(dto.newStartDate && { newStartDate: dto.newStartDate }),
+          } as any,
+          userId,
+        },
+      });
+
+      if (dto.status === 'ACCEPTEE') {
+        await this.createLeaveRequestFromProposal(updated, tx);
+      }
+
+      return updated;
+    });
 
     if (proposal.employee?.user) {
       const campaignLabel = updated.campaign?.label || 'Campagne';
@@ -516,10 +535,6 @@ export class LeaveCampaignService {
 
       if (dto.status === 'ACCEPTEE') {
         await this.notificationsService.notifyProposalAccepted([employeeUserId], campaignLabel);
-
-        await this.createLeaveRequestFromProposal(updated).catch((err) => {
-          this.logger.error(`Échec création congé pour la proposition #${proposalId}: ${err.message}`);
-        });
       } else if (dto.status === 'REFUSEE') {
         await this.notificationsService.notifyProposalRefused([employeeUserId], campaignLabel);
       } else if (dto.status === 'REPROGRAMMEE') {
@@ -533,12 +548,14 @@ export class LeaveCampaignService {
     return updated;
   }
 
-  private async createLeaveRequestFromProposal(proposal: any) {
+  private async createLeaveRequestFromProposal(proposal: any, tx?: Prisma.TransactionClient) {
+    const prisma = tx ?? this.prisma;
+
     const startDate = new Date(proposal.desiredStartDate);
     const endDate = proposal.endDate ? new Date(proposal.endDate) : await this.workingDaysService.addWorkingDays(startDate, (proposal.duration || 1) - 1);
     const returnDate = proposal.returnDate ? new Date(proposal.returnDate) : await this.workingDaysService.computeReturnDate(endDate);
 
-    const annualLeaveType = await this.prisma.leaveType.findFirst({
+    const annualLeaveType = await prisma.leaveType.findFirst({
       where: { name: { contains: 'annuel', mode: 'insensitive' } },
     });
     if (!annualLeaveType) {
@@ -546,13 +563,13 @@ export class LeaveCampaignService {
       return;
     }
 
-    const existingLeave = await this.prisma.leaveRequest.findFirst({
+    const existingLeave = await prisma.leaveRequest.findFirst({
       where: { employeeId: proposal.employeeId, leaveTypeId: annualLeaveType.id, status: 'APPROUVE' },
     });
 
     if (existingLeave) return;
 
-    const leave = await this.prisma.leaveRequest.create({
+    const leave = await prisma.leaveRequest.create({
       data: {
         startDate,
         endDate,

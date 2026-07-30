@@ -606,7 +606,7 @@ export class LeaveService {
     });
   }
 
-  async cancelRequest(id: number, employeeId: number) {
+  async cancelRequest(id: number, employeeId: number, userId: number) {
     const request = await this.prisma.leaveRequest.findUnique({
       where: { id },
       include: { leaveType: true },
@@ -638,12 +638,12 @@ export class LeaveService {
         },
       });
 
-      await this.recordHistory(tx, id, request.status, 'ANNULE', employeeId);
+      await this.recordHistory(tx, id, request.status, 'ANNULE', userId);
       await this.recordAuditLog(
         tx,
         'LEAVE_REQUEST_CANCELLED',
         id,
-        employeeId,
+        userId,
         { status: request.status },
         { status: 'ANNULE' },
       );

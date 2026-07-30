@@ -26,8 +26,11 @@ export class LeaveCampaignController {
 
   @Post()
   @Roles('ADMIN', 'HR')
-  create(@Body() dto: CreateCampaignDto) {
-    return this.campaignService.create(dto);
+  create(
+    @Body() dto: CreateCampaignDto,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.campaignService.create(dto, user.id);
   }
 
   @Get()
@@ -52,26 +55,36 @@ export class LeaveCampaignController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCampaignDto,
+    @CurrentUser() user: { id: number },
   ) {
-    return this.campaignService.update(id, dto);
+    return this.campaignService.update(id, dto, user.id);
   }
 
   @Patch(':id/open')
   @Roles('ADMIN', 'HR')
-  openCampaign(@Param('id', ParseIntPipe) id: number) {
-    return this.campaignService.openCampaign(id);
+  openCampaign(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.campaignService.openCampaign(id, user.id);
   }
 
   @Patch(':id/close')
   @Roles('ADMIN', 'HR')
-  closeCampaign(@Param('id', ParseIntPipe) id: number) {
-    return this.campaignService.closeCampaign(id);
+  closeCampaign(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.campaignService.closeCampaign(id, user.id);
   }
 
   @Patch(':id/archive')
   @Roles('ADMIN', 'HR')
-  archiveCampaign(@Param('id', ParseIntPipe) id: number) {
-    return this.campaignService.archiveCampaign(id);
+  archiveCampaign(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: { id: number },
+  ) {
+    return this.campaignService.archiveCampaign(id, user.id);
   }
 
   @Delete(':id')
@@ -118,7 +131,8 @@ export class LeaveCampaignController {
   updateProposalStatus(
     @Param('proposalId', ParseIntPipe) proposalId: number,
     @Body() dto: UpdateProposalStatusDto,
+    @CurrentUser() user: { id: number },
   ) {
-    return this.campaignService.updateProposalStatus(proposalId, dto);
+    return this.campaignService.updateProposalStatus(proposalId, dto, user.id);
   }
 }

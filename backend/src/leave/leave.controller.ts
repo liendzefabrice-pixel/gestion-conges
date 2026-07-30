@@ -94,7 +94,7 @@ export class LeaveController {
     @CurrentUser() user: { id: number },
   ) {
     const employee = await this.leaveService.getEmployeeByUserId(user.id);
-    return this.leaveService.cancelRequest(id, employee.id);
+    return this.leaveService.cancelRequest(id, employee.id, user.id);
   }
 
   @Patch('requests/:id/archive')
