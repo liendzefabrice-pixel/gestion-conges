@@ -25,8 +25,11 @@ async function bootstrap() {
   app.use(helmet());
 
   // Autoriser les requêtes du frontend
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+    : [process.env.FRONTEND_URL || 'http://localhost:5173'];
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: corsOrigins,
     credentials: true,
   });
 
@@ -36,8 +39,11 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 3000;
+  const server = await app.listen(port);
 
-  await app.listen(port);
+  // Timeout serveur (évite les requêtes pendantes)
+  const serverTimeout = parseInt(process.env.SERVER_TIMEOUT || '120000', 10);
+  server.setTimeout(serverTimeout);
 
   console.log(`🚀 Backend lancé sur http://localhost:${port}/api/v1`);
 }

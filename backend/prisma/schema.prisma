@@ -41,6 +41,12 @@ enum PermissionType {
   FAMILIAL
 }
 
+enum BalanceOperationType {
+  INITIALISATION
+  DEDUCTION_CONGES
+  AJUSTEMENT_MANUAL
+}
+
 enum NotificationType {
   LEAVE_CREATED
   LEAVE_RH_REVIEWED
@@ -136,6 +142,7 @@ model User {
   decisionAnalysesCreated DecisionAnalysis[] @relation("DecisionCreator")
   decisionAnalysesDecided DecisionAnalysis[] @relation("DecisionDecider")
   leaveRequestHistories LeaveRequestHistory[]
+  validatedProposals  LeaveProposal[]      @relation("ProposalValidator")
   passwordResetOtps PasswordResetOtp[]
 
   createdAt DateTime @default(now())
@@ -311,6 +318,7 @@ model LeaveRequest {
 
   @@index([employeeId])
   @@index([status])
+  @@index([createdAt])
 }
 
 model LeaveRequestHistory {
@@ -419,8 +427,8 @@ model LeaveBalance {
 }
 
 model BalanceAdjustment {
-  id                Int      @id @default(autoincrement())
-  operationType     String
+  id                Int                  @id @default(autoincrement())
+  operationType     BalanceOperationType
   previousRemaining Int      @default(0)
   newRemaining      Int      @default(0)
   comment           String?
@@ -453,6 +461,7 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([entityType, entityId])
+  @@index([createdAt])
 }
 
 model AuditLog {
@@ -469,6 +478,7 @@ model AuditLog {
   createdAt  DateTime @default(now())
 
   @@index([entityType, entityId])
+  @@index([createdAt])
 }
 
 model Holiday {
@@ -552,6 +562,9 @@ model LeaveProposal {
 
   employeeId       Int
   employee         Employee        @relation(fields: [employeeId], references: [id])
+
+  validatedById    Int?
+  validatedBy      User?           @relation("ProposalValidator", fields: [validatedById], references: [id])
 
   analysisLogs     ProposalAnalysisLog[]
 

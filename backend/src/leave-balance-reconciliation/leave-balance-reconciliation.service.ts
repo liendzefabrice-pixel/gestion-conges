@@ -52,15 +52,23 @@ export class LeaveBalanceReconciliationService {
       const years = await this.collectAllYears();
 
       for (const employee of employees) {
+        let empCreated = 0;
+        let empUpdated = 0;
+        let empUnchanged = 0;
+
         for (const leaveType of leaveTypes) {
           for (const year of years) {
             totalBalances++;
             const result = await this.reconcileOne(employee.id, leaveType.id, year, admin?.id);
 
-            if (result === 'created') created++;
-            else if (result === 'updated') updated++;
-            else unchanged++;
+            if (result === 'created') { created++; empCreated++; }
+            else if (result === 'updated') { updated++; empUpdated++; }
+            else { unchanged++; empUnchanged++; }
           }
+        }
+
+        if (empCreated > 0 || empUpdated > 0) {
+          this.logger.log(`Employé #${employee.id} : ${empCreated} créé(s), ${empUpdated} mis à jour, ${empUnchanged} inchangé(s)`);
         }
       }
 

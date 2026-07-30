@@ -221,6 +221,20 @@ export class LeaveCampaignService {
     }
   }
 
+  private async getAnnualLeaveType(prisma: any) {
+    const setting = await prisma.setting.findUnique({ where: { key: 'annual_leave_type_id' } });
+    if (setting?.value) {
+      const id = parseInt(setting.value, 10);
+      if (!isNaN(id)) {
+        const leaveType = await prisma.leaveType.findUnique({ where: { id } });
+        if (leaveType) return leaveType;
+      }
+    }
+    return prisma.leaveType.findFirst({
+      where: { name: { contains: 'annuel', mode: 'insensitive' } },
+    });
+  }
+
   private async isEligible(employeeId: number): Promise<boolean> {
     try {
       const employee = await this.prisma.employee.findUnique({
@@ -255,12 +269,13 @@ export class LeaveCampaignService {
 
     let annualBalance: { available: number; acquired: number; consumed: number; reserved: number; seniority: string } | null = null;
     try {
-      const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
-      const bal = result.balances.find(
-        (b) => b.leaveTypeName.toLowerCase().includes('annuel') || b.leaveTypeName.toLowerCase().includes('annual'),
-      );
-      if (bal) {
-        annualBalance = { ...bal, seniority: `${seniorityYears} an${seniorityYears > 1 ? 's' : ''}` };
+      const annualLeaveType = await this.getAnnualLeaveType(this.prisma);
+      if (annualLeaveType) {
+        const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
+        const bal = result.balances.find((b) => b.leaveTypeId === annualLeaveType.id);
+        if (bal) {
+          annualBalance = { ...bal, seniority: `${seniorityYears} an${seniorityYears > 1 ? 's' : ''}` };
+        }
       }
     } catch {}
 
@@ -291,17 +306,28 @@ export class LeaveCampaignService {
 
     let duration = 0;
     try {
-      const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
-      const annualBalance = result.balances.find(
-        (b) => b.leaveTypeName.toLowerCase().includes('annuel') || b.leaveTypeName.toLowerCase().includes('annual'),
-      );
-      duration = annualBalance?.available ?? 0;
+      const annualLeaveType = await this.getAnnualLeaveType(this.prisma);
+      if (annualLeaveType) {
+        const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
+        const annualBalance = result.balances.find((b) => b.leaveTypeId === annualLeaveType.id);
+        duration = annualBalance?.available ?? 0;
+      }
     } catch {
       duration = 0;
     }
 
     const startDate = new Date(dto.desiredStartDate);
-    const endDate = duration > 0 ? await this.workingDaysService.addWorkingDays(startDate, duration - 1) : startDate;
+    if (startDate.getFullYear() !== campaign.year) {
+      throw new BadRequestException('La date de début doit être dans l\'année de la campagne');
+    }
+    if (startDate <= new Date()) {
+      throw new BadRequestException('La date de début doit être dans le futur');
+    }
+    if (duration <= 0) {
+      throw new BadRequestException('Solde annuel insuffisant pour soumettre une proposition');
+    }
+
+    const endDate = await this.workingDaysService.addWorkingDays(startDate, duration - 1);
     const returnDate = await this.workingDaysService.computeReturnDate(endDate);
 
     const proposal = await this.prisma.leaveProposal.create({
@@ -367,17 +393,28 @@ export class LeaveCampaignService {
 
     let duration = 0;
     try {
-      const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
-      const annualBalance = result.balances.find(
-        (b) => b.leaveTypeName.toLowerCase().includes('annuel') || b.leaveTypeName.toLowerCase().includes('annual'),
-      );
-      duration = annualBalance?.available ?? 0;
+      const annualLeaveType = await this.getAnnualLeaveType(this.prisma);
+      if (annualLeaveType) {
+        const result = await this.leaveBalanceEngine.calculateEmployeeBalances(employee.id);
+        const annualBalance = result.balances.find((b) => b.leaveTypeId === annualLeaveType.id);
+        duration = annualBalance?.available ?? 0;
+      }
     } catch {
       duration = 0;
     }
 
     const startDate = new Date(dto.desiredStartDate);
-    const endDate = duration > 0 ? await this.workingDaysService.addWorkingDays(startDate, duration - 1) : startDate;
+    if (startDate.getFullYear() !== campaign.year) {
+      throw new BadRequestException('La date de début doit être dans l\'année de la campagne');
+    }
+    if (startDate <= new Date()) {
+      throw new BadRequestException('La date de début doit être dans le futur');
+    }
+    if (duration <= 0) {
+      throw new BadRequestException('Solde annuel insuffisant pour modifier la proposition');
+    }
+
+    const endDate = await this.workingDaysService.addWorkingDays(startDate, duration - 1);
     const returnDate = await this.workingDaysService.computeReturnDate(endDate);
 
     const updated = await this.prisma.leaveProposal.update({
@@ -434,16 +471,17 @@ export class LeaveCampaignService {
       orderBy: { createdAt: 'asc' },
     });
 
+    const annualLeaveTypeForFilter = await this.getAnnualLeaveType(this.prisma);
     const enriched = await Promise.all(
       proposals.map(async (p) => {
         let annualBalance: number | null = null;
-        try {
-          const result = await this.leaveBalanceEngine.calculateEmployeeBalances(p.employeeId);
-          const balance = result.balances.find(
-            (b) => b.leaveTypeName.toLowerCase().includes('annuel') || b.leaveTypeName.toLowerCase().includes('annual'),
-          );
-          if (balance) annualBalance = balance.available;
-        } catch {}
+        if (annualLeaveTypeForFilter) {
+          try {
+            const result = await this.leaveBalanceEngine.calculateEmployeeBalances(p.employeeId);
+            const balance = result.balances.find((b) => b.leaveTypeId === annualLeaveTypeForFilter.id);
+            if (balance) annualBalance = balance.available;
+          } catch {}
+        }
 
         const hireDate = p.employee.hireDate;
         const now = new Date();
@@ -473,7 +511,7 @@ export class LeaveCampaignService {
     if (!proposal) throw new NotFoundException('Proposition introuvable');
 
     const oldStatus = proposal.status;
-    const updateData: any = { status: dto.status as any };
+    const updateData: any = { status: dto.status as any, validatedById: userId };
 
     if (dto.newStartDate) updateData.desiredStartDate = new Date(dto.newStartDate);
     if (dto.newEndDate) updateData.suggestedEndDate = new Date(dto.newEndDate);
@@ -555,9 +593,7 @@ export class LeaveCampaignService {
     const endDate = proposal.endDate ? new Date(proposal.endDate) : await this.workingDaysService.addWorkingDays(startDate, (proposal.duration || 1) - 1);
     const returnDate = proposal.returnDate ? new Date(proposal.returnDate) : await this.workingDaysService.computeReturnDate(endDate);
 
-    const annualLeaveType = await prisma.leaveType.findFirst({
-      where: { name: { contains: 'annuel', mode: 'insensitive' } },
-    });
+    const annualLeaveType = await this.getAnnualLeaveType(prisma);
     if (!annualLeaveType) {
       this.logger.warn('Type de congé annuel introuvable, création de congé ignorée');
       return;
@@ -566,8 +602,38 @@ export class LeaveCampaignService {
     const existingLeave = await prisma.leaveRequest.findFirst({
       where: { employeeId: proposal.employeeId, leaveTypeId: annualLeaveType.id, status: 'APPROUVE' },
     });
+    if (existingLeave) {
+      this.logger.warn(`Proposition #${proposal.id} ignorée : un congé annuel approuvé existe déjà (#${existingLeave.id})`);
+      return;
+    }
 
-    if (existingLeave) return;
+    const balance = await prisma.leaveBalance.findUnique({
+      where: {
+        employeeId_leaveTypeId_year: {
+          employeeId: proposal.employeeId,
+          leaveTypeId: annualLeaveType.id,
+          year: startDate.getFullYear(),
+        },
+      },
+    });
+    const remaining = (balance?.totalDays ?? 0) + (balance?.adjustedDays ?? 0) - (balance?.usedDays ?? 0) - (balance?.pendingDays ?? 0);
+    if (remaining < proposal.duration) {
+      this.logger.warn(`Proposition #${proposal.id} ignorée : solde insuffisant (${remaining}/${proposal.duration})`);
+      return;
+    }
+
+    const overlapping = await prisma.leaveRequest.findFirst({
+      where: {
+        employeeId: proposal.employeeId,
+        status: { in: ['EN_ATTENTE_RH', 'EN_ATTENTE_DIRECTION', 'AVIS_RH_RENDU', 'APPROUVE'] },
+        startDate: { lte: endDate },
+        endDate: { gte: startDate },
+      },
+    });
+    if (overlapping) {
+      this.logger.warn(`Proposition #${proposal.id} ignorée : chevauchement avec la demande #${overlapping.id}`);
+      return;
+    }
 
     const leave = await prisma.leaveRequest.create({
       data: {
@@ -583,6 +649,21 @@ export class LeaveCampaignService {
     });
 
     this.logger.log(`Congé #${leave.id} créé automatiquement pour la proposition #${proposal.id}`);
+
+    const employeeUserId = proposal.employee?.user?.id;
+    if (employeeUserId) {
+      this.notificationsService.createNotification(
+        [employeeUserId],
+        'Congé créé',
+        `Votre congé annuel du ${startDate.toLocaleDateString('fr-FR')} au ${endDate.toLocaleDateString('fr-FR')} (${proposal.duration} jour${proposal.duration > 1 ? 's' : ''}) a été créé avec succès via la campagne "${proposal.campaign?.label || ''}".`,
+        'LEAVE_CREATED',
+        '/leave',
+        'LeaveRequest',
+        leave.id,
+      ).catch((err) => {
+        this.logger.error(`Échec notification pour le congé #${leave.id}: ${err.message}`);
+      });
+    }
   }
 
   async getEligibleCount(campaignId: number): Promise<number> {

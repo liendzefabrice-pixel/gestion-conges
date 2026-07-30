@@ -484,13 +484,18 @@ export class PermissionsService {
       orderBy: { id: 'asc' },
     });
 
+    const setting = await this.prisma.setting.findUnique({
+      where: { key: 'permission_default_days' },
+    });
+    const totalDays = setting ? parseInt(setting.value, 10) || 10 : 10;
+
     await this.prisma.permissionBalance.upsert({
       where: { employeeId_year: { employeeId, year } },
-      update: {},
+      update: { totalDays },
       create: {
         employeeId,
         year,
-        totalDays: 10,
+        totalDays,
       },
     });
   }

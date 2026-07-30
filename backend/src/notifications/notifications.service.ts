@@ -503,11 +503,31 @@ export class NotificationsService {
   // STANDARD CRUD (retained)
   // ---------------------------------------------------------------------------
 
-  async findByUser(userId: number) {
-    return this.prisma.notification.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-    });
+  async findByUser(userId: number, page?: number, pageSize?: number) {
+    const skip = page && pageSize ? (page - 1) * pageSize : undefined;
+    const take = pageSize ?? undefined;
+
+    const [notifications, total] = await Promise.all([
+      this.prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.notification.count({ where: { userId } }),
+    ]);
+
+    if (page && pageSize) {
+      return {
+        data: notifications,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      };
+    }
+
+    return notifications;
   }
 
   async countUnread(userId: number) {
