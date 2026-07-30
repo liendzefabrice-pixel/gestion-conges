@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { WorkingDaysService } from '../../working-days/working-days.service';
 import { PlanningRule, RuleContext, RuleResult } from '../interfaces/planning-rule.interface';
-import { addWorkingDays } from '../../common/working-days';
 
 @Injectable()
 export class InternalEventConflictRule implements PlanningRule {
   readonly name = 'InternalEventConflictRule';
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private workingDaysService: WorkingDaysService,
+  ) {}
 
   async analyze(context: RuleContext): Promise<RuleResult> {
     const { proposal } = context;
@@ -22,7 +25,7 @@ export class InternalEventConflictRule implements PlanningRule {
       };
     }
 
-    const desiredEnd = addWorkingDays(new Date(proposal.desiredStartDate), proposal.duration - 1);
+    const desiredEnd = await this.workingDaysService.addWorkingDays(new Date(proposal.desiredStartDate), proposal.duration - 1);
 
     const activeEvents = await this.prisma.internalEvent.findMany({
       where: {
@@ -57,11 +60,8 @@ export class InternalEventConflictRule implements PlanningRule {
 
     const conflictingNames = conflictingEvents.map((e) => `"${e.title}"`).join(', ');
 
-    const newStart = new Date(primaryEvent.endDate);
-    newStart.setDate(newStart.getDate() + 1);
-    while (newStart.getDay() === 0) newStart.setDate(newStart.getDate() + 1);
-
-    const newEnd = addWorkingDays(newStart, proposal.duration - 1);
+    const newStart = await this.workingDaysService.computeReturnDate(new Date(primaryEvent.endDate));
+    const newEnd = await this.workingDaysService.addWorkingDays(newStart, proposal.duration - 1);
 
     return {
       ruleName: this.name,

@@ -4,11 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { LeaveBalanceEngineService } from '../leave-balance-engine/leave-balance-engine.service';
 import { LeavePlanningEngineService } from '../leave-planning-engine/leave-planning-engine.service';
+import { WorkingDaysService } from '../working-days/working-days.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { SubmitProposalDto } from './dto/submit-proposal.dto';
 import { UpdateProposalStatusDto } from './dto/update-proposal-status.dto';
-import { addWorkingDays } from '../common/working-days';
 
 @Injectable()
 export class LeaveCampaignService {
@@ -19,6 +19,7 @@ export class LeaveCampaignService {
     private notificationsService: NotificationsService,
     private leaveBalanceEngine: LeaveBalanceEngineService,
     private planningEngine: LeavePlanningEngineService,
+    private workingDaysService: WorkingDaysService,
   ) {}
 
   async create(dto: CreateCampaignDto) {
@@ -300,8 +301,8 @@ export class LeaveCampaignService {
     }
 
     const startDate = new Date(dto.desiredStartDate);
-    const endDate = duration > 0 ? addWorkingDays(startDate, duration - 1) : startDate;
-    const returnDate = addWorkingDays(endDate, 1);
+    const endDate = duration > 0 ? await this.workingDaysService.addWorkingDays(startDate, duration - 1) : startDate;
+    const returnDate = await this.workingDaysService.computeReturnDate(endDate);
 
     const proposal = await this.prisma.leaveProposal.create({
       data: {
@@ -376,8 +377,8 @@ export class LeaveCampaignService {
     }
 
     const startDate = new Date(dto.desiredStartDate);
-    const endDate = duration > 0 ? addWorkingDays(startDate, duration - 1) : startDate;
-    const returnDate = addWorkingDays(endDate, 1);
+    const endDate = duration > 0 ? await this.workingDaysService.addWorkingDays(startDate, duration - 1) : startDate;
+    const returnDate = await this.workingDaysService.computeReturnDate(endDate);
 
     const updated = await this.prisma.leaveProposal.update({
       where: { id: existing.id },
@@ -534,8 +535,8 @@ export class LeaveCampaignService {
 
   private async createLeaveRequestFromProposal(proposal: any) {
     const startDate = new Date(proposal.desiredStartDate);
-    const endDate = proposal.endDate ? new Date(proposal.endDate) : addWorkingDays(startDate, (proposal.duration || 1) - 1);
-    const returnDate = proposal.returnDate ? new Date(proposal.returnDate) : addWorkingDays(endDate, 1);
+    const endDate = proposal.endDate ? new Date(proposal.endDate) : await this.workingDaysService.addWorkingDays(startDate, (proposal.duration || 1) - 1);
+    const returnDate = proposal.returnDate ? new Date(proposal.returnDate) : await this.workingDaysService.computeReturnDate(endDate);
 
     const annualLeaveType = await this.prisma.leaveType.findFirst({
       where: { name: { contains: 'annuel', mode: 'insensitive' } },

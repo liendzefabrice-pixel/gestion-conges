@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { WorkingDaysService } from '../working-days/working-days.service';
 import { DecisionRule, DecisionContext, RuleEvaluation } from './interfaces/decision-rule.interface';
 import { DepartmentConflictRule } from './rules/department-conflict.rule';
 import { InternalEventConflictRule } from './rules/internal-event-conflict.rule';
@@ -7,7 +8,6 @@ import { BalanceSufficiencyRule } from './rules/balance-sufficiency.rule';
 import { CampaignValidationRule } from './rules/campaign-validation.rule';
 import { OperationalRiskRule } from './rules/operational-risk.rule';
 import { ReplacementAvailabilityRule } from './rules/replacement-availability.rule';
-import { addWorkingDays } from '../common/working-days';
 
 @Injectable()
 export class DecisionEngineService {
@@ -16,6 +16,7 @@ export class DecisionEngineService {
 
   constructor(
     private prisma: PrismaService,
+    private workingDaysService: WorkingDaysService,
     private deptConflictRule: DepartmentConflictRule,
     private eventConflictRule: InternalEventConflictRule,
     private balanceRule: BalanceSufficiencyRule,
@@ -145,7 +146,7 @@ export class DecisionEngineService {
     });
     if (!proposal) throw new Error('Proposition introuvable');
 
-    const endDate = addWorkingDays(new Date(proposal.desiredStartDate), (proposal.duration || 1) - 1);
+    const endDate = await this.workingDaysService.addWorkingDays(new Date(proposal.desiredStartDate), (proposal.duration || 1) - 1);
 
     return {
       entityType,

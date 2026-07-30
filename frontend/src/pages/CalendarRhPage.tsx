@@ -163,12 +163,8 @@ export default function CalendarRhPage() {
       ;(data?.proposals || []).forEach((p: any) => {
         const ps = new Date(p.desiredStartDate)
         ps.setHours(0, 0, 0, 0)
-        let remaining = (p.duration || 1) - 1
-        const pe = new Date(ps)
-        while (remaining > 0) {
-          pe.setDate(pe.getDate() + 1)
-          if (pe.getDay() !== 0) remaining--
-        }
+        const pe = new Date(p.endDate || p.desiredStartDate)
+        pe.setHours(0, 0, 0, 0)
         if (dateObj >= ps && dateObj <= pe && dateObj.getDay() !== 0) {
           items.push({ type: 'proposal', data: p })
         }

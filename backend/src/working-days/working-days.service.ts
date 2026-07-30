@@ -54,6 +54,24 @@ export class WorkingDaysService {
     return this.checkIsHoliday(date, holidays);
   }
 
+  async addWorkingDays(startDate: Date, days: number): Promise<Date> {
+    const holidays = await this.prisma.holiday.findMany();
+    const result = new Date(startDate);
+    let remaining = days;
+    while (remaining > 0) {
+      result.setDate(result.getDate() + 1);
+      const dayOfWeek = result.getDay();
+      if (dayOfWeek === 0) continue;
+      if (this.checkIsHoliday(result, holidays)) continue;
+      remaining--;
+    }
+    return result;
+  }
+
+  async computeReturnDate(fromDate: Date): Promise<Date> {
+    return this.addWorkingDays(fromDate, 1);
+  }
+
   private checkIsHoliday(date: Date, holidays: { date: Date; isRecurring: boolean }[]): boolean {
     for (const holiday of holidays) {
       if (holiday.isRecurring) {

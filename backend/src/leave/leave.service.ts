@@ -61,22 +61,6 @@ export class LeaveService {
     });
   }
 
-  private async computeReturnDate(startDate: Date, duration: number): Promise<Date> {
-    let remaining = duration;
-    const returnDate = new Date(startDate);
-    while (remaining > 0) {
-      returnDate.setDate(returnDate.getDate() + 1);
-      const dayOfWeek = returnDate.getDay();
-      if (dayOfWeek !== 0) {
-        const isHoliday = await this.workingDaysService.isHoliday(returnDate);
-        if (!isHoliday) {
-          remaining--;
-        }
-      }
-    }
-    return returnDate;
-  }
-
   async createLeaveType(createLeaveTypeDto: CreateLeaveTypeDto) {
     const existing = await this.prisma.leaveType.findUnique({
       where: { name: createLeaveTypeDto.name },
@@ -234,7 +218,7 @@ export class LeaveService {
       }
     }
 
-    const returnDate = await this.computeReturnDate(endDate, 1);
+    const returnDate = await this.workingDaysService.computeReturnDate(endDate);
 
     return this.prisma.$transaction(async (tx) => {
       const request = await tx.leaveRequest.create({

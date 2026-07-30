@@ -9,20 +9,6 @@ import { PageHeader } from '../components/ui/page-header'
 import { CalendarDays, Send, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { cn } from '../lib/utils'
 
-const WEEKEND_DAYS = [0]
-
-function addWorkingDays(from: Date, count: number): Date {
-  const d = new Date(from)
-  let added = 0
-  while (added < count) {
-    d.setDate(d.getDate() + 1)
-    if (!WEEKEND_DAYS.includes(d.getDay())) {
-      added++
-    }
-  }
-  return d
-}
-
 function formatDate(d: Date): string {
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 }
@@ -47,9 +33,7 @@ export default function MyCampaignPage() {
   const preview = useMemo(() => {
     if (!startDate || duration <= 0) return null
     const start = new Date(startDate + 'T00:00:00')
-    const end = addWorkingDays(start, duration - 1)
-    const returnD = addWorkingDays(end, 1)
-    return { start, end, return: returnD }
+    return { start }
   }, [startDate, duration])
 
   const submitMutation = useMutation({
@@ -194,11 +178,10 @@ export default function MyCampaignPage() {
                         <p className="font-medium text-gray-900">{duration} jour(s)</p>
                         <span className="text-gray-500">Début</span>
                         <p className="font-medium text-gray-900">{formatDate(preview.start)}</p>
-                        <span className="text-gray-500">Fin estimée</span>
-                        <p className="font-medium text-gray-900">{formatDate(preview.end)}</p>
-                        <span className="text-gray-500">Reprise estimée</span>
-                        <p className="font-medium text-gray-900">{formatDate(preview.return)}</p>
                       </div>
+                      <p className="text-xs text-gray-400 italic">
+                        Les dates de fin et de reprise seront calculées lors de la soumission.
+                      </p>
                     </div>
                   )}
 
